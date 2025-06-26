@@ -1,0 +1,332 @@
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+<style>
+.franchise-signup-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.step-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px 10px 0 0;
+    text-align: center;
+}
+
+.step-progress {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    padding: 0 20px;
+}
+
+.progress-step {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 0 5px;
+    transition: all 0.3s ease;
+}
+
+.progress-step.active {
+    background-color: #667eea;
+    color: white;
+}
+
+.progress-step.completed {
+    background-color: #28a745;
+    color: white;
+}
+
+.progress-step.inactive {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.form-container {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 0 0 10px 10px;
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-step {
+    display: none;
+}
+
+.form-step.active {
+    display: block;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-group input[required]:invalid {
+    border-color: #dc3545;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    margin: 5px;
+}
+
+.btn-primary {
+    background-color: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #5a6fd8;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+}
+
+.loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    color: #667eea;
+}
+
+.success-message {
+    display: none;
+    text-align: center;
+    padding: 40px;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 10px;
+    color: #155724;
+}
+</style>
+
+<div class="franchise-signup-container">
+    <div class="step-header">
+        <h2>Franchise Application Portal</h2>
+        <p>Complete your franchise application in 3 easy steps</p>
+    </div>
+    
+    <div class="step-progress">
+        <div class="progress-step active" id="progress-1">
+            <strong>Step 1</strong><br>Supplier Information
+        </div>
+        <div class="progress-step inactive" id="progress-2">
+            <strong>Step 2</strong><br>Project Information
+        </div>
+        <div class="progress-step inactive" id="progress-3">
+            <strong>Step 3</strong><br>Feedstock Details
+        </div>
+    </div>
+
+    <div class="form-container">
+        <!-- Step 1: Supplier Information -->
+        <form id="step1" class="form-step active">
+            <h3>Step 1: Supplier Information</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="company_name">Company Name *</label>
+                    <input type="text" id="company_name" name="company_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="contact_person">Contact Person</label>
+                    <input type="text" id="contact_person" name="contact_person">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone_number">Phone Number</label>
+                    <input type="tel" id="phone_number" name="phone_number">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="company_address">Company Address</label>
+                <textarea id="company_address" name="company_address" rows="3"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="country_of_operation">Country of Operation</label>
+                <select id="country_of_operation" name="country_of_operation">
+                    <option value="India">India</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            
+            <div class="button-group">
+                <div></div>
+                <button type="button" class="btn btn-primary" onclick="nextStep(1)">Next Step</button>
+            </div>
+        </form>
+
+        <!-- Step 2: Project Information -->
+        <form id="step2" class="form-step">
+            <h3>Step 2: Project Information</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="project_name">Project Name</label>
+                    <input type="text" id="project_name" name="project_name">
+                </div>
+                <div class="form-group">
+                    <label for="project_location">Project Location</label>
+                    <input type="text" id="project_location" name="project_location">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="gps_coordinates">GPS Coordinates</label>
+                    <input type="text" id="gps_coordinates" name="gps_coordinates" placeholder="e.g., 12.9716, 77.5946">
+                </div>
+                <div class="form-group">
+                    <label for="project_start_date">Project Start Date</label>
+                    <input type="date" id="project_start_date" name="project_start_date">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="reporting_period">Reporting Period</label>
+                <select id="reporting_period" name="reporting_period">
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Annually">Annually</option>
+                </select>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="previousStep(2)">Previous</button>
+                <button type="button" class="btn btn-primary" onclick="nextStep(2)">Next Step</button>
+            </div>
+        </form>
+
+        <!-- Step 3: Feedstock Description -->
+        <form id="step3" class="form-step">
+            <h3>Step 3: Feedstock Description</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="feedstock_category">Feedstock Category</label>
+                    <select id="feedstock_category" name="feedstock_category">
+                        <option value="">Select Category</option>
+                        <option value="Agricultural Residues">Agricultural Residues</option>
+                        <option value="Forestry Trimmings">Forestry Trimmings</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="specific_feedstock_type">Specific Feedstock Type</label>
+                    <input type="text" id="specific_feedstock_type" name="specific_feedstock_type" placeholder="e.g., Rice husks, Wheat straw">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="source">Source</label>
+                    <input type="text" id="source" name="source" placeholder="e.g., Local farms, Processing mills">
+                </div>
+                <div class="form-group">
+                    <label for="annual_volume_available">Annual Volume Available (MT)</label>
+                    <input type="number" id="annual_volume_available" name="annual_volume_available" step="0.01">
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="previousStep(3)">Previous</button>
+                <button type="button" class="btn btn-success" onclick="submitApplication()">Submit Application</button>
+            </div>
+        </form>
+
+        <!-- Loading Message -->
+        <div class="loading" id="loading">
+            <h3>Processing your application...</h3>
+            <p>Please wait while we save your information.</p>
+        </div>
+
+        <!-- Success Message -->
+        <div class="success-message" id="success">
+            <h3>Application Submitted Successfully!</h3>
+            <p>Thank you for your interest in our franchise program. We will review your application and contact you within 2-3 business days.</p>
+            <p><strong>Application ID:</strong> <span id="application-id"></span></p>
+        </div>
+    </div>
+</div>
+{% endblock %} 
