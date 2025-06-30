@@ -6,6 +6,7 @@ from frappe import _
 from frappe.utils import now
 import uuid
 import json
+import os
 
 
 @frappe.whitelist(allow_guest=True)
@@ -158,8 +159,8 @@ def save_step_with_verification(token, data, step):
         # Save updated session
         frappe.cache().set_value(session_key, json.dumps(session_data), expires_in_sec=86400)
         
-        # If this is the final step, save to doctype
-        if step >= 3:
+        # If this is the final step (step 4), save to doctype
+        if step >= 4:
             return finalize_application(session_data, token)
         
         return {
@@ -176,220 +177,6 @@ def save_step_with_verification(token, data, step):
         }
 
 
-def finalize_application(session_data, token):
-    """Finalize application in doctype (update existing or create new)"""
-    try:
-        application_data = session_data["data"]
-        email = session_data["email"]
-        
-        # Validate required Step 3 fields before finalizing
-        annual_volume = application_data.get('annual_volume_available')
-        try:
-            annual_volume_float = float(annual_volume) if annual_volume and str(annual_volume).strip() else 0
-        except (ValueError, TypeError):
-            annual_volume_float = 0
-            
-        if annual_volume_float <= 0:
-            return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
-        
-        if not application_data.get('primary_feedstock_category'):
-            return {"success": False, "message": "Primary Feedstock Category is required"}
-        
-        # Check if application already exists for this email
-        existing_applications = frappe.get_all(
-            "Franchise Signup Application",
-            filters={"email": email},
-            fields=["name"]
-        )
-        
-        if existing_applications:
-            # Update existing application
-            doc = frappe.get_doc("Franchise Signup Application", existing_applications[0].name)
-            
-            # Update all fields with new data
-            for key, value in application_data.items():
-                if hasattr(doc, key) and key not in ['name', 'doctype']:
-                    setattr(doc, key, value)
-            
-            # Handle legacy project_location field - combine city and state if needed
-            if application_data.get('project_city') or application_data.get('project_state'):
-                city = application_data.get('project_city', '')
-                state = application_data.get('project_state', '')
-                if city and state:
-                    doc.project_location = f"{city}, {state}"
-                elif city:
-                    doc.project_location = city
-                elif state:
-                    doc.project_location = state
-            
-            # Update status to submitted
-            doc.status = "Submitted"
-            doc.current_step = 3
-            doc.save(ignore_permissions=True)
-            
-        else:
-            # Create new application (fallback case)
-            doc_data = {
-                "doctype": "Franchise Signup Application",
-                "status": "Submitted",
-                "naming_series": "FSA-.YYYY.-"
-            }
-            
-            # Add all provided data
-            for key, value in application_data.items():
-                if key not in ['doctype', 'name'] and value is not None:
-                    doc_data[key] = value
-            
-            # Ensure required fields
-            if not doc_data.get('company_name'):
-                doc_data['company_name'] = 'Untitled Application'
-                
-            doc = frappe.get_doc(doc_data)
-            doc.insert(ignore_permissions=True)
-        
-        # Send notification emails
-        try:
-            send_notification_email(doc)
-            send_final_confirmation_email(doc)
-        except Exception as e:
-            frappe.log_error(f"Error sending emails: {str(e)}")
-        
-        frappe.db.commit()
-        
-        # Clear session data
-        session_key = f"franchise_signup_{token}"
-        frappe.cache().delete_value(session_key)
-        
-        return {
-            "success": True,
-            "message": "Application submitted successfully",
-            "application_id": doc.name
-        }
-        
-    except Exception as e:
-        frappe.log_error(f"Error finalizing application: {str(e)}", "Franchise Portal Finalize Error")
-        return {
-            "success": False,
-            "message": f"Error finalizing application: {str(e)}"
-        }
-
-
-@frappe.whitelist(allow_guest=True)
-def save_step(data):
-    """Save step data for the franchise application"""
-    try:
-        # Handle JSON string data from frontend
-        if isinstance(data, str):
-            import json
-            data = json.loads(data)
-        
-        data = frappe._dict(data)
-        
-        # Validate required fields
-        if not data.get('email') or not data.get('email').strip():
-            return {"success": False, "message": "Email is required"}
-        
-        if not data.get('company_name') or not data.get('company_name').strip():
-            return {"success": False, "message": "Company name is required"}
-        
-        # Check for existing application
-        existing = frappe.get_all(
-            "Franchise Signup Application",
-            filters={"email": data.email},
-            fields=["name"]
-        )
-        
-        if existing:
-            # Update existing application
-            doc = frappe.get_doc("Franchise Signup Application", existing[0].name)
-            
-            # Update fields
-            for key, value in data.items():
-                if hasattr(doc, key) and key != 'name':
-                    setattr(doc, key, value)
-            
-            # Handle legacy project_location field - combine city and state if needed
-            if data.get('project_city') or data.get('project_state'):
-                city = data.get('project_city', '')
-                state = data.get('project_state', '')
-                if city and state:
-                    doc.project_location = f"{city}, {state}"
-                elif city:
-                    doc.project_location = city
-                elif state:
-                    doc.project_location = state
-            
-            doc.status = "In Progress"
-            doc.save(ignore_permissions=True)
-            application_id = doc.name
-            
-        else:
-            # Create new application
-            doc_data = {
-                "doctype": "Franchise Signup Application",
-                "status": "Draft",
-                "naming_series": "FSA-.YYYY.-"
-            }
-            
-            # Add all provided data, ensuring proper field mapping
-            for key, value in data.items():
-                if key not in ['doctype', 'name'] and value is not None:
-                    doc_data[key] = value
-            
-            # Handle legacy project_location field - combine city and state if needed
-            if data.get('project_city') or data.get('project_state'):
-                city = data.get('project_city', '')
-                state = data.get('project_state', '')
-                if city and state:
-                    doc_data['project_location'] = f"{city}, {state}"
-                elif city:
-                    doc_data['project_location'] = city
-                elif state:
-                    doc_data['project_location'] = state
-            
-            # Ensure company_name is set for title generation
-            if not doc_data.get('company_name'):
-                doc_data['company_name'] = 'Untitled Application'
-                
-            doc = frappe.get_doc(doc_data)
-            doc.insert(ignore_permissions=True)
-            application_id = doc.name
-        
-        frappe.db.commit()
-        
-        return {
-            "success": True,
-            "message": "Step data saved successfully",
-            "application_id": application_id
-        }
-        
-    except Exception as e:
-        frappe.log_error(f"Error saving step data: {str(e)}", "Franchise Portal Save Step Error")
-        
-        # Log only essential data to avoid title truncation issues
-        try:
-            # Handle both string and dict data for logging
-            if isinstance(data, str):
-                import json
-                parsed_data = json.loads(data)
-            else:
-                parsed_data = data
-                
-            essential_data = {
-                "email": parsed_data.get("email", "") if hasattr(parsed_data, 'get') else str(parsed_data)[:50],
-                "company_name": parsed_data.get("company_name", "") if hasattr(parsed_data, 'get') else "",
-                "step": parsed_data.get("current_step", "") if hasattr(parsed_data, 'get') else ""
-            }
-            frappe.log_error(f"Essential data: {essential_data}", "Franchise Portal Save Step Data")
-        except Exception as log_error:
-            frappe.log_error(f"Could not log data: {str(log_error)}", "Franchise Portal Logging Error")
-            
-        return {
-            "success": False,
-            "message": f"Error saving data: {str(e)}"
-        }
-
-
 @frappe.whitelist(allow_guest=True)
 def submit_application(email, data=None):
     """Submit the franchise application"""
@@ -401,6 +188,10 @@ def submit_application(email, data=None):
         if data and isinstance(data, str):
             import json
             data = json.loads(data)
+        
+        # Convert to frappe._dict for easier access
+        if data:
+            data = frappe._dict(data)
         
         # Find the application
         applications = frappe.get_all(
@@ -416,68 +207,32 @@ def submit_application(email, data=None):
         
         # Update with final data if provided
         if data:
-            data = frappe._dict(data)
+            # Handle generation_locations table data
+            if 'generation_locations' in data and isinstance(data.generation_locations, list):
+                # Clear existing generation locations
+                doc.generation_locations = []
+                
+                # Add new generation locations
+                for location in data.generation_locations:
+                    if isinstance(location, dict) and location.get('address') and location.get('gps_coordinates'):
+                        doc.append('generation_locations', {
+                            'address': location['address'],
+                            'gps_coordinates': location['gps_coordinates']
+                        })
+            
+            # Update other fields
             for key, value in data.items():
-                if hasattr(doc, key) and key not in ['name', 'doctype']:
+                if key != 'generation_locations' and hasattr(doc, key):
                     setattr(doc, key, value)
-            
-            # Handle legacy project_location field - combine city and state if needed
-            if data.get('project_city') or data.get('project_state'):
-                city = data.get('project_city', '')
-                state = data.get('project_state', '')
-                if city and state:
-                    doc.project_location = f"{city}, {state}"
-                elif city:
-                    doc.project_location = city
-                elif state:
-                    doc.project_location = state
         
-        # Validate required fields for final submission
-        if not doc.company_name:
-            return {"success": False, "message": "Company name is required"}
-        
-        if not doc.email:
-            return {"success": False, "message": "Email is required"}
-        
-        # Validate required Step 3 fields for final submission
-        annual_volume = doc.annual_volume_available
-        try:
-            annual_volume_float = float(annual_volume) if annual_volume and str(annual_volume).strip() else 0
-        except (ValueError, TypeError):
-            annual_volume_float = 0
-            
-        if annual_volume_float <= 0:
-            return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
-        
-        if not doc.primary_feedstock_category:
-            return {"success": False, "message": "Primary Feedstock Category is required"}
-        
-        # Update status and save
+        # Mark as submitted
         doc.status = "Submitted"
-        doc.current_step = 3
-        doc.save(ignore_permissions=True)
+        doc.save()
         
-        # Send notification email
-        try:
-            send_notification_email(doc)
-            send_confirmation_email(doc)
-        except Exception as e:
-            frappe.log_error(f"Error sending emails: {str(e)}")
-        
-        frappe.db.commit()
-        
-        return {
-            "success": True,
-            "message": "Application submitted successfully",
-            "application_id": doc.name
-        }
+        return {"success": True, "message": "Application submitted successfully", "application_id": doc.name}
         
     except Exception as e:
-        frappe.log_error(f"Error submitting application: {str(e)}")
-        return {
-            "success": False,
-            "message": f"Error submitting application: {str(e)}"
-        }
+        return {"success": False, "message": f"Error submitting application: {str(e)}"}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -754,4 +509,190 @@ def get_google_maps_api_key():
         return {
             "success": False,
             "message": "Error retrieving Maps configuration"
-        } 
+        }
+
+
+def finalize_application(session_data, token):
+    """Finalize application in doctype (update existing or create new)"""
+    try:
+        application_data = session_data["data"]
+        email = session_data["email"]
+        
+        # Validate required Step 3 fields before finalizing
+        annual_volume = application_data.get('annual_volume_available')
+        try:
+            annual_volume_float = float(annual_volume) if annual_volume and str(annual_volume).strip() else 0
+        except (ValueError, TypeError):
+            annual_volume_float = 0
+            
+        if annual_volume_float <= 0:
+            return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
+        
+        # Check for existing application
+        existing_applications = frappe.get_all(
+            "Franchise Signup Application",
+            filters={"email": email},
+            fields=["name"]
+        )
+        
+        if existing_applications:
+            # Update existing
+            doc = frappe.get_doc("Franchise Signup Application", existing_applications[0].name)
+            
+            # Handle generation_locations table data
+            if 'generation_locations' in application_data and isinstance(application_data.generation_locations, list):
+                # Clear existing generation locations
+                doc.generation_locations = []
+                
+                # Add new generation locations
+                for location in application_data.generation_locations:
+                    if isinstance(location, dict) and location.get('address') and location.get('gps_coordinates'):
+                        doc.append('generation_locations', {
+                            'address': location['address'],
+                            'gps_coordinates': location['gps_coordinates']
+                        })
+            
+            # Update other fields
+            for key, value in application_data.items():
+                if key != 'generation_locations' and hasattr(doc, key):
+                    setattr(doc, key, value)
+            
+            doc.status = "Submitted"
+            doc.save()
+            
+            # Clear session after successful submission
+            frappe.cache().delete_value(f"franchise_signup_{token}")
+            
+            return {"success": True, "message": "Application submitted successfully!", "application_id": doc.name}
+        else:
+            # Create new
+            doc = frappe.new_doc("Franchise Signup Application")
+            
+            # Handle generation_locations table data
+            if 'generation_locations' in application_data and isinstance(application_data.generation_locations, list):
+                for location in application_data.generation_locations:
+                    if isinstance(location, dict) and location.get('address') and location.get('gps_coordinates'):
+                        doc.append('generation_locations', {
+                            'address': location['address'],
+                            'gps_coordinates': location['gps_coordinates']
+                        })
+            
+            # Set other fields
+            for key, value in application_data.items():
+                if key != 'generation_locations' and hasattr(doc, key):
+                    setattr(doc, key, value)
+            
+            doc.status = "Submitted"
+            doc.insert()
+            
+            # Clear session after successful submission
+            frappe.cache().delete_value(f"franchise_signup_{token}")
+            
+            return {"success": True, "message": "Application submitted successfully!", "application_id": doc.name}
+            
+    except Exception as e:
+        return {"success": False, "message": f"Error finalizing application: {str(e)}"}
+
+
+@frappe.whitelist(allow_guest=True)
+def save_step(data):
+    """Save step data for the franchise application"""
+    try:
+        # Handle JSON string data from frontend
+        if isinstance(data, str):
+            import json
+            data = json.loads(data)
+        
+        data = frappe._dict(data)
+        
+        # File-based debug logging
+        debug_file = os.path.join(frappe.get_site_path(), 'debug_save.txt')
+        with open(debug_file, 'a') as f:
+            f.write(f"\n=== SAVE_STEP DEBUG {frappe.utils.now()} ===\n")
+            f.write(f"Data keys: {list(data.keys())}\n")
+            if 'source_type' in data:
+                f.write(f"source_type: '{data.source_type}' (type: {type(data.source_type)})\n")
+            if 'generation_locations' in data:
+                f.write(f"generation_locations: {data.generation_locations}\n")
+        
+        # Validate required fields
+        if not data.get('email') or not data.get('email').strip():
+            return {"success": False, "message": "Email is required"}
+        
+        if not data.get('company_name') or not data.get('company_name').strip():
+            return {"success": False, "message": "Company name is required"}
+        
+        # Check for existing application
+        existing_applications = frappe.get_all(
+            "Franchise Signup Application",
+            filters={"email": data.email},
+            fields=["name", "status"]
+        )
+        
+        if existing_applications:
+            # Update existing application
+            application = frappe.get_doc("Franchise Signup Application", existing_applications[0].name)
+            
+            # Update fields from data
+            for key, value in data.items():
+                if hasattr(application, key) and key not in ['name', 'doctype']:
+                    # Special handling for generation_locations table
+                    if key == 'generation_locations' and isinstance(value, list):
+                        # Clear existing child records
+                        application.set('generation_locations', [])
+                        # Add new child records
+                        for location_data in value:
+                            application.append('generation_locations', location_data)
+                    else:
+                        setattr(application, key, value)
+                        # File debug: track source_type setting
+                        if key == 'source_type':
+                            with open(debug_file, 'a') as f:
+                                f.write(f"SET source_type to '{value}' on app {application.name}\n")
+            
+            application.modified_at = frappe.utils.now()
+            application.save(ignore_permissions=True)
+            frappe.db.commit()
+            
+            # File debug: check what was saved
+            if 'source_type' in data:
+                saved_value = frappe.db.get_value("Franchise Signup Application", application.name, "source_type")
+                with open(debug_file, 'a') as f:
+                    f.write(f"SAVED source_type in DB: '{saved_value}'\n")
+            
+            return {"success": True, "message": "Application updated successfully", "application_id": application.name}
+        
+        else:
+            # Create new application
+            application = frappe.new_doc("Franchise Signup Application")
+            
+            # Set fields from data
+            for key, value in data.items():
+                if hasattr(application, key) and key not in ['name', 'doctype']:
+                    # Special handling for generation_locations table
+                    if key == 'generation_locations' and isinstance(value, list):
+                        for location_data in value:
+                            application.append('generation_locations', location_data)
+                    else:
+                        setattr(application, key, value)
+                        # File debug: track source_type setting
+                        if key == 'source_type':
+                            with open(debug_file, 'a') as f:
+                                f.write(f"SET source_type to '{value}' on new app\n")
+            
+            application.created_at = frappe.utils.now()
+            application.modified_at = frappe.utils.now()
+            application.insert(ignore_permissions=True)
+            frappe.db.commit()
+            
+            # File debug: check what was saved
+            if 'source_type' in data:
+                saved_value = frappe.db.get_value("Franchise Signup Application", application.name, "source_type")
+                with open(debug_file, 'a') as f:
+                    f.write(f"INSERTED source_type in DB: '{saved_value}'\n")
+            
+            return {"success": True, "message": "Application created successfully", "application_id": application.name}
+            
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Save Step Error")
+        return {"success": False, "message": f"Error saving application: {str(e)}"} 

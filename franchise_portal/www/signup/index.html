@@ -1,6 +1,9 @@
 {% extends "templates/web.html" %}
 
 {% block page_content %}
+<script>
+window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
+</script>
 <style>
 /* Higher specificity selectors to override Frappe default styles */
 .page-content .franchise-signup-container,
@@ -422,6 +425,23 @@ body .franchise-signup-container .form-container .form-step#step3 {
 .form-step#step3::-webkit-scrollbar-thumb:hover {
     background: #5a6fd8;
 }
+
+.generation-location-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+}
+.generation-location-row input[type="text"] {
+    min-width: 120px;
+    padding: 8px;
+    font-size: 14px;
+}
+.generation-location-row .btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    min-width: 70px;
+}
 </style>
 
 <div class="franchise-signup-container">
@@ -439,6 +459,9 @@ body .franchise-signup-container .form-container .form-step#step3 {
         </div>
         <div class="progress-step inactive" id="progress-3">
             <strong>Step 3</strong><br>Feedstock Details
+        </div>
+        <div class="progress-step inactive" id="progress-4">
+            <strong>Step 4</strong><br>Origin, Sourcing & Supply Chain
         </div>
     </div>
 
@@ -750,7 +773,136 @@ body .franchise-signup-container .form-container .form-step#step3 {
             
             <div class="button-group">
                 <button type="button" class="btn btn-secondary" onclick="previousStep(3)">Previous</button>
-                <button type="button" class="btn btn-success" onclick="submitApplication()">Submit Application</button>
+                <button type="button" class="btn btn-primary" onclick="nextStep(3)">Next Step</button>
+            </div>
+        </form>
+
+        <!-- Step 4: Origin, Sourcing & Supply Chain -->
+        <form id="step4" class="form-step">
+            <h3>Step 4: Origin, Sourcing & Supply Chain</h3>
+            <div class="section-header">
+                <h4>Feedstock Origin</h4>
+            </div>
+            <div class="form-group">
+                <label>Source Type</label>
+                <div id="source_type_checkboxes" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 8px;">
+                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
+                        <input type="checkbox" name="source_type" value="Farm" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        Farm
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
+                        <input type="checkbox" name="source_type" value="Mill" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        Mill
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
+                        <input type="checkbox" name="source_type" value="Forest" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        Forest
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 140px;">
+                        <input type="checkbox" name="source_type" value="Industrial Facility" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        Industrial Facility
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
+                        <input type="checkbox" name="source_type" value="Other" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        Other
+                    </label>
+                </div>
+            </div>
+            <div class="form-group" id="source_type_other_group" style="display:none;">
+                <label for="source_type_other">If Other, please specify</label>
+                <input type="text" id="source_type_other" name="source_type_other">
+            </div>
+            <div class="form-group">
+                <label>Location(s) of Generation</label>
+                <div id="generation_locations_container"></div>
+                <button type="button" class="btn btn-secondary" onclick="addGenerationLocation()">Add Location</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="generation_datetime">Date/Time of Generation</label>
+                    <input type="datetime-local" id="generation_datetime" name="generation_datetime">
+                </div>
+                <div class="form-group">
+                    <label for="collection_method">Collection/Harvest Method</label>
+                    <input type="text" id="collection_method" name="collection_method">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="number_of_suppliers">Number of Suppliers</label>
+                    <input type="number" id="number_of_suppliers" name="number_of_suppliers" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="max_sourcing_radius">Maximum Sourcing Radius (km)</label>
+                    <input type="number" id="max_sourcing_radius" name="max_sourcing_radius" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="avg_transport_distance">Average Transport Distance (km)</label>
+                    <input type="number" id="avg_transport_distance" name="avg_transport_distance" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="primary_transport_method">Primary Transport Method</label>
+                    <select id="primary_transport_method" name="primary_transport_method">
+                        <option value="">Select</option>
+                        <option value="Truck">Truck</option>
+                        <option value="Rail">Rail</option>
+                        <option value="Ship">Ship</option>
+                        <option value="Mixed">Mixed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="handling_steps">Number of Handling Steps</label>
+                    <input type="number" id="handling_steps" name="handling_steps" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="storage_duration">Storage Duration Before Use (days)</label>
+                    <input type="number" id="storage_duration" name="storage_duration" min="0">
+                </div>
+            </div>
+            <div class="section-header">
+                <h4>Documentation</h4>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="chain_of_custody_protocol">Chain of Custody Protocol</label>
+                    <select id="chain_of_custody_protocol" name="chain_of_custody_protocol">
+                        <option value="">Select</option>
+                        <option value="Attached">Attached</option>
+                        <option value="Not Available">Not Available</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="supplier_agreements">Supplier Agreements</label>
+                    <select id="supplier_agreements" name="supplier_agreements">
+                        <option value="">Select</option>
+                        <option value="Attached">Attached</option>
+                        <option value="Not Available">Not Available</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="origin_certificates">Origin Certificates</label>
+                    <select id="origin_certificates" name="origin_certificates">
+                        <option value="">Select</option>
+                        <option value="Attached">Attached</option>
+                        <option value="Not Available">Not Available</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="transportation_records">Transportation Records</label>
+                    <select id="transportation_records" name="transportation_records">
+                        <option value="">Select</option>
+                        <option value="Attached">Attached</option>
+                        <option value="Not Available">Not Available</option>
+                    </select>
+                </div>
+            </div>
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="previousStep(4)">Previous</button>
+                <button type="button" class="btn btn-primary" onclick="submitApplication()">Submit Application</button>
             </div>
         </form>
 

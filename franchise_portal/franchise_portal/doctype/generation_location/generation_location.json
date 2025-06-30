@@ -1,0 +1,31 @@
+{
+ "doctype": "DocType",
+ "name": "Generation Location",
+ "module": "Franchise Portal",
+ "istable": 1,
+ "title_field": "address",
+ "fields": [
+  {
+   "fieldname": "address",
+   "fieldtype": "Data",
+   "label": "Address",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "gps_coordinates",
+   "fieldtype": "Data",
+   "label": "GPS Coordinates",
+   "in_list_view": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ]
+} 

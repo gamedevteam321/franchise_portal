@@ -67,6 +67,22 @@
   "section_break_current_use",
   "current_use_disposal_method",
   "section_break_21",
+  "section_break_origin",
+  "source_type",
+  "source_type_other",
+  "generation_locations",
+  "generation_datetime",
+  "collection_method",
+  "number_of_suppliers",
+  "max_sourcing_radius",
+  "avg_transport_distance",
+  "primary_transport_method",
+  "handling_steps",
+  "storage_duration",
+  "chain_of_custody_protocol",
+  "supplier_agreements",
+  "origin_certificates",
+  "transportation_records",
   "created_at",
   "modified_at"
  ],
@@ -393,6 +409,93 @@
   {
    "fieldname": "section_break_21",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_origin",
+   "fieldtype": "Section Break",
+   "label": "Origin, Sourcing & Supply Chain"
+  },
+  {
+   "fieldname": "source_type",
+   "fieldtype": "Data",
+   "label": "Source Type"
+  },
+  {
+   "fieldname": "source_type_other",
+   "fieldtype": "Data",
+   "label": "Source Type (Other)",
+   "depends_on": "eval:doc.source_type && doc.source_type.indexOf('Other') !== -1"
+  },
+  {
+   "fieldname": "generation_locations",
+   "fieldtype": "Table",
+   "label": "Location(s) of Generation",
+   "options": "Generation Location"
+  },
+  {
+   "fieldname": "generation_datetime",
+   "fieldtype": "Datetime",
+   "label": "Date/Time of Generation"
+  },
+  {
+   "fieldname": "collection_method",
+   "fieldtype": "Data",
+   "label": "Collection/Harvest Method"
+  },
+  {
+   "fieldname": "number_of_suppliers",
+   "fieldtype": "Int",
+   "label": "Number of Suppliers"
+  },
+  {
+   "fieldname": "max_sourcing_radius",
+   "fieldtype": "Float",
+   "label": "Maximum Sourcing Radius (km)"
+  },
+  {
+   "fieldname": "avg_transport_distance",
+   "fieldtype": "Float",
+   "label": "Average Transport Distance (km)"
+  },
+  {
+   "fieldname": "primary_transport_method",
+   "fieldtype": "Select",
+   "label": "Primary Transport Method",
+   "options": "Truck\nRail\nShip\nMixed"
+  },
+  {
+   "fieldname": "handling_steps",
+   "fieldtype": "Int",
+   "label": "Number of Handling Steps"
+  },
+  {
+   "fieldname": "storage_duration",
+   "fieldtype": "Int",
+   "label": "Storage Duration Before Use (days)"
+  },
+  {
+   "fieldname": "chain_of_custody_protocol",
+   "fieldtype": "Select",
+   "label": "Chain of Custody Protocol",
+   "options": "Attached\nNot Available"
+  },
+  {
+   "fieldname": "supplier_agreements",
+   "fieldtype": "Select",
+   "label": "Supplier Agreements",
+   "options": "Attached\nNot Available"
+  },
+  {
+   "fieldname": "origin_certificates",
+   "fieldtype": "Select",
+   "label": "Origin Certificates",
+   "options": "Attached\nNot Available"
+  },
+  {
+   "fieldname": "transportation_records",
+   "fieldtype": "Select",
+   "label": "Transportation Records",
+   "options": "Attached\nNot Available"
   },
   {
    "fieldname": "created_at",

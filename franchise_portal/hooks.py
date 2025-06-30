@@ -242,3 +242,7 @@ web_include_js = "/assets/franchise_portal/js/signup.js"
 # Automatically update python controller files with type annotations for Frappe 15+
 # tsconfigjson_template = "franchise_portal/public/build.json"
 
+# Fixtures
+# --------
+fixtures = ["Franchise Signup Application"]
+  
