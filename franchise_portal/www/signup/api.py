@@ -128,6 +128,12 @@ def save_step_with_verification(token, data, step):
     try:
         if not token:
             return {"success": False, "message": "Verification token is required"}
+        
+        # Convert step to integer (it comes as string from frontend)
+        try:
+            step = int(step)
+        except (ValueError, TypeError):
+            step = 1
             
         session_key = f"franchise_signup_{token}"
         session_data_str = frappe.cache().get_value(session_key)
@@ -171,28 +177,62 @@ def save_step_with_verification(token, data, step):
 
 
 def finalize_application(session_data, token):
-    """Create final application in doctype"""
+    """Finalize application in doctype (update existing or create new)"""
     try:
         application_data = session_data["data"]
+        email = session_data["email"]
         
-        # Create new application
-        doc_data = {
-            "doctype": "Franchise Signup Application",
-            "status": "Submitted",
-            "naming_series": "FSA-.YYYY.-"
-        }
+        # Check if application already exists for this email
+        existing_applications = frappe.get_all(
+            "Franchise Signup Application",
+            filters={"email": email},
+            fields=["name"]
+        )
         
-        # Add all provided data
-        for key, value in application_data.items():
-            if key not in ['doctype', 'name'] and value is not None:
-                doc_data[key] = value
-        
-        # Ensure required fields
-        if not doc_data.get('company_name'):
-            doc_data['company_name'] = 'Untitled Application'
+        if existing_applications:
+            # Update existing application
+            doc = frappe.get_doc("Franchise Signup Application", existing_applications[0].name)
             
-        doc = frappe.get_doc(doc_data)
-        doc.insert(ignore_permissions=True)
+                    # Update all fields with new data
+        for key, value in application_data.items():
+            if hasattr(doc, key) and key not in ['name', 'doctype']:
+                setattr(doc, key, value)
+        
+        # Handle legacy project_location field - combine city and state if needed
+        if application_data.get('project_city') or application_data.get('project_state'):
+            city = application_data.get('project_city', '')
+            state = application_data.get('project_state', '')
+            if city and state:
+                doc.project_location = f"{city}, {state}"
+            elif city:
+                doc.project_location = city
+            elif state:
+                doc.project_location = state
+            
+            # Update status to submitted
+            doc.status = "Submitted"
+            doc.current_step = 3
+            doc.save(ignore_permissions=True)
+            
+        else:
+            # Create new application (fallback case)
+            doc_data = {
+                "doctype": "Franchise Signup Application",
+                "status": "Submitted",
+                "naming_series": "FSA-.YYYY.-"
+            }
+            
+            # Add all provided data
+            for key, value in application_data.items():
+                if key not in ['doctype', 'name'] and value is not None:
+                    doc_data[key] = value
+            
+            # Ensure required fields
+            if not doc_data.get('company_name'):
+                doc_data['company_name'] = 'Untitled Application'
+                
+            doc = frappe.get_doc(doc_data)
+            doc.insert(ignore_permissions=True)
         
         # Send notification emails
         try:
@@ -255,6 +295,17 @@ def save_step(data):
                 if hasattr(doc, key) and key != 'name':
                     setattr(doc, key, value)
             
+            # Handle legacy project_location field - combine city and state if needed
+            if data.get('project_city') or data.get('project_state'):
+                city = data.get('project_city', '')
+                state = data.get('project_state', '')
+                if city and state:
+                    doc.project_location = f"{city}, {state}"
+                elif city:
+                    doc.project_location = city
+                elif state:
+                    doc.project_location = state
+            
             doc.status = "In Progress"
             doc.save(ignore_permissions=True)
             application_id = doc.name
@@ -271,6 +322,17 @@ def save_step(data):
             for key, value in data.items():
                 if key not in ['doctype', 'name'] and value is not None:
                     doc_data[key] = value
+            
+            # Handle legacy project_location field - combine city and state if needed
+            if data.get('project_city') or data.get('project_state'):
+                city = data.get('project_city', '')
+                state = data.get('project_state', '')
+                if city and state:
+                    doc_data['project_location'] = f"{city}, {state}"
+                elif city:
+                    doc_data['project_location'] = city
+                elif state:
+                    doc_data['project_location'] = state
             
             # Ensure company_name is set for title generation
             if not doc_data.get('company_name'):
@@ -345,6 +407,17 @@ def submit_application(email, data=None):
             for key, value in data.items():
                 if hasattr(doc, key) and key not in ['name', 'doctype']:
                     setattr(doc, key, value)
+            
+            # Handle legacy project_location field - combine city and state if needed
+            if data.get('project_city') or data.get('project_state'):
+                city = data.get('project_city', '')
+                state = data.get('project_state', '')
+                if city and state:
+                    doc.project_location = f"{city}, {state}"
+                elif city:
+                    doc.project_location = city
+                elif state:
+                    doc.project_location = state
         
         # Validate required fields
         if not doc.company_name:
@@ -628,4 +701,31 @@ def send_final_confirmation_email(doc):
         subject=subject,
         message=message,
         now=True
-    ) 
+    )
+
+
+@frappe.whitelist(allow_guest=True)
+def get_google_maps_api_key():
+    """Get Google Maps API key from site config securely"""
+    try:
+        # Get the API key from site config
+        api_key = frappe.conf.get("google_maps_api_key")
+        
+        if not api_key:
+            frappe.log_error("Google Maps API key not found in site config", "Maps Configuration Error")
+            return {
+                "success": False,
+                "message": "Google Maps API key not configured"
+            }
+        
+        return {
+            "success": True,
+            "api_key": api_key
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Error getting Google Maps API key: {str(e)}", "Maps Configuration Error")
+        return {
+            "success": False,
+            "message": "Error retrieving Maps configuration"
+        } 

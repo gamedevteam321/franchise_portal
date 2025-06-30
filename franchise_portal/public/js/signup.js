@@ -582,8 +582,383 @@ function populateFormData(data) {
     });
 }
 
+// Google Maps Variables
+let map;
+let selectedMarker;
+let selectedCoordinates = null;
+let searchBox;
+
+// Project ID Generation
+function generateProjectId() {
+    const companyName = applicationData.company_name || document.getElementById('company_name')?.value || '';
+    const projectName = document.getElementById('project_name')?.value || '';
+    const currentYear = new Date().getFullYear();
+    
+    if (companyName && projectName) {
+        // Clean company and project names (remove spaces, special chars)
+        const cleanCompany = companyName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+        const cleanProject = projectName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+        
+        const projectId = `${cleanCompany}-${cleanProject}-${currentYear}`;
+        document.getElementById('project_id').value = projectId;
+    }
+}
+
+// Google Maps Functions
+function initMap() {
+    console.log('initMap called');
+    
+    try {
+        // Check if Google Maps is loaded
+        if (typeof google === 'undefined' || !google.maps) {
+            console.error('Google Maps API not loaded');
+            return;
+        }
+        
+        console.log('Google Maps API loaded successfully');
+        
+        // Initialize map centered on India
+        const mapElement = document.getElementById('map');
+        if (!mapElement) {
+            console.error('Map element not found');
+            return;
+        }
+        
+        map = new google.maps.Map(mapElement, {
+            center: { lat: 20.5937, lng: 78.9629 }, // India center
+            zoom: 5,
+            mapTypeControl: true,
+            streetViewControl: true,
+            fullscreenControl: true
+        });
+        
+        console.log('Map initialized successfully');
+        
+        // Initialize Places search
+        const searchInput = document.getElementById('mapSearchInput');
+        if (searchInput && google.maps.places) {
+            searchBox = new google.maps.places.SearchBox(searchInput);
+            
+            // Bias search results to current map viewport
+            map.addListener('bounds_changed', () => {
+                searchBox.setBounds(map.getBounds());
+            });
+            
+            // Listen for place search results
+            searchBox.addListener('places_changed', () => {
+                const places = searchBox.getPlaces();
+                if (places.length === 0) return;
+                
+                const place = places[0];
+                if (!place.geometry || !place.geometry.location) return;
+                
+                // Center map on selected place
+                map.setCenter(place.geometry.location);
+                map.setZoom(15);
+                
+                // Add marker at selected place
+                addMarkerAtLocation(place.geometry.location);
+            });
+            
+            console.log('Places search initialized');
+        } else {
+            console.warn('Places API not available or search input not found');
+        }
+        
+        // Add click listener to map
+        map.addListener('click', (event) => {
+            console.log('Map clicked at:', event.latLng.toString());
+            addMarkerAtLocation(event.latLng);
+        });
+        
+    } catch (error) {
+        console.error('Error initializing map:', error);
+    }
+}
+
+// Fallback initialization function
+function initMapFallback() {
+    console.log('Fallback map initialization');
+    if (typeof google !== 'undefined' && google.maps) {
+        initMap();
+    } else {
+        console.log('Google Maps not ready, retrying in 500ms...');
+        setTimeout(initMapFallback, 500);
+    }
+}
+
+function addMarkerAtLocation(location) {
+    // Remove existing marker
+    if (selectedMarker) {
+        selectedMarker.setMap(null);
+    }
+    
+    // Add new marker
+    selectedMarker = new google.maps.Marker({
+        position: location,
+        map: map,
+        title: 'Selected Location'
+    });
+    
+    // Store coordinates
+    selectedCoordinates = {
+        lat: location.lat(),
+        lng: location.lng()
+    };
+    
+    // Update coordinates display
+    const coordinatesText = `${selectedCoordinates.lat.toFixed(6)}, ${selectedCoordinates.lng.toFixed(6)}`;
+    document.getElementById('coordinatesDisplay').textContent = `Selected: ${coordinatesText}`;
+}
+
+function openMapModal() {
+    console.log('Opening map modal');
+    
+    const modal = document.getElementById('mapModal');
+    const modalContent = document.querySelector('.map-modal-content');
+    const mapElement = document.getElementById('map');
+    
+    modal.style.display = 'block';
+    
+    // Force modal to be within viewport and fix button visibility
+    setTimeout(() => {
+        if (modalContent) {
+            // Ensure modal fits in viewport
+            const viewportHeight = window.innerHeight;
+            const modalMaxHeight = Math.min(600, viewportHeight - 100); // Leave 100px margin
+            
+            modalContent.style.maxHeight = modalMaxHeight + 'px';
+            modalContent.style.top = '50px';
+            modalContent.style.position = 'relative';
+            modalContent.style.overflow = 'hidden';
+            
+            // Adjust content area height to make room for buttons
+            const contentArea = document.querySelector('.map-content-area');
+            if (contentArea) {
+                contentArea.style.height = (modalMaxHeight - 120) + 'px'; // Reserve space for header + buttons
+                contentArea.style.overflow = 'auto';
+            }
+            
+            // Ensure buttons are visible
+            const buttons = document.querySelector('.map-buttons');
+            if (buttons) {
+                buttons.style.position = 'absolute';
+                buttons.style.bottom = '0';
+                buttons.style.left = '0';
+                buttons.style.right = '0';
+                buttons.style.zIndex = '1000';
+                buttons.style.backgroundColor = '#f8f9fa';
+                buttons.style.borderTop = '2px solid #667eea';
+                buttons.style.padding = '10px 15px';
+            }
+            
+            const rect = modalContent.getBoundingClientRect();
+            console.log('Modal dimensions after adjustment:', {
+                width: rect.width,
+                height: rect.height,
+                top: rect.top,
+                bottom: rect.bottom,
+                windowHeight: window.innerHeight,
+                modalMaxHeight: modalMaxHeight
+            });
+            
+            // Check button visibility
+            if (buttons) {
+                const buttonRect = buttons.getBoundingClientRect();
+                console.log('Buttons position after adjustment:', {
+                    top: buttonRect.top,
+                    bottom: buttonRect.bottom,
+                    visible: buttonRect.bottom <= window.innerHeight
+                });
+            }
+        }
+    }, 100);
+    
+    // Load Google Maps API - implement direct API loading if the HTML function isn't available
+    if (mapElement) {
+        mapElement.innerHTML = '<div style="padding: 20px; text-align: center;"><p>Loading Google Maps...</p></div>';
+    }
+    
+    // More robust Google Maps loading
+    const loadGoogleMaps = () => {
+        return new Promise((resolve, reject) => {
+            // Check if Google Maps is already loaded
+            if (typeof google !== 'undefined' && google.maps) {
+                console.log('Google Maps already available');
+                resolve();
+                return;
+            }
+            
+            // Try to use the HTML function first
+            if (typeof window.loadGoogleMapsAPI === 'function') {
+                console.log('Using HTML loadGoogleMapsAPI function');
+                window.loadGoogleMapsAPI()
+                    .then(resolve)
+                    .catch((error) => {
+                        console.log('HTML loadGoogleMapsAPI failed, trying direct method:', error);
+                        loadGoogleMapsDirectly().then(resolve).catch(reject);
+                    });
+            } else {
+                console.log('HTML loadGoogleMapsAPI not available, using direct method');
+                loadGoogleMapsDirectly().then(resolve).catch(reject);
+            }
+        });
+    };
+    
+    // Direct Google Maps loading function
+    const loadGoogleMapsDirectly = () => {
+        return new Promise((resolve, reject) => {
+            // First get the API key
+            frappe.call({
+                method: 'franchise_portal.www.signup.api.get_google_maps_api_key',
+                callback: function(response) {
+                    if (response.message && response.message.success) {
+                        const apiKey = response.message.api_key;
+                        console.log('API key retrieved for direct loading');
+                        
+                        // Check if script already exists
+                        const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+                        if (existingScript) {
+                            console.log('Google Maps script already exists, waiting for load...');
+                            // Wait for existing script to load
+                            const checkGoogleMaps = setInterval(() => {
+                                if (typeof google !== 'undefined' && google.maps) {
+                                    clearInterval(checkGoogleMaps);
+                                    resolve();
+                                }
+                            }, 100);
+                            
+                            setTimeout(() => {
+                                clearInterval(checkGoogleMaps);
+                                reject(new Error('Google Maps loading timeout'));
+                            }, 10000);
+                            return;
+                        }
+                        
+                        // Create callback function
+                        window.directMapCallback = function() {
+                            console.log('Direct Google Maps callback triggered');
+                            resolve();
+                        };
+                        
+                        // Create and load script
+                        const script = document.createElement('script');
+                        script.async = true;
+                        script.defer = true;
+                        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=directMapCallback`;
+                        script.onerror = () => reject(new Error('Failed to load Google Maps script'));
+                        
+                        document.head.appendChild(script);
+                        
+                    } else {
+                        reject(new Error('Failed to get API key: ' + (response.message?.message || 'Unknown error')));
+                    }
+                },
+                error: function(error) {
+                    reject(new Error('Error fetching API key: ' + error.message));
+                }
+            });
+        });
+    };
+    
+    // Load Google Maps
+    loadGoogleMaps()
+        .then(() => {
+            console.log('Google Maps loaded successfully, initializing map...');
+            
+            // Initialize map if not already done
+            if (!map && typeof google !== 'undefined' && google.maps) {
+                console.log('Initializing map on modal open');
+                initMap();
+            } else if (!map) {
+                console.log('Google Maps not ready, using fallback');
+                initMapFallback();
+            }
+            
+            // Trigger map resize to ensure proper display
+            setTimeout(() => {
+                if (map && typeof google !== 'undefined') {
+                    console.log('Triggering map resize');
+                    google.maps.event.trigger(map, 'resize');
+                    
+                    // Re-center the map
+                    map.setCenter({ lat: 20.5937, lng: 78.9629 });
+                } else {
+                    console.warn('Map not available for resize');
+                }
+            }, 300);
+        })
+        .catch((error) => {
+            console.error('Failed to load Google Maps:', error);
+            if (mapElement) {
+                mapElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #dc3545;">' +
+                    '<h4>📍 Map Loading Issue</h4>' +
+                    '<p>' + error.message + '</p>' +
+                    '<div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">' +
+                    '<strong>✅ Alternative: Manual Entry</strong><br>' +
+                    'You can enter coordinates directly in the GPS field below:<br>' +
+                    '<code style="background: white; padding: 2px 5px;">28.6139, 77.2090</code> (latitude, longitude)<br>' +
+                    '<small>💡 Get coordinates from Google Maps by right-clicking any location</small>' +
+                    '</div>' +
+                    '</div>';
+            }
+        });
+}
+
+function closeMapModal() {
+    document.getElementById('mapModal').style.display = 'none';
+}
+
+function confirmLocation() {
+    if (selectedCoordinates) {
+        const coordinatesText = `${selectedCoordinates.lat.toFixed(6)}, ${selectedCoordinates.lng.toFixed(6)}`;
+        document.getElementById('gps_coordinates').value = coordinatesText;
+        closeMapModal();
+        
+        // Show success message
+        if (typeof frappe !== 'undefined' && frappe.show_alert) {
+            frappe.show_alert({
+                message: 'Location selected successfully!',
+                indicator: 'green'
+            });
+        }
+    } else {
+        if (typeof frappe !== 'undefined' && frappe.msgprint) {
+            frappe.msgprint({
+                title: 'No Location Selected',
+                message: 'Please click on the map to select a location first.',
+                indicator: 'red'
+            });
+        } else {
+            alert('Please click on the map to select a location first.');
+        }
+    }
+}
+
+function enableManualEntry() {
+    const coordinatesField = document.getElementById('gps_coordinates');
+    coordinatesField.removeAttribute('readonly');
+    coordinatesField.focus();
+    coordinatesField.placeholder = 'Enter coordinates manually (e.g., 28.6139, 77.2090)';
+    
+    // Show help message
+    if (typeof frappe !== 'undefined' && frappe.show_alert) {
+        frappe.show_alert({
+            message: 'You can now enter coordinates manually. Format: latitude, longitude',
+            indicator: 'blue'
+        });
+    }
+}
+
 // Export functions for global access
 window.nextStep = nextStep;
 window.previousStep = previousStep;
 window.submitApplication = submitApplication;
-window.testNextStep = testNextStep; 
+window.testNextStep = testNextStep;
+window.generateProjectId = generateProjectId;
+window.initMap = initMap;
+window.initMapFallback = initMapFallback;
+window.openMapModal = openMapModal;
+window.closeMapModal = closeMapModal;
+window.confirmLocation = confirmLocation;
+window.enableManualEntry = enableManualEntry; 

@@ -20,7 +20,12 @@
   "country_of_operation",
   "project_info_tab",
   "project_name",
-  "project_location",
+  "project_type",
+  "project_id",
+  "column_break_project_1",
+  "project_city",
+  "project_state",
+  "section_break_project_2",
   "gps_coordinates",
   "project_start_date",
   "reporting_period",
@@ -111,9 +116,34 @@
    "label": "Project Name"
   },
   {
-   "fieldname": "project_location",
+   "fieldname": "project_type",
+   "fieldtype": "Select",
+   "label": "Project Type",
+   "options": "Franchise\nInternal Company"
+  },
+  {
+   "fieldname": "project_id",
    "fieldtype": "Data",
-   "label": "Project Location"
+   "label": "Project ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_project_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "project_city",
+   "fieldtype": "Data",
+   "label": "Project City"
+  },
+  {
+   "fieldname": "project_state",
+   "fieldtype": "Data",
+   "label": "Project State/Province"
+  },
+  {
+   "fieldname": "section_break_project_2",
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "gps_coordinates",
