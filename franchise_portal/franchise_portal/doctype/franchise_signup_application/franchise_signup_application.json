@@ -30,10 +30,42 @@
   "project_start_date",
   "reporting_period",
   "feedstock_tab",
-  "feedstock_category",
+  "primary_feedstock_category",
   "specific_feedstock_type",
+  "classification",
   "source",
+  "section_break_payment",
+  "feedstock_payment_type",
+  "payment_details",
+  "section_break_chemical",
+  "carbon_content",
+  "hydrogen_content",
+  "column_break_chem_1",
+  "nitrogen_content",
+  "oxygen_content",
+  "column_break_chem_2",
+  "sulfur_content",
+  "fixed_carbon",
+  "column_break_chem_3",
+  "volatile_matter",
+  "ash_content",
+  "section_break_ratio",
+  "ch_ratio",
+  "section_break_physical",
+  "moisture_content",
+  "heating_value",
+  "column_break_phys_1",
+  "r0_measurement",
+  "section_break_contaminants",
+  "contaminants_present",
+  "other_contaminants",
+  "section_break_volume",
   "annual_volume_available",
+  "plant_operation_schedule",
+  "column_break_vol_1",
+  "seasonal_months",
+  "section_break_current_use",
+  "current_use_disposal_method",
   "section_break_21",
   "created_at",
   "modified_at"
@@ -168,15 +200,21 @@
    "label": "Feedstock Description"
   },
   {
-   "fieldname": "feedstock_category",
+   "fieldname": "primary_feedstock_category",
    "fieldtype": "Select",
-   "label": "Feedstock Category",
-   "options": "Agricultural Residues\nForestry Trimmings\nOther"
+   "label": "Primary Feedstock Category",
+   "options": "Agricultural Residues\nForestry Thinnings\nIndustrial Biomass Residues\nUrban Green Waste"
   },
   {
    "fieldname": "specific_feedstock_type",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Specific Feedstock Type"
+  },
+  {
+   "fieldname": "classification",
+   "fieldtype": "Select",
+   "label": "Classification",
+   "options": "Waste\nBy-product\nCo-product\nResidue"
   },
   {
    "fieldname": "source",
@@ -184,9 +222,173 @@
    "label": "Source (e.g. farm, mill)"
   },
   {
+   "fieldname": "section_break_payment",
+   "fieldtype": "Section Break",
+   "label": "Payment Information"
+  },
+  {
+   "fieldname": "feedstock_payment_type",
+   "fieldtype": "Select",
+   "label": "Feedstock Payment Type",
+   "options": "No Feedstock Payment\nTipping Fee\nPayment at Lower value\n3rd Party Payment"
+  },
+  {
+   "fieldname": "payment_details",
+   "fieldtype": "Small Text",
+   "label": "Payment Details"
+  },
+  {
+   "fieldname": "section_break_chemical",
+   "fieldtype": "Section Break",
+   "label": "Chemical Composition (% dry basis)"
+  },
+  {
+   "fieldname": "carbon_content",
+   "fieldtype": "Float",
+   "label": "Carbon Content (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "hydrogen_content",
+   "fieldtype": "Float",
+   "label": "Hydrogen Content (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "column_break_chem_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "nitrogen_content",
+   "fieldtype": "Float",
+   "label": "Nitrogen Content (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "oxygen_content",
+   "fieldtype": "Float",
+   "label": "Oxygen Content (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "column_break_chem_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sulfur_content",
+   "fieldtype": "Float",
+   "label": "Sulfur Content (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "fixed_carbon",
+   "fieldtype": "Float",
+   "label": "Fixed Carbon (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "column_break_chem_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "volatile_matter",
+   "fieldtype": "Float",
+   "label": "Volatile Matter (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "ash_content",
+   "fieldtype": "Float",
+   "label": "Ash Content (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "section_break_ratio",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "ch_ratio",
+   "fieldtype": "Data",
+   "label": "C:H Ratio",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_physical",
+   "fieldtype": "Section Break",
+   "label": "Physical Properties"
+  },
+  {
+   "fieldname": "moisture_content",
+   "fieldtype": "Float",
+   "label": "Moisture Content (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "heating_value",
+   "fieldtype": "Float",
+   "label": "Heating Value (MJ/kg)",
+   "precision": 2
+  },
+  {
+   "fieldname": "column_break_phys_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "r0_measurement",
+   "fieldtype": "Float",
+   "label": "R0 Measurement (if >1000yr storage)",
+   "precision": 2
+  },
+  {
+   "fieldname": "section_break_contaminants",
+   "fieldtype": "Section Break",
+   "label": "Contaminants"
+  },
+  {
+   "fieldname": "contaminants_present",
+   "fieldtype": "Select",
+   "label": "Contaminants Present",
+   "options": "None\nPlastics\nMetals\nSoil\nOther"
+  },
+  {
+   "fieldname": "other_contaminants",
+   "fieldtype": "Data",
+   "label": "Other Contaminants (specify)"
+  },
+  {
+   "fieldname": "section_break_volume",
+   "fieldtype": "Section Break",
+   "label": "Volume & Operations"
+  },
+  {
    "fieldname": "annual_volume_available",
    "fieldtype": "Float",
    "label": "Annual Volume Available (MT)"
+  },
+  {
+   "fieldname": "plant_operation_schedule",
+   "fieldtype": "Select",
+   "label": "Plant Operation Schedule",
+   "options": "Year-round\nSeasonal"
+  },
+  {
+   "fieldname": "column_break_vol_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "seasonal_months",
+   "fieldtype": "Data",
+   "label": "Seasonal Months (specify)"
+  },
+  {
+   "fieldname": "section_break_current_use",
+   "fieldtype": "Section Break",
+   "label": "Current Usage"
+  },
+  {
+   "fieldname": "current_use_disposal_method",
+   "fieldtype": "Small Text",
+   "label": "Current Use/Disposal Method"
   },
   {
    "fieldname": "section_break_21",

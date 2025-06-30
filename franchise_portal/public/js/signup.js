@@ -31,24 +31,31 @@ function testNextStep() {
 window.testNextStep = testNextStep;
 
 function initializeForm() {
-    // Check for verification token in URL
+    console.log('Initializing form...');
+    
+    // Check for email verification in URL
     const urlParams = new URLSearchParams(window.location.search);
     const verifyToken = urlParams.get('verify');
-    const testMode = urlParams.get('test') === 'true'; // Add ?test=true to bypass verification
+    const testMode = urlParams.get('test');
     
-    if (testMode) {
+    if (testMode === 'true') {
         console.log('TEST MODE: Email verification bypassed');
         emailVerified = true;
         verificationToken = 'test-token';
     }
     
-    if (verifyToken) {
+    if (verifyToken && !testMode) {
         handleEmailVerification(verifyToken);
-    } else {
-        // Set default values
-        currentStep = 1;
-        updateProgressIndicator();
     }
+    
+    // Force fix Step 3 if it's currently active
+    const step3Element = document.getElementById('step3');
+    if (step3Element && step3Element.classList.contains('active')) {
+        console.log('Step 3 is active on page load, applying fixes...');
+        showStep(3); // This will trigger our Step 3 fixes
+    }
+    
+    console.log('Form initialization complete');
     
     // Add input listeners for auto-save
     const inputs = document.querySelectorAll('input, select, textarea');
@@ -161,16 +168,65 @@ function previousStep(step) {
 window.previousStep = previousStep;
 
 function showStep(stepNumber) {
+    console.log(`Showing step ${stepNumber}`);
+    
     // Hide all steps
-    document.querySelectorAll('.form-step').forEach(form => {
-        form.classList.remove('active');
+    document.querySelectorAll('.form-step').forEach(step => {
+        step.style.display = 'none';
+        step.classList.remove('active');
     });
     
     // Show current step
-    const currentForm = document.getElementById(`step${stepNumber}`);
-    if (currentForm) {
-        currentForm.classList.add('active');
+    const currentStepElement = document.getElementById(`step${stepNumber}`);
+    if (currentStepElement) {
+        currentStepElement.style.display = 'block';
+        currentStepElement.classList.add('active');
+        
+        // FORCE FIX for Step 3 layout issues
+        if (stepNumber === 3) {
+            console.log('Applying direct styling fixes to Step 3');
+            
+            // Apply styling directly via JavaScript to override any CSS conflicts
+            currentStepElement.style.cssText = `
+                display: block !important;
+                max-height: none !important;
+                overflow-y: visible !important;
+                overflow-x: visible !important;
+                padding: 30px 50px 30px 50px !important;
+                margin: 0 !important;
+                margin-left: 0 !important;
+                box-sizing: border-box !important;
+                width: 100% !important;
+                position: relative !important;
+                left: 0 !important;
+                transform: none !important;
+                border: none !important;
+                background-color: transparent !important;
+            `;
+            
+            // Also fix the parent container
+            const formContainer = document.querySelector('.form-container');
+            if (formContainer) {
+                formContainer.style.overflow = 'visible';
+                formContainer.style.maxHeight = 'none';
+                formContainer.style.paddingLeft = '50px';
+            }
+            
+            // Fix all child elements in Step 3
+            const step3Elements = currentStepElement.querySelectorAll('*');
+            step3Elements.forEach(element => {
+                element.style.marginLeft = '0';
+                element.style.paddingLeft = '0';
+                element.style.position = 'relative';
+                element.style.left = '0';
+            });
+            
+            console.log('Step 3 styling fixes applied via JavaScript');
+        }
     }
+    
+    // Update progress indicator
+    updateProgressIndicator();
 }
 
 function updateProgressIndicator() {
@@ -950,6 +1006,62 @@ function enableManualEntry() {
     }
 }
 
+// Step 3 Conditional Logic Functions
+function togglePaymentDetails() {
+    const paymentType = document.getElementById('feedstock_payment_type').value;
+    const paymentDetailsGroup = document.getElementById('payment_details_group');
+    
+    if (paymentType && paymentType !== 'No Feedstock Payment') {
+        paymentDetailsGroup.style.display = 'block';
+        document.getElementById('payment_details').setAttribute('required', 'required');
+    } else {
+        paymentDetailsGroup.style.display = 'none';
+        document.getElementById('payment_details').removeAttribute('required');
+        document.getElementById('payment_details').value = '';
+    }
+}
+
+function toggleOtherContaminants() {
+    const contaminants = document.getElementById('contaminants_present').value;
+    const otherGroup = document.getElementById('other_contaminants_group');
+    
+    if (contaminants === 'Other') {
+        otherGroup.style.display = 'block';
+        document.getElementById('other_contaminants').setAttribute('required', 'required');
+    } else {
+        otherGroup.style.display = 'none';
+        document.getElementById('other_contaminants').removeAttribute('required');
+        document.getElementById('other_contaminants').value = '';
+    }
+}
+
+function toggleSeasonalMonths() {
+    const schedule = document.getElementById('plant_operation_schedule').value;
+    const seasonalGroup = document.getElementById('seasonal_months_group');
+    
+    if (schedule === 'Seasonal') {
+        seasonalGroup.style.display = 'block';
+        document.getElementById('seasonal_months').setAttribute('required', 'required');
+    } else {
+        seasonalGroup.style.display = 'none';
+        document.getElementById('seasonal_months').removeAttribute('required');
+        document.getElementById('seasonal_months').value = '';
+    }
+}
+
+function calculateCHRatio() {
+    const carbon = parseFloat(document.getElementById('carbon_content').value);
+    const hydrogen = parseFloat(document.getElementById('hydrogen_content').value);
+    const ratioField = document.getElementById('ch_ratio');
+    
+    if (carbon && hydrogen && hydrogen > 0) {
+        const ratio = (carbon / hydrogen).toFixed(2);
+        ratioField.value = ratio;
+    } else {
+        ratioField.value = '';
+    }
+}
+
 // Export functions for global access
 window.nextStep = nextStep;
 window.previousStep = previousStep;
@@ -961,4 +1073,65 @@ window.initMapFallback = initMapFallback;
 window.openMapModal = openMapModal;
 window.closeMapModal = closeMapModal;
 window.confirmLocation = confirmLocation;
-window.enableManualEntry = enableManualEntry; 
+window.enableManualEntry = enableManualEntry;
+window.togglePaymentDetails = togglePaymentDetails;
+window.toggleOtherContaminants = toggleOtherContaminants;
+window.toggleSeasonalMonths = toggleSeasonalMonths;
+window.calculateCHRatio = calculateCHRatio;
+window.forceFixStep3Layout = forceFixStep3Layout;
+
+// Add debugging function
+window.debugStep3 = function() {
+    const step3 = document.getElementById('step3');
+    console.log('=== Step 3 Debug Info ===');
+    console.log('Step 3 element:', step3);
+    console.log('Step 3 computed styles:', step3 ? window.getComputedStyle(step3) : 'Not found');
+    console.log('Step 3 inline styles:', step3 ? step3.style.cssText : 'Not found');
+    console.log('Step 3 classes:', step3 ? step3.classList : 'Not found');
+    console.log('Form container:', document.querySelector('.form-container'));
+    console.log('========================');
+};
+
+// Add a manual function to force fix Step 3 layout
+function forceFixStep3Layout() {
+    console.log('Manually forcing Step 3 layout fix...');
+    const step3Element = document.getElementById('step3');
+    if (step3Element) {
+        // Apply the same fixes as in showStep function
+        step3Element.style.cssText = `
+            display: block !important;
+            max-height: none !important;
+            overflow-y: visible !important;
+            overflow-x: visible !important;
+            padding: 30px 50px 30px 50px !important;
+            margin: 0 !important;
+            margin-left: 0 !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
+            position: relative !important;
+            left: 0 !important;
+            transform: none !important;
+            border: none !important;
+            background-color: transparent !important;
+        `;
+        
+        // Fix parent container
+        const formContainer = document.querySelector('.form-container');
+        if (formContainer) {
+            formContainer.style.overflow = 'visible';
+            formContainer.style.maxHeight = 'none';
+            formContainer.style.paddingLeft = '50px';
+        }
+        
+        // Fix all child elements
+        const step3Elements = step3Element.querySelectorAll('*');
+        step3Elements.forEach(element => {
+            element.style.marginLeft = '0';
+            element.style.paddingLeft = '0';
+            element.style.position = 'relative';
+            element.style.left = '0';
+        });
+        
+        console.log('Step 3 layout manually fixed');
+    }
+} 

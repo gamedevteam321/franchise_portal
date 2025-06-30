@@ -182,6 +182,19 @@ def finalize_application(session_data, token):
         application_data = session_data["data"]
         email = session_data["email"]
         
+        # Validate required Step 3 fields before finalizing
+        annual_volume = application_data.get('annual_volume_available')
+        try:
+            annual_volume_float = float(annual_volume) if annual_volume and str(annual_volume).strip() else 0
+        except (ValueError, TypeError):
+            annual_volume_float = 0
+            
+        if annual_volume_float <= 0:
+            return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
+        
+        if not application_data.get('primary_feedstock_category'):
+            return {"success": False, "message": "Primary Feedstock Category is required"}
+        
         # Check if application already exists for this email
         existing_applications = frappe.get_all(
             "Franchise Signup Application",
@@ -193,21 +206,21 @@ def finalize_application(session_data, token):
             # Update existing application
             doc = frappe.get_doc("Franchise Signup Application", existing_applications[0].name)
             
-                    # Update all fields with new data
-        for key, value in application_data.items():
-            if hasattr(doc, key) and key not in ['name', 'doctype']:
-                setattr(doc, key, value)
-        
-        # Handle legacy project_location field - combine city and state if needed
-        if application_data.get('project_city') or application_data.get('project_state'):
-            city = application_data.get('project_city', '')
-            state = application_data.get('project_state', '')
-            if city and state:
-                doc.project_location = f"{city}, {state}"
-            elif city:
-                doc.project_location = city
-            elif state:
-                doc.project_location = state
+            # Update all fields with new data
+            for key, value in application_data.items():
+                if hasattr(doc, key) and key not in ['name', 'doctype']:
+                    setattr(doc, key, value)
+            
+            # Handle legacy project_location field - combine city and state if needed
+            if application_data.get('project_city') or application_data.get('project_state'):
+                city = application_data.get('project_city', '')
+                state = application_data.get('project_state', '')
+                if city and state:
+                    doc.project_location = f"{city}, {state}"
+                elif city:
+                    doc.project_location = city
+                elif state:
+                    doc.project_location = state
             
             # Update status to submitted
             doc.status = "Submitted"
@@ -419,12 +432,25 @@ def submit_application(email, data=None):
                 elif state:
                     doc.project_location = state
         
-        # Validate required fields
+        # Validate required fields for final submission
         if not doc.company_name:
             return {"success": False, "message": "Company name is required"}
         
         if not doc.email:
             return {"success": False, "message": "Email is required"}
+        
+        # Validate required Step 3 fields for final submission
+        annual_volume = doc.annual_volume_available
+        try:
+            annual_volume_float = float(annual_volume) if annual_volume and str(annual_volume).strip() else 0
+        except (ValueError, TypeError):
+            annual_volume_float = 0
+            
+        if annual_volume_float <= 0:
+            return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
+        
+        if not doc.primary_feedstock_category:
+            return {"success": False, "message": "Primary Feedstock Category is required"}
         
         # Update status and save
         doc.status = "Submitted"

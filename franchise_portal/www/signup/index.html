@@ -10,6 +10,8 @@
     padding: 20px !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     background: transparent !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .page-content .step-header,
@@ -76,6 +78,8 @@
     padding: 30px !important;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
     margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .form-step {
@@ -322,6 +326,102 @@
     background: #f8f9fa;
     border-radius: 5px;
 }
+
+/* Section Headers for Step 3 */
+.section-header {
+    margin: 25px 0 15px 0;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 5px;
+    font-weight: 600;
+    border-left: 4px solid #5a6fd8;
+}
+
+.section-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.section-header:first-child {
+    margin-top: 10px;
+}
+
+/* Enhanced form styling for complex Step 3 - AGGRESSIVE FIX */
+body .franchise-signup-container .form-container .form-step#step3 {
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+    padding: 30px !important;
+    padding-left: 50px !important;
+    padding-right: 50px !important;
+    margin: 0 !important;
+    margin-left: 0 !important;
+    box-sizing: border-box !important;
+    width: calc(100% - 20px) !important;
+    min-width: 100% !important;
+    position: relative !important;
+    left: 0 !important;
+    transform: none !important;
+}
+
+/* Force proper display for Step 3 elements */
+body .franchise-signup-container .form-container .form-step#step3 * {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    position: relative !important;
+    left: 0 !important;
+}
+
+/* Ensure form-container works properly with Step 3 */
+body .franchise-signup-container .form-container:has(#step3.active),
+body .franchise-signup-container .form-container:has(.form-step#step3:not([style*="display: none"])) {
+    overflow: visible !important;
+    max-height: none !important;
+    padding-left: 50px !important;
+}
+
+/* Ensure Step 3 sections have proper spacing */
+body .franchise-signup-container .form-container .form-step#step3 .section-header {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    position: relative !important;
+    left: 0 !important;
+}
+
+body .franchise-signup-container .form-container .form-step#step3 .form-row,
+body .franchise-signup-container .form-container .form-step#step3 .form-group {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    position: relative !important;
+    left: 0 !important;
+}
+
+/* Debug - Add visible border to Step 3 to see the boundaries */
+body .franchise-signup-container .form-container .form-step#step3 {
+    border: none !important;
+    background-color: transparent !important;
+}
+
+.form-step#step3::-webkit-scrollbar {
+    width: 6px;
+}
+
+.form-step#step3::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.form-step#step3::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 3px;
+}
+
+.form-step#step3::-webkit-scrollbar-thumb:hover {
+    background: #5a6fd8;
+}
 </style>
 
 <div class="franchise-signup-container">
@@ -456,35 +556,196 @@
             </div>
         </form>
 
-        <!-- Step 3: Feedstock Description -->
-        <form id="step3" class="form-step">
-            <h3>Step 3: Feedstock Description</h3>
+        <!-- Step 3: Feedstock Description & Classification -->
+        <form id="step3" class="form-step" style="padding: 30px 50px 30px 50px !important; margin-left: 0 !important; width: 100% !important; box-sizing: border-box !important; position: relative !important; left: 0 !important; overflow: visible !important;">
+            <h3>Step 3: Feedstock Description & Classification</h3>
+            
+            <!-- Basic Information Section -->
+            <div class="section-header">
+                <h4>📋 Basic Information</h4>
+            </div>
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="feedstock_category">Feedstock Category</label>
-                    <select id="feedstock_category" name="feedstock_category">
+                    <label for="primary_feedstock_category">Primary Feedstock Category *</label>
+                    <select id="primary_feedstock_category" name="primary_feedstock_category" required>
                         <option value="">Select Category</option>
                         <option value="Agricultural Residues">Agricultural Residues</option>
-                        <option value="Forestry Trimmings">Forestry Trimmings</option>
-                        <option value="Other">Other</option>
+                        <option value="Forestry Thinnings">Forestry Thinnings</option>
+                        <option value="Industrial Biomass Residues">Industrial Biomass Residues</option>
+                        <option value="Urban Green Waste">Urban Green Waste</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="specific_feedstock_type">Specific Feedstock Type</label>
-                    <input type="text" id="specific_feedstock_type" name="specific_feedstock_type" placeholder="e.g., Rice husks, Wheat straw">
+                    <label for="classification">Classification</label>
+                    <select id="classification" name="classification">
+                        <option value="">Select Classification</option>
+                        <option value="Waste">Waste</option>
+                        <option value="By-product">By-product</option>
+                        <option value="Co-product">Co-product</option>
+                        <option value="Residue">Residue</option>
+                    </select>
                 </div>
             </div>
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="source">Source</label>
-                    <input type="text" id="source" name="source" placeholder="e.g., Local farms, Processing mills">
+                    <label for="specific_feedstock_type">Specific Feedstock Type</label>
+                    <textarea id="specific_feedstock_type" name="specific_feedstock_type" rows="2" placeholder="e.g., coconut shells, rice husk, sawmill waste, manufacturing residue"></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="annual_volume_available">Annual Volume Available (MT)</label>
-                    <input type="number" id="annual_volume_available" name="annual_volume_available" step="0.01">
+                    <label for="source">Source (e.g., farm, mill)</label>
+                    <input type="text" id="source" name="source" placeholder="e.g., Local farms, Processing mills">
                 </div>
+            </div>
+            
+            <!-- Payment Information Section -->
+            <div class="section-header">
+                <h4>💰 Payment Information</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="feedstock_payment_type">Feedstock Payment Type</label>
+                    <select id="feedstock_payment_type" name="feedstock_payment_type" onchange="togglePaymentDetails()">
+                        <option value="">Select Payment Type</option>
+                        <option value="No Feedstock Payment">No Feedstock Payment</option>
+                        <option value="Tipping Fee">Tipping Fee</option>
+                        <option value="Payment at Lower value">Payment at Lower value</option>
+                        <option value="3rd Party Payment">3rd Party Payment</option>
+                    </select>
+                </div>
+                <div class="form-group" id="payment_details_group" style="display: none;">
+                    <label for="payment_details">Payment Details</label>
+                    <textarea id="payment_details" name="payment_details" rows="2" placeholder="Enter payment details, amount, or other relevant information"></textarea>
+                </div>
+            </div>
+            
+            <!-- Chemical Composition Section -->
+            <div class="section-header">
+                <h4>🧪 Chemical Composition (% dry basis)</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="carbon_content">Carbon Content (%)</label>
+                    <input type="number" id="carbon_content" name="carbon_content" step="0.01" min="0" max="100" onchange="calculateCHRatio()">
+                </div>
+                <div class="form-group">
+                    <label for="hydrogen_content">Hydrogen Content (%)</label>
+                    <input type="number" id="hydrogen_content" name="hydrogen_content" step="0.01" min="0" max="100" onchange="calculateCHRatio()">
+                </div>
+                <div class="form-group">
+                    <label for="nitrogen_content">Nitrogen Content (%)</label>
+                    <input type="number" id="nitrogen_content" name="nitrogen_content" step="0.01" min="0" max="100">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="oxygen_content">Oxygen Content (%)</label>
+                    <input type="number" id="oxygen_content" name="oxygen_content" step="0.01" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="sulfur_content">Sulfur Content (%)</label>
+                    <input type="number" id="sulfur_content" name="sulfur_content" step="0.01" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="fixed_carbon">Fixed Carbon (%)</label>
+                    <input type="number" id="fixed_carbon" name="fixed_carbon" step="0.01" min="0" max="100">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="volatile_matter">Volatile Matter (%)</label>
+                    <input type="number" id="volatile_matter" name="volatile_matter" step="0.01" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="ash_content">Ash Content (%)</label>
+                    <input type="number" id="ash_content" name="ash_content" step="0.01" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="ch_ratio">C:H Ratio (Auto-calculated)</label>
+                    <input type="text" id="ch_ratio" name="ch_ratio" readonly style="background-color: #f8f9fa;">
+                </div>
+            </div>
+            
+            <!-- Physical Properties Section -->
+            <div class="section-header">
+                <h4>⚖️ Physical Properties</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="moisture_content">Moisture Content (%)</label>
+                    <input type="number" id="moisture_content" name="moisture_content" step="0.01" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="heating_value">Heating Value (MJ/kg)</label>
+                    <input type="number" id="heating_value" name="heating_value" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="r0_measurement">R0 Measurement (if >1000yr storage)</label>
+                    <input type="number" id="r0_measurement" name="r0_measurement" step="0.01" min="0">
+                </div>
+            </div>
+            
+            <!-- Contaminants Section -->
+            <div class="section-header">
+                <h4>⚠️ Contaminants</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="contaminants_present">Contaminants Present</label>
+                    <select id="contaminants_present" name="contaminants_present" onchange="toggleOtherContaminants()">
+                        <option value="">Select Contaminants</option>
+                        <option value="None">None</option>
+                        <option value="Plastics">Plastics</option>
+                        <option value="Metals">Metals</option>
+                        <option value="Soil">Soil</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group" id="other_contaminants_group" style="display: none;">
+                    <label for="other_contaminants">Other Contaminants (specify)</label>
+                    <input type="text" id="other_contaminants" name="other_contaminants" placeholder="Specify other contaminants">
+                </div>
+            </div>
+            
+            <!-- Volume & Operations Section -->
+            <div class="section-header">
+                <h4>📊 Volume & Operations</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="annual_volume_available">Annual Volume Available (MT) *</label>
+                    <input type="number" id="annual_volume_available" name="annual_volume_available" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="plant_operation_schedule">Plant Operation Schedule</label>
+                    <select id="plant_operation_schedule" name="plant_operation_schedule" onchange="toggleSeasonalMonths()">
+                        <option value="">Select Schedule</option>
+                        <option value="Year-round">Year-round</option>
+                        <option value="Seasonal">Seasonal</option>
+                    </select>
+                </div>
+                <div class="form-group" id="seasonal_months_group" style="display: none;">
+                    <label for="seasonal_months">Seasonal Months (specify)</label>
+                    <input type="text" id="seasonal_months" name="seasonal_months" placeholder="e.g., April to September">
+                </div>
+            </div>
+            
+            <!-- Current Usage Section -->
+            <div class="section-header">
+                <h4>🔄 Current Usage</h4>
+            </div>
+            
+            <div class="form-group">
+                <label for="current_use_disposal_method">Current Use/Disposal Method</label>
+                <textarea id="current_use_disposal_method" name="current_use_disposal_method" rows="3" placeholder="Describe how the feedstock is currently being used or disposed of"></textarea>
             </div>
             
             <div class="button-group">
