@@ -108,7 +108,24 @@
   "backup_system",
   "retention_period",
   "created_at",
-  "modified_at"
+  "modified_at",
+  "sustainability_assessment_tab",
+  "section_break_sustainability",
+  "environmental_permits",
+  "impact_assessment_performed",
+  "regulatory_compliance",
+  "certified_sustainable_source",
+  "certification_type",
+  "dedicated_energy_crop",
+  "feedback_study_competitive",
+  "demand_increased_due_project",
+  "could_displace_current_use",
+  "market_leakage_study",
+  "counterfactual_scenario",
+  "additionality_demonstration",
+  "water_resource_plan",
+  "community_health_consider",
+  "soil_impact_assessment"
  ],
  "fields": [
   {
@@ -661,6 +678,104 @@
    "fieldtype": "Datetime",
    "label": "Modified At",
    "read_only": 1
+  },
+  {
+   "fieldname": "sustainability_assessment_tab",
+   "fieldtype": "Tab Break",
+   "label": "Sustainability Assessment & Market Impact"
+  },
+  {
+   "fieldname": "section_break_sustainability",
+   "fieldtype": "Section Break",
+   "label": "Sustainability Assessment & Market Impact"
+  },
+  {
+   "fieldname": "environmental_permits",
+   "fieldtype": "Select",
+   "label": "Environmental Permits",
+   "options": "Attached\nNot Required\nIn Process"
+  },
+  {
+   "fieldname": "impact_assessment_performed",
+   "fieldtype": "Select",
+   "label": "Impact Assessment Performed",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "regulatory_compliance",
+   "fieldtype": "Select",
+   "label": "Regulatory Compliance",
+   "options": "Confirmed\nPending"
+  },
+  {
+   "fieldname": "certified_sustainable_source",
+   "fieldtype": "Select",
+   "label": "Certified Sustainable Source",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "certification_type",
+   "fieldtype": "Data",
+   "label": "Certification Type",
+   "options": "FSC\nPEFC\nISCC\nOther"
+  },
+  {
+   "fieldname": "dedicated_energy_crop",
+   "fieldtype": "Select",
+   "label": "Dedicated Energy Crop",
+   "options": "Yes (NOT ELIGIBLE)\nNo"
+  },
+  {
+   "fieldname": "feedback_study_competitive",
+   "fieldtype": "Select",
+   "label": "Feedback Study in Competitive Market",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "demand_increased_due_project",
+   "fieldtype": "Select",
+   "label": "Demand Increased Due to Project",
+   "options": "Yes\nNo\nUnknown"
+  },
+  {
+   "fieldname": "could_displace_current_use",
+   "fieldtype": "Select",
+   "label": "Could Displace Current Use",
+   "options": "Yes\nNo\nUncertain"
+  },
+  {
+   "fieldname": "market_leakage_study",
+   "fieldtype": "Select",
+   "label": "Market Leakage Study Performed",
+   "options": "Yes (attach)\nNo"
+  },
+  {
+   "fieldname": "counterfactual_scenario",
+   "fieldtype": "Small Text",
+   "label": "What Would Happen Without Project"
+  },
+  {
+   "fieldname": "additionality_demonstration",
+   "fieldtype": "Small Text",
+   "label": "How Project Exceeds Business-as-Usual"
+  },
+  {
+   "fieldname": "water_resource_plan",
+   "fieldtype": "Select",
+   "label": "Water Resource Management Plan",
+   "options": "Yes\nNo\nN/A"
+  },
+  {
+   "fieldname": "community_health_consider",
+   "fieldtype": "Select",
+   "label": "Community Health Considerations",
+   "options": "Addressed\nNot Required"
+  },
+  {
+   "fieldname": "soil_impact_assessment",
+   "fieldtype": "Select",
+   "label": "Soil Impact Assessment (if applicable)",
+   "options": "Completed\nN/A"
   }
  ],
  "index_web_pages_for_search": 1,

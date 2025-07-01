@@ -230,7 +230,7 @@ function showStep(stepNumber) {
 }
 
 function updateProgressIndicator() {
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 6; i++) {
         const progressElement = document.getElementById(`progress-${i}`);
         if (progressElement) {
             if (i < currentStep) {
@@ -590,7 +590,7 @@ function saveStepData(step, callback) {
 }
 
 function autoSaveStep() {
-    if (currentStep <= 5) {
+    if (currentStep <= 6) {
         const stepData = getStepData(currentStep);
         Object.assign(applicationData, stepData);
         
@@ -604,14 +604,14 @@ function autoSaveStep() {
 }
 
 function submitApplication() {
-    if (!validateStep(5)) {
+    if (!validateStep(6)) {
         return;
     }
     
     // Show loading
     showLoading(true);
     
-    // Collect data from ALL steps (1-5) before submitting
+    // Collect data from ALL steps (1-6) before submitting
     console.log('=== DEBUG: Submit Application - Collecting ALL Steps Data ===');
     
     const step1Data = getStepData(1);
@@ -619,12 +619,14 @@ function submitApplication() {
     const step3Data = getStepData(3);
     const step4Data = getStepData(4);
     const step5Data = getStepData(5);
+    const step6Data = getStepData(6);
     
     console.log('Step 1 data:', step1Data);
     console.log('Step 2 data:', step2Data);
     console.log('Step 3 data:', step3Data);
     console.log('Step 4 data:', step4Data);
     console.log('Step 5 data:', step5Data);
+    console.log('Step 6 data:', step6Data);
     
     // Merge all step data into one object
     const finalData = {
@@ -632,7 +634,8 @@ function submitApplication() {
         ...step2Data,
         ...step3Data,
         ...step4Data,
-        ...step5Data
+        ...step5Data,
+        ...step6Data
     };
     
     console.log('=== DEBUG: Submit Application Complete Data ===');
@@ -640,10 +643,16 @@ function submitApplication() {
     console.log('Final data keys:', Object.keys(finalData));
     console.log('Final data length:', Object.keys(finalData).length);
     
-    // Verify Step 5 fields are present
-    const step5FieldNames = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 'weighbridge_id', 'testing_laboratory_name'];
-    console.log('Step 5 fields verification:');
-    step5FieldNames.forEach(field => {
+    // Verify Step 6 fields are present
+    const step6FieldNames = [
+        'environmental_compliance', 'impact_assessment_performed', 'regulatory_compliance',
+        'certified_sustainable_source', 'certification_type', 'dedicated_energy_crop',
+        'feedback_study_competitive', 'demand_increased_due_project', 'could_displace_current_use',
+        'market_leakage_study', 'counterfactual_scenario', 'additionality_demonstration',
+        'water_resource_plan', 'community_health_consider', 'soil_impact_assessment'
+    ];
+    console.log('Step 6 fields verification:');
+    step6FieldNames.forEach(field => {
         console.log(`  ${field}: ${finalData[field] || 'MISSING'}`);
     });
     console.log('=== END DEBUG ===');
@@ -654,9 +663,8 @@ function submitApplication() {
     console.log('=== FRONTEND SENDING TO API ===');
     console.log('Application data being sent:', applicationData);
     console.log('Application data keys:', Object.keys(applicationData));
-    console.log('Step 5 fields in application data:');
-    const step5FieldCheck = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 'weighbridge_id', 'testing_laboratory_name'];
-    step5FieldCheck.forEach(field => {
+    console.log('Step 6 fields in application data:');
+    step6FieldNames.forEach(field => {
         console.log(`  ${field}: ${applicationData[field] || 'MISSING'}`);
     });
     console.log('=== END FRONTEND DEBUG ===');
@@ -669,7 +677,7 @@ function submitApplication() {
             args: { 
                 token: verificationToken,
                 data: finalData,
-                step: 5
+                step: 6
             },
             callback: function(response) {
                 showLoading(false);
