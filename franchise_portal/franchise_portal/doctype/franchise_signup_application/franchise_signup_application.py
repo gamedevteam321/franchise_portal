@@ -22,6 +22,10 @@ class FranchiseSignupApplication(Document):
 		"""Validate the document before saving"""
 		if self.email:
 			self.validate_email_uniqueness()
+		
+		# Only validate Step 7 fields when application is being submitted/finalized
+		if self.status == "Submitted":
+			self.validate_step7_required_fields()
 	
 	def validate_email_uniqueness(self):
 		"""Ensure email is unique across all applications"""
@@ -32,6 +36,19 @@ class FranchiseSignupApplication(Document):
 		)
 		if existing:
 			frappe.throw(f"An application with email {self.email} already exists.")
+	
+	def validate_step7_required_fields(self):
+		"""Validate required fields for Step 7 (Emissions & Energy Accounting) only when submitting"""
+		missing_fields = []
+		
+		if not self.calculated_total:
+			missing_fields.append("Calculated Total (kg CO₂/tonne)")
+		
+		if not self.uncertainty_range:
+			missing_fields.append("Uncertainty Range (%)")
+		
+		if missing_fields:
+			frappe.throw(f"The following required fields are missing: {', '.join(missing_fields)}")
 	
 	def on_submit(self):
 		"""Actions to perform when the application is submitted"""

@@ -855,14 +855,12 @@
   {
    "fieldname": "calculated_total",
    "fieldtype": "Float",
-   "label": "Calculated Total (kg CO₂/tonne)",
-   "reqd": 1
+   "label": "Calculated Total (kg CO₂/tonne)"
   },
   {
    "fieldname": "uncertainty_range",
    "fieldtype": "Float",
-   "label": "Uncertainty Range (%)",
-   "reqd": 1
+   "label": "Uncertainty Range (%)"
   }
  ],
  "index_web_pages_for_search": 1,

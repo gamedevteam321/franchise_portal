@@ -545,6 +545,19 @@ def finalize_application(session_data, token):
         if annual_volume_float <= 0:
             return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
         
+        # Validate required Step 7 fields before finalizing
+        calculated_total = application_data.get('calculated_total')
+        uncertainty_range = application_data.get('uncertainty_range')
+        
+        missing_step7_fields = []
+        if not calculated_total or str(calculated_total).strip() == '':
+            missing_step7_fields.append("Calculated Total (kg CO₂/tonne)")
+        if not uncertainty_range or str(uncertainty_range).strip() == '':
+            missing_step7_fields.append("Uncertainty Range (%)")
+        
+        if missing_step7_fields:
+            return {"success": False, "message": f"The following required fields are missing: {', '.join(missing_step7_fields)}"}
+        
         # Check for existing application
         existing_applications = frappe.get_all(
             "Franchise Signup Application",
