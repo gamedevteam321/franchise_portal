@@ -83,6 +83,30 @@
   "supplier_agreements",
   "origin_certificates",
   "transportation_records",
+  "monitoring_measurement_tab",
+  "section_break_monitoring",
+  "electricity_meter_id",
+  "meter_type_model",
+  "monitoring_interval",
+  "last_calibration_date",
+  "next_calibration_due",
+  "section_break_weighbridge",
+  "weighbridge_id",
+  "capacity",
+  "accuracy_rating",
+  "continuous_recording",
+  "data_logging_system",
+  "section_break_laboratory",
+  "testing_laboratory_name",
+  "lab_accreditation_number",
+  "testing_standards_used",
+  "testing_standards_other",
+  "analysis_frequency",
+  "section_break_data_management",
+  "automatic_data_upload",
+  "data_storage_method",
+  "backup_system",
+  "retention_period",
   "created_at",
   "modified_at"
  ],
@@ -496,6 +520,135 @@
    "fieldtype": "Select",
    "label": "Transportation Records",
    "options": "Attached\nNot Available"
+  },
+  {
+   "fieldname": "monitoring_measurement_tab",
+   "fieldtype": "Tab Break",
+   "label": "Monitoring & Measurement"
+  },
+  {
+   "fieldname": "section_break_monitoring",
+   "fieldtype": "Section Break",
+   "label": "Continuous Monitoring Equipment"
+  },
+  {
+   "fieldname": "electricity_meter_id",
+   "fieldtype": "Data",
+   "label": "Electricity Meter ID"
+  },
+  {
+   "fieldname": "meter_type_model",
+   "fieldtype": "Data",
+   "label": "Meter Type/Model"
+  },
+  {
+   "fieldname": "monitoring_interval",
+   "fieldtype": "Select",
+   "label": "Monitoring Interval",
+   "options": "Minute-by-minute\nHourly\nDaily"
+  },
+  {
+   "fieldname": "last_calibration_date",
+   "fieldtype": "Date",
+   "label": "Last Calibration Date"
+  },
+  {
+   "fieldname": "next_calibration_due",
+   "fieldtype": "Date",
+   "label": "Next Calibration Due"
+  },
+  {
+   "fieldname": "section_break_weighbridge",
+   "fieldtype": "Section Break",
+   "label": "Weighbridge System"
+  },
+  {
+   "fieldname": "weighbridge_id",
+   "fieldtype": "Data",
+   "label": "Weighbridge ID"
+  },
+  {
+   "fieldname": "capacity",
+   "fieldtype": "Float",
+   "label": "Capacity (tons)",
+   "precision": 2
+  },
+  {
+   "fieldname": "accuracy_rating",
+   "fieldtype": "Float",
+   "label": "Accuracy Rating (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "continuous_recording",
+   "fieldtype": "Select",
+   "label": "Continuous Recording",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "data_logging_system",
+   "fieldtype": "Data",
+   "label": "Data Logging System"
+  },
+  {
+   "fieldname": "section_break_laboratory",
+   "fieldtype": "Section Break",
+   "label": "Laboratory Analysis"
+  },
+  {
+   "fieldname": "testing_laboratory_name",
+   "fieldtype": "Data",
+   "label": "Testing Laboratory Name"
+  },
+  {
+   "fieldname": "lab_accreditation_number",
+   "fieldtype": "Data",
+   "label": "Lab Accreditation Number"
+  },
+  {
+   "fieldname": "testing_standards_used",
+   "fieldtype": "Select",
+   "label": "Testing Standards Used",
+   "options": "ASTM\nISO\nOther"
+  },
+  {
+   "fieldname": "testing_standards_other",
+   "fieldtype": "Data",
+   "label": "Testing Standards (Other)",
+   "depends_on": "eval:doc.testing_standards_used=='Other'"
+  },
+  {
+   "fieldname": "analysis_frequency",
+   "fieldtype": "Select",
+   "label": "Analysis Frequency",
+   "options": "Per batch\nDaily\nWeekly\nMonthly"
+  },
+  {
+   "fieldname": "section_break_data_management",
+   "fieldtype": "Section Break",
+   "label": "Data Management"
+  },
+  {
+   "fieldname": "automatic_data_upload",
+   "fieldtype": "Select",
+   "label": "Automatic Data Upload",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "data_storage_method",
+   "fieldtype": "Select",
+   "label": "Data Storage Method",
+   "options": "Cloud\nLocal Server\nPhysical Records"
+  },
+  {
+   "fieldname": "backup_system",
+   "fieldtype": "Data",
+   "label": "Backup System"
+  },
+  {
+   "fieldname": "retention_period",
+   "fieldtype": "Int",
+   "label": "Retention Period (years)"
   },
   {
    "fieldname": "created_at",

@@ -127,6 +127,15 @@ def get_session_data(token):
 def save_step_with_verification(token, data, step):
     """Save step data with verification check"""
     try:
+        # Log RAW input data BEFORE any processing
+        debug_file = os.path.join(frappe.get_site_path(), 'debug_save.txt')
+        with open(debug_file, 'a') as f:
+            f.write(f"\n=== RAW VERIFIED API INPUT {frappe.utils.now()} ===\n")
+            f.write(f"Token: {token}\n")
+            f.write(f"Step: {step}\n")
+            f.write(f"Raw data type: {type(data)}\n")
+            f.write(f"Raw data: {str(data)[:1000]}...\n")  # First 1000 chars
+        
         if not token:
             return {"success": False, "message": "Verification token is required"}
         
@@ -159,8 +168,8 @@ def save_step_with_verification(token, data, step):
         # Save updated session
         frappe.cache().set_value(session_key, json.dumps(session_data), expires_in_sec=86400)
         
-        # If this is the final step (step 4), save to doctype
-        if step >= 4:
+        # If this is the final step (step 5), save to doctype
+        if step >= 5:
             return finalize_application(session_data, token)
         
         return {
@@ -181,6 +190,14 @@ def save_step_with_verification(token, data, step):
 def submit_application(email, data=None):
     """Submit the franchise application"""
     try:
+        # Log RAW input data BEFORE any processing
+        debug_file = os.path.join(frappe.get_site_path(), 'debug_save.txt')
+        with open(debug_file, 'a') as f:
+            f.write(f"\n=== RAW SUBMIT API INPUT {frappe.utils.now()} ===\n")
+            f.write(f"Email: {email}\n")
+            f.write(f"Raw data type: {type(data)}\n")
+            f.write(f"Raw data: {str(data)[:1000]}...\n")  # First 1000 chars
+        
         if not email:
             return {"success": False, "message": "Email is required"}
         
@@ -598,6 +615,13 @@ def finalize_application(session_data, token):
 def save_step(data):
     """Save step data for the franchise application"""
     try:
+        # Log RAW input data BEFORE any processing
+        debug_file = os.path.join(frappe.get_site_path(), 'debug_save.txt')
+        with open(debug_file, 'a') as f:
+            f.write(f"\n=== RAW API INPUT {frappe.utils.now()} ===\n")
+            f.write(f"Raw data type: {type(data)}\n")
+            f.write(f"Raw data: {str(data)[:1000]}...\n")  # First 1000 chars
+        
         # Handle JSON string data from frontend
         if isinstance(data, str):
             import json
@@ -614,6 +638,15 @@ def save_step(data):
                 f.write(f"source_type: '{data.source_type}' (type: {type(data.source_type)})\n")
             if 'generation_locations' in data:
                 f.write(f"generation_locations: {data.generation_locations}\n")
+            
+            # Check for Step 5 fields
+            step5_fields = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 
+                           'weighbridge_id', 'testing_laboratory_name', 'automatic_data_upload']
+            step5_data = {k: v for k, v in data.items() if k in step5_fields}
+            if step5_data:
+                f.write(f"STEP 5 FIELDS FOUND: {step5_data}\n")
+            else:
+                f.write(f"NO STEP 5 FIELDS IN DATA\n")
         
         # Validate required fields
         if not data.get('email') or not data.get('email').strip():
@@ -645,20 +678,26 @@ def save_step(data):
                             application.append('generation_locations', location_data)
                     else:
                         setattr(application, key, value)
-                        # File debug: track source_type setting
-                        if key == 'source_type':
-                            with open(debug_file, 'a') as f:
-                                f.write(f"SET source_type to '{value}' on app {application.name}\n")
+                        # File debug: track field setting
+                        with open(debug_file, 'a') as f:
+                            f.write(f"SET {key} to '{value}' on app {application.name}\n")
+                else:
+                    # Debug: track fields that are being skipped
+                    with open(debug_file, 'a') as f:
+                        f.write(f"SKIPPED {key} (hasattr={hasattr(application, key)}, excluded={key in ['name', 'doctype']})\n")
             
             application.modified_at = frappe.utils.now()
             application.save(ignore_permissions=True)
             frappe.db.commit()
             
-            # File debug: check what was saved
-            if 'source_type' in data:
-                saved_value = frappe.db.get_value("Franchise Signup Application", application.name, "source_type")
-                with open(debug_file, 'a') as f:
-                    f.write(f"SAVED source_type in DB: '{saved_value}'\n")
+            # File debug: check what was saved (Step 5 fields)
+            step5_fields = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 
+                           'weighbridge_id', 'testing_laboratory_name', 'automatic_data_upload']
+            for field in step5_fields:
+                if field in data:
+                    saved_value = frappe.db.get_value("Franchise Signup Application", application.name, field)
+                    with open(debug_file, 'a') as f:
+                        f.write(f"SAVED {field} in DB: '{saved_value}'\n")
             
             return {"success": True, "message": "Application updated successfully", "application_id": application.name}
         
@@ -675,24 +714,62 @@ def save_step(data):
                             application.append('generation_locations', location_data)
                     else:
                         setattr(application, key, value)
-                        # File debug: track source_type setting
-                        if key == 'source_type':
-                            with open(debug_file, 'a') as f:
-                                f.write(f"SET source_type to '{value}' on new app\n")
+                        # File debug: track field setting
+                        with open(debug_file, 'a') as f:
+                            f.write(f"SET {key} to '{value}' on new app\n")
+                else:
+                    # Debug: track fields that are being skipped
+                    with open(debug_file, 'a') as f:
+                        f.write(f"SKIPPED {key} (hasattr={hasattr(application, key)}, excluded={key in ['name', 'doctype']})\n")
             
             application.created_at = frappe.utils.now()
             application.modified_at = frappe.utils.now()
             application.insert(ignore_permissions=True)
             frappe.db.commit()
             
-            # File debug: check what was saved
-            if 'source_type' in data:
-                saved_value = frappe.db.get_value("Franchise Signup Application", application.name, "source_type")
-                with open(debug_file, 'a') as f:
-                    f.write(f"INSERTED source_type in DB: '{saved_value}'\n")
+            # File debug: check what was saved (Step 5 fields)
+            step5_fields = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 
+                           'weighbridge_id', 'testing_laboratory_name', 'automatic_data_upload']
+            for field in step5_fields:
+                if field in data:
+                    saved_value = frappe.db.get_value("Franchise Signup Application", application.name, field)
+                    with open(debug_file, 'a') as f:
+                        f.write(f"INSERTED {field} in DB: '{saved_value}'\n")
             
             return {"success": True, "message": "Application created successfully", "application_id": application.name}
             
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Save Step Error")
-        return {"success": False, "message": f"Error saving application: {str(e)}"} 
+        return {"success": False, "message": f"Error saving application: {str(e)}"}
+
+
+@frappe.whitelist(allow_guest=True)
+def test_step5_fields():
+    """Test if Step 5 fields exist in the doctype"""
+    try:
+        # Create a test document to check field existence
+        doc = frappe.new_doc("Franchise Signup Application")
+        
+        step5_fields = [
+            'electricity_meter_id', 'meter_type_model', 'monitoring_interval',
+            'last_calibration_date', 'next_calibration_due', 'weighbridge_id',
+            'capacity', 'accuracy_rating', 'continuous_recording', 'data_logging_system',
+            'testing_laboratory_name', 'lab_accreditation_number', 'testing_standards_used',
+            'testing_standards_other', 'analysis_frequency', 'automatic_data_upload',
+            'data_storage_method', 'backup_system', 'retention_period'
+        ]
+        
+        field_status = {}
+        for field in step5_fields:
+            field_status[field] = hasattr(doc, field)
+        
+        return {
+            "success": True,
+            "message": "Step 5 field check completed",
+            "field_status": field_status,
+            "total_fields": len(step5_fields),
+            "existing_fields": sum(field_status.values())
+        }
+        
+    except Exception as e:
+        return {"success": False, "message": f"Error testing Step 5 fields: {str(e)}"}

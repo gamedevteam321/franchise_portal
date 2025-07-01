@@ -230,7 +230,7 @@ function showStep(stepNumber) {
 }
 
 function updateProgressIndicator() {
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= 5; i++) {
         const progressElement = document.getElementById(`progress-${i}`);
         if (progressElement) {
             if (i < currentStep) {
@@ -388,6 +388,19 @@ function getStepData(step) {
                 delete data[key];
             }
         });
+    }
+    
+    // Special handling for Step 5 - Monitoring & Measurement (for debugging and validation)
+    if (step === 5) {
+        console.log('Processing Step 5 monitoring & measurement fields...');
+        
+        // Ensure testing_standards_other is only included if testing_standards_used is "Other"
+        const testingStandards = data['testing_standards_used'];
+        if (testingStandards !== 'Other') {
+            data['testing_standards_other'] = '';
+        }
+        
+        console.log('Step 5 processed data:', data);
     }
     
     console.log('Final step data:', data);
@@ -577,7 +590,7 @@ function saveStepData(step, callback) {
 }
 
 function autoSaveStep() {
-    if (currentStep <= 4) {
+    if (currentStep <= 5) {
         const stepData = getStepData(currentStep);
         Object.assign(applicationData, stepData);
         
@@ -591,22 +604,62 @@ function autoSaveStep() {
 }
 
 function submitApplication() {
-    if (!validateStep(4)) {
+    if (!validateStep(5)) {
         return;
     }
     
     // Show loading
     showLoading(true);
     
-    // Get final step data
-    const finalData = getStepData(4);
-    console.log('=== DEBUG: Submit Application Step 4 Data ===');
-    console.log('Raw form data collected:', finalData);
-    console.log('Generation locations found:', finalData.generation_locations);
-    console.log('Source type found:', finalData.source_type);
+    // Collect data from ALL steps (1-5) before submitting
+    console.log('=== DEBUG: Submit Application - Collecting ALL Steps Data ===');
+    
+    const step1Data = getStepData(1);
+    const step2Data = getStepData(2);
+    const step3Data = getStepData(3);
+    const step4Data = getStepData(4);
+    const step5Data = getStepData(5);
+    
+    console.log('Step 1 data:', step1Data);
+    console.log('Step 2 data:', step2Data);
+    console.log('Step 3 data:', step3Data);
+    console.log('Step 4 data:', step4Data);
+    console.log('Step 5 data:', step5Data);
+    
+    // Merge all step data into one object
+    const finalData = {
+        ...step1Data,
+        ...step2Data,
+        ...step3Data,
+        ...step4Data,
+        ...step5Data
+    };
+    
+    console.log('=== DEBUG: Submit Application Complete Data ===');
+    console.log('Merged data from all steps:', finalData);
+    console.log('Final data keys:', Object.keys(finalData));
+    console.log('Final data length:', Object.keys(finalData).length);
+    
+    // Verify Step 5 fields are present
+    const step5FieldNames = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 'weighbridge_id', 'testing_laboratory_name'];
+    console.log('Step 5 fields verification:');
+    step5FieldNames.forEach(field => {
+        console.log(`  ${field}: ${finalData[field] || 'MISSING'}`);
+    });
     console.log('=== END DEBUG ===');
     
     Object.assign(applicationData, finalData);
+    
+    // Debug: Log what we're about to send to the API
+    console.log('=== FRONTEND SENDING TO API ===');
+    console.log('Application data being sent:', applicationData);
+    console.log('Application data keys:', Object.keys(applicationData));
+    console.log('Step 5 fields in application data:');
+    const step5FieldCheck = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 'weighbridge_id', 'testing_laboratory_name'];
+    step5FieldCheck.forEach(field => {
+        console.log(`  ${field}: ${applicationData[field] || 'MISSING'}`);
+    });
+    console.log('=== END FRONTEND DEBUG ===');
     
     if (emailVerified && verificationToken && verificationToken !== 'test-token') {
         // Use verified session API for final submission (but not for test mode)
@@ -616,7 +669,7 @@ function submitApplication() {
             args: { 
                 token: verificationToken,
                 data: finalData,
-                step: 4
+                step: 5
             },
             callback: function(response) {
                 showLoading(false);
@@ -1155,6 +1208,21 @@ function calculateCHRatio() {
     }
 }
 
+// Step 5: Toggle testing standards other field
+function toggleTestingStandardsOther() {
+    const testingStandards = document.getElementById('testing_standards_used').value;
+    const otherGroup = document.getElementById('testing_standards_other_group');
+    
+    if (testingStandards === 'Other') {
+        otherGroup.style.display = 'block';
+        document.getElementById('testing_standards_other').setAttribute('required', 'required');
+    } else {
+        otherGroup.style.display = 'none';
+        document.getElementById('testing_standards_other').removeAttribute('required');
+        document.getElementById('testing_standards_other').value = '';
+    }
+}
+
 // Export functions for global access
 window.nextStep = nextStep;
 window.previousStep = previousStep;
@@ -1171,6 +1239,7 @@ window.togglePaymentDetails = togglePaymentDetails;
 window.toggleOtherContaminants = toggleOtherContaminants;
 window.toggleSeasonalMonths = toggleSeasonalMonths;
 window.calculateCHRatio = calculateCHRatio;
+window.toggleTestingStandardsOther = toggleTestingStandardsOther;
 window.forceFixStep3Layout = forceFixStep3Layout;
 
 // Add debugging function
@@ -1440,3 +1509,98 @@ window.debugAddTestLocation = function() {
         }
     }
 }; 
+
+// Add debug function to test Step 5 data collection
+window.debugStep5Data = function() {
+    console.log('=== DEBUG: Step 5 Data Collection ===');
+    
+    // Fill Step 5 with test data
+    const step5Fields = {
+        'electricity_meter_id': 'METER-001',
+        'meter_type_model': 'Smart Meter Pro 2024',
+        'monitoring_interval': 'Hourly',
+        'last_calibration_date': '2024-01-15',
+        'next_calibration_due': '2025-01-15',
+        'weighbridge_id': 'WB-001',
+        'capacity': '50.00',
+        'accuracy_rating': '99.95',
+        'continuous_recording': 'Yes',
+        'data_logging_system': 'Cloud Logger v2.0',
+        'testing_laboratory_name': 'Test Lab Inc.',
+        'lab_accreditation_number': 'ACC-12345',
+        'testing_standards_used': 'ISO',
+        'analysis_frequency': 'Daily',
+        'automatic_data_upload': 'Yes',
+        'data_storage_method': 'Cloud',
+        'backup_system': 'Daily Cloud Backup',
+        'retention_period': '7'
+    };
+    
+    // Fill the form
+    Object.keys(step5Fields).forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.value = step5Fields[fieldId];
+            console.log(`Set ${fieldId} = ${step5Fields[fieldId]}`);
+        } else {
+            console.warn(`Field ${fieldId} not found`);
+        }
+    });
+    
+    // Test data collection
+    console.log('Testing getStepData(5):');
+    const collectedData = getStepData(5);
+    console.log('Collected data:', collectedData);
+    
+    // Show summary
+    console.log('=== Step 5 Data Summary ===');
+    Object.keys(step5Fields).forEach(fieldId => {
+        const expectedValue = step5Fields[fieldId];
+        const actualValue = collectedData[fieldId];
+        const match = expectedValue === actualValue;
+        console.log(`${fieldId}: Expected="${expectedValue}", Actual="${actualValue}", Match=${match}`);
+    });
+};
+
+// Debug function to navigate directly to Step 5
+window.goToStep5 = function() {
+    console.log('=== DEBUG: Forcing navigation to Step 5 ===');
+    currentStep = 5;
+    showStep(5);
+    updateProgressIndicator();
+    console.log('Should now be showing Step 5');
+};
+
+// Debug function to test complete 5-step flow
+window.testComplete5StepFlow = function() {
+    console.log('=== DEBUG: Testing Complete 5-Step Data Collection ===');
+    
+    // Collect data from all steps
+    const allData = {};
+    
+    for (let step = 1; step <= 5; step++) {
+        console.log(`Collecting data from step ${step}:`);
+        const stepData = getStepData(step);
+        console.log(`Step ${step} data:`, stepData);
+        Object.assign(allData, stepData);
+    }
+    
+    console.log('=== COMPLETE FORM DATA ===');
+    console.log('All collected data:', allData);
+    
+    // Count fields from each step
+    const step1Fields = ['company_name', 'contact_person', 'email', 'phone_number'];
+    const step2Fields = ['project_name', 'project_city', 'project_state', 'gps_coordinates'];
+    const step3Fields = ['primary_feedstock_category', 'annual_volume_available', 'heating_value'];
+    const step4Fields = ['source_type', 'generation_locations', 'collection_method'];
+    const step5Fields = ['electricity_meter_id', 'weighbridge_id', 'testing_laboratory_name', 'automatic_data_upload'];
+    
+    console.log('=== FIELD COUNT SUMMARY ===');
+    console.log('Step 1 fields found:', step1Fields.filter(f => allData[f]).length, '/', step1Fields.length);
+    console.log('Step 2 fields found:', step2Fields.filter(f => allData[f]).length, '/', step2Fields.length);
+    console.log('Step 3 fields found:', step3Fields.filter(f => allData[f]).length, '/', step3Fields.length);
+    console.log('Step 4 fields found:', step4Fields.filter(f => allData[f]).length, '/', step4Fields.length);
+    console.log('Step 5 fields found:', step5Fields.filter(f => allData[f]).length, '/', step5Fields.length);
+    
+    return allData;
+};

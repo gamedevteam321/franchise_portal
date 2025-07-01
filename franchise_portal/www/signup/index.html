@@ -456,7 +456,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
 <div class="franchise-signup-container">
     <div class="step-header">
         <h2>Franchise Application Portal</h2>
-        <p>Complete your franchise application in 3 easy steps</p>
+        <p>Complete your franchise application in 5 easy steps</p>
     </div>
     
     <div class="step-progress">
@@ -471,6 +471,9 @@ body .franchise-signup-container .form-container .form-step#step3 {
         </div>
         <div class="progress-step inactive" id="progress-4">
             <strong>Step 4</strong><br>Origin, Sourcing & Supply Chain
+        </div>
+        <div class="progress-step inactive" id="progress-5">
+            <strong>Step 5</strong><br>Monitoring & Measurement
         </div>
     </div>
 
@@ -796,23 +799,23 @@ body .franchise-signup-container .form-container .form-step#step3 {
                 <label>Source Type</label>
                 <div id="source_type_checkboxes" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 8px;">
                     <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
-                        <input type="checkbox" name="source_type" value="Farm" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        <input type="checkbox" name="source_type" value="Farm" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
                         Farm
                     </label>
                     <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
-                        <input type="checkbox" name="source_type" value="Mill" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        <input type="checkbox" name="source_type" value="Mill" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
                         Mill
                     </label>
                     <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
-                        <input type="checkbox" name="source_type" value="Forest" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        <input type="checkbox" name="source_type" value="Forest" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
                         Forest
                     </label>
                     <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 140px;">
-                        <input type="checkbox" name="source_type" value="Industrial Facility" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        <input type="checkbox" name="source_type" value="Industrial Facility" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
                         Industrial Facility
                     </label>
                     <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
-                        <input type="checkbox" name="source_type" value="Other" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 8px; height: 8px; flex-shrink: 0;">
+                        <input type="checkbox" name="source_type" value="Other" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
                         Other
                     </label>
                 </div>
@@ -911,6 +914,165 @@ body .franchise-signup-container .form-container .form-step#step3 {
             </div>
             <div class="button-group">
                 <button type="button" class="btn btn-secondary" onclick="previousStep(4)">Previous</button>
+                <button type="button" class="btn btn-primary" onclick="nextStep(4)">Next Step</button>
+            </div>
+        </form>
+
+        <!-- Step 5: Monitoring & Measurement Requirements -->
+        <form id="step5" class="form-step">
+            <h3>Step 5: Monitoring & Measurement Requirements</h3>
+            
+            <!-- Continuous Monitoring Equipment Section -->
+            <div class="section-header">
+                <h4>🔌 Continuous Monitoring Equipment</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="electricity_meter_id">Electricity Meter ID</label>
+                    <input type="text" id="electricity_meter_id" name="electricity_meter_id">
+                </div>
+                <div class="form-group">
+                    <label for="meter_type_model">Meter Type/Model</label>
+                    <input type="text" id="meter_type_model" name="meter_type_model">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="monitoring_interval">Monitoring Interval</label>
+                    <select id="monitoring_interval" name="monitoring_interval">
+                        <option value="">Select Interval</option>
+                        <option value="Minute-by-minute">Minute-by-minute</option>
+                        <option value="Hourly">Hourly</option>
+                        <option value="Daily">Daily</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="last_calibration_date">Last Calibration Date</label>
+                    <input type="date" id="last_calibration_date" name="last_calibration_date">
+                </div>
+                <div class="form-group">
+                    <label for="next_calibration_due">Next Calibration Due</label>
+                    <input type="date" id="next_calibration_due" name="next_calibration_due">
+                </div>
+            </div>
+            
+            <!-- Weighbridge System Section -->
+            <div class="section-header">
+                <h4>⚖️ Weighbridge System</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="weighbridge_id">Weighbridge ID</label>
+                    <input type="text" id="weighbridge_id" name="weighbridge_id">
+                </div>
+                <div class="form-group">
+                    <label for="capacity">Capacity (tons)</label>
+                    <input type="number" id="capacity" name="capacity" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="accuracy_rating">Accuracy Rating (%)</label>
+                    <input type="number" id="accuracy_rating" name="accuracy_rating" step="0.01" min="0" max="100">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="continuous_recording">Continuous Recording</label>
+                    <select id="continuous_recording" name="continuous_recording">
+                        <option value="">Select Input</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="data_logging_system">Data Logging System</label>
+                    <input type="text" id="data_logging_system" name="data_logging_system">
+                </div>
+            </div>
+            
+            <!-- Laboratory Analysis Section -->
+            <div class="section-header">
+                <h4>🧪 Laboratory Analysis</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="testing_laboratory_name">Testing Laboratory Name</label>
+                    <input type="text" id="testing_laboratory_name" name="testing_laboratory_name">
+                </div>
+                <div class="form-group">
+                    <label for="lab_accreditation_number">Lab Accreditation Number</label>
+                    <input type="text" id="lab_accreditation_number" name="lab_accreditation_number">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="testing_standards_used">Testing Standards Used</label>
+                    <select id="testing_standards_used" name="testing_standards_used" onchange="toggleTestingStandardsOther()">
+                        <option value="">Select Input and text for other</option>
+                        <option value="ASTM">ASTM</option>
+                        <option value="ISO">ISO</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group" id="testing_standards_other_group" style="display: none;">
+                    <label for="testing_standards_other">Testing Standards (Other)</label>
+                    <input type="text" id="testing_standards_other" name="testing_standards_other">
+                </div>
+                <div class="form-group">
+                    <label for="analysis_frequency">Analysis Frequency</label>
+                    <select id="analysis_frequency" name="analysis_frequency">
+                        <option value="">Select Input</option>
+                        <option value="Per batch">Per batch</option>
+                        <option value="Daily">Daily</option>
+                        <option value="Weekly">Weekly</option>
+                        <option value="Monthly">Monthly</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Data Management Section -->
+            <div class="section-header">
+                <h4>💾 Data Management</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="automatic_data_upload">Automatic Data Upload</label>
+                    <select id="automatic_data_upload" name="automatic_data_upload">
+                        <option value="">Select Input</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="data_storage_method">Data Storage Method</label>
+                    <select id="data_storage_method" name="data_storage_method">
+                        <option value="">Select Input</option>
+                        <option value="Cloud">Cloud</option>
+                        <option value="Local Server">Local Server</option>
+                        <option value="Physical Records">Physical Records</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="backup_system">Backup System</label>
+                    <input type="text" id="backup_system" name="backup_system">
+                </div>
+                <div class="form-group">
+                    <label for="retention_period">Retention Period (years)</label>
+                    <input type="number" id="retention_period" name="retention_period" min="0">
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="previousStep(5)">Previous</button>
                 <button type="button" class="btn btn-primary" onclick="submitApplication()">Submit Application</button>
             </div>
         </form>
