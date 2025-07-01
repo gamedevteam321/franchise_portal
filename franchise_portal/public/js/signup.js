@@ -230,7 +230,7 @@ function showStep(stepNumber) {
 }
 
 function updateProgressIndicator() {
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         const progressElement = document.getElementById(`progress-${i}`);
         if (progressElement) {
             if (i < currentStep) {
@@ -403,7 +403,25 @@ function getStepData(step) {
         console.log('Step 5 processed data:', data);
     }
     
-    console.log('Final step data:', data);
+    // Special handling for Step 7 - use 'Other' text if selected
+    if (step === 7) {
+        // Fuel Type
+        if (data['fuel_type'] === 'Other') {
+            const other = document.getElementById('fuel_type_other')?.value;
+            if (other) data['fuel_type'] = other;
+        }
+        // Drying Method
+        if (data['drying_method'] === 'Other') {
+            const other = document.getElementById('drying_method_other')?.value;
+            if (other) data['drying_method'] = other;
+        }
+        // Energy Source
+        if (data['energy_source'] === 'Other') {
+            const other = document.getElementById('energy_source_other')?.value;
+            if (other) data['energy_source'] = other;
+        }
+    }
+    
     return data;
 }
 
@@ -590,11 +608,9 @@ function saveStepData(step, callback) {
 }
 
 function autoSaveStep() {
-    if (currentStep <= 6) {
+    if (currentStep <= 7) {
         const stepData = getStepData(currentStep);
         Object.assign(applicationData, stepData);
-        
-        // Auto-save without showing loading
         frappe.call({
             method: 'franchise_portal.www.signup.api.save_step',
             args: { data: stepData },
@@ -604,30 +620,18 @@ function autoSaveStep() {
 }
 
 function submitApplication() {
-    if (!validateStep(6)) {
+    if (!validateStep(7)) {
         return;
     }
-    
-    // Show loading
     showLoading(true);
-    
-    // Collect data from ALL steps (1-6) before submitting
-    console.log('=== DEBUG: Submit Application - Collecting ALL Steps Data ===');
-    
+    // Collect data from ALL steps (1-7) before submitting
     const step1Data = getStepData(1);
     const step2Data = getStepData(2);
     const step3Data = getStepData(3);
     const step4Data = getStepData(4);
     const step5Data = getStepData(5);
     const step6Data = getStepData(6);
-    
-    console.log('Step 1 data:', step1Data);
-    console.log('Step 2 data:', step2Data);
-    console.log('Step 3 data:', step3Data);
-    console.log('Step 4 data:', step4Data);
-    console.log('Step 5 data:', step5Data);
-    console.log('Step 6 data:', step6Data);
-    
+    const step7Data = getStepData(7);
     // Merge all step data into one object
     const finalData = {
         ...step1Data,
@@ -635,58 +639,24 @@ function submitApplication() {
         ...step3Data,
         ...step4Data,
         ...step5Data,
-        ...step6Data
+        ...step6Data,
+        ...step7Data
     };
-    
-    console.log('=== DEBUG: Submit Application Complete Data ===');
-    console.log('Merged data from all steps:', finalData);
-    console.log('Final data keys:', Object.keys(finalData));
-    console.log('Final data length:', Object.keys(finalData).length);
-    
-    // Verify Step 6 fields are present
-    const step6FieldNames = [
-        'environmental_compliance', 'impact_assessment_performed', 'regulatory_compliance',
-        'certified_sustainable_source', 'certification_type', 'dedicated_energy_crop',
-        'feedback_study_competitive', 'demand_increased_due_project', 'could_displace_current_use',
-        'market_leakage_study', 'counterfactual_scenario', 'additionality_demonstration',
-        'water_resource_plan', 'community_health_consider', 'soil_impact_assessment'
-    ];
-    console.log('Step 6 fields verification:');
-    step6FieldNames.forEach(field => {
-        console.log(`  ${field}: ${finalData[field] || 'MISSING'}`);
-    });
-    console.log('=== END DEBUG ===');
-    
     Object.assign(applicationData, finalData);
-    
-    // Debug: Log what we're about to send to the API
-    console.log('=== FRONTEND SENDING TO API ===');
-    console.log('Application data being sent:', applicationData);
-    console.log('Application data keys:', Object.keys(applicationData));
-    console.log('Step 6 fields in application data:');
-    step6FieldNames.forEach(field => {
-        console.log(`  ${field}: ${applicationData[field] || 'MISSING'}`);
-    });
-    console.log('=== END FRONTEND DEBUG ===');
-    
+    // ... existing code for API call ...
     if (emailVerified && verificationToken && verificationToken !== 'test-token') {
-        // Use verified session API for final submission (but not for test mode)
-        console.log('Using verified API for submission with token:', verificationToken);
         frappe.call({
             method: 'franchise_portal.www.signup.api.save_step_with_verification',
             args: { 
                 token: verificationToken,
                 data: finalData,
-                step: 6
+                step: 7
             },
             callback: function(response) {
                 showLoading(false);
-                console.log('Verified API response:', response);
-                
                 if (response.message && response.message.success) {
                     showSuccessMessage(response.message.application_id);
                 } else {
-                    console.error('Verified API error:', response.message);
                     frappe.msgprint({
                         title: 'Submission Error',
                         message: response.message?.message || 'Failed to submit application. Please try again.',
@@ -696,7 +666,6 @@ function submitApplication() {
             },
             error: function(error) {
                 showLoading(false);
-                console.error('Error submitting verified application:', error);
                 frappe.msgprint({
                     title: 'Submission Error',
                     message: 'Failed to submit application. Please try again.',
@@ -705,9 +674,6 @@ function submitApplication() {
             }
         });
     } else {
-        // Fallback to original API (for test mode or non-verified users)
-        console.log('Using fallback submit API (test mode or non-verified)');
-        console.log('Application data being sent:', applicationData);
         frappe.call({
             method: 'franchise_portal.www.signup.api.submit_application',
             args: { 
@@ -716,12 +682,9 @@ function submitApplication() {
             },
             callback: function(response) {
                 showLoading(false);
-                console.log('Fallback submit response:', response);
-                
                 if (response.message && response.message.success) {
                     showSuccessMessage(response.message.application_id);
                 } else {
-                    console.error('Fallback submit error:', JSON.stringify(response, null, 2));
                     frappe.msgprint({
                         title: 'Submission Error',
                         message: response.message?.message || 'Failed to submit application. Please try again.',
@@ -731,7 +694,6 @@ function submitApplication() {
             },
             error: function(error) {
                 showLoading(false);
-                console.error('Error submitting application:', error);
                 frappe.msgprint({
                     title: 'Submission Error',
                     message: 'Failed to submit application. Please try again.',
@@ -1231,6 +1193,22 @@ function toggleTestingStandardsOther() {
     }
 }
 
+// Utility for Step 7: Show/hide 'Other' text input for select fields
+function toggleOtherField(selectId, groupId) {
+    const select = document.getElementById(selectId);
+    const group = document.getElementById(groupId);
+    if (select && group) {
+        if (select.value === 'Other') {
+            group.style.display = '';
+            group.querySelector('input').setAttribute('required', 'required');
+        } else {
+            group.style.display = 'none';
+            group.querySelector('input').removeAttribute('required');
+            group.querySelector('input').value = '';
+        }
+    }
+}
+
 // Export functions for global access
 window.nextStep = nextStep;
 window.previousStep = previousStep;
@@ -1249,6 +1227,7 @@ window.toggleSeasonalMonths = toggleSeasonalMonths;
 window.calculateCHRatio = calculateCHRatio;
 window.toggleTestingStandardsOther = toggleTestingStandardsOther;
 window.forceFixStep3Layout = forceFixStep3Layout;
+window.toggleOtherField = toggleOtherField;
 
 // Add debugging function
 window.debugStep3 = function() {

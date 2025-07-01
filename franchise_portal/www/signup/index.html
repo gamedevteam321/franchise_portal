@@ -467,7 +467,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <strong>Step 2</strong><br>Project Information
         </div>
         <div class="progress-step inactive" id="progress-3">
-            <strong>Step 3</strong><br>Feedstock Details
+            <strong>Step 3</strong><br>Feedstock Description
         </div>
         <div class="progress-step inactive" id="progress-4">
             <strong>Step 4</strong><br>Origin, Sourcing & Supply Chain
@@ -476,7 +476,10 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <strong>Step 5</strong><br>Monitoring & Measurement
         </div>
         <div class="progress-step inactive" id="progress-6">
-            <strong>Step 6</strong><br>Sustainability & Market Impact
+            <strong>Step 6</strong><br>Sustainability Assessment & Market Impact
+        </div>
+        <div class="progress-step inactive" id="progress-7">
+            <strong>Step 7</strong><br>Emissions & Energy Accounting
         </div>
     </div>
 
@@ -1096,8 +1099,6 @@ body .franchise-signup-container .form-container .form-step#step3 {
                         <option value="In Process">In Process</option>
                     </select>
                 </div>
-            </div>
-            <div class="form-row">
                 <div class="form-group">
                     <label for="impact_assessment_performed">Impact Assessment Performed</label>
                     <select id="impact_assessment_performed" name="impact_assessment_performed">
@@ -1114,6 +1115,14 @@ body .franchise-signup-container .form-container .form-step#step3 {
                         <option value="">Select</option>
                         <option value="Confirmed">Confirmed</option>
                         <option value="Pending">Pending</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="certified_sustainable_source">Certified Sustainable Source</label>
+                    <select id="certified_sustainable_source" name="certified_sustainable_source">
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
                     </select>
                 </div>
             </div>
@@ -1133,20 +1142,21 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <div class="form-row">
                 <div class="form-group">
                     <label for="certification_type">Certification Type</label>
-                    <div id="certification_type_group">
-                        <label style="display: inline-flex; align-items: center; margin-right: 18px;">
-                            <input type="checkbox" name="certification_type" value="FSC" style="margin-right: 6px;"> FSC
-                        </label>
-                        <label style="display: inline-flex; align-items: center; margin-right: 18px;">
-                            <input type="checkbox" name="certification_type" value="PEFC" style="margin-right: 6px;"> PEFC
-                        </label>
-                        <label style="display: inline-flex; align-items: center; margin-right: 18px;">
-                            <input type="checkbox" name="certification_type" value="ISCC" style="margin-right: 6px;"> ISCC
-                        </label>
-                        <label style="display: inline-flex; align-items: center;">
-                            <input type="checkbox" name="certification_type" value="Other" style="margin-right: 6px;"> Other
-                        </label>
-                    </div>
+                    <select id="certification_type" name="certification_type">
+                        <option value="">Select</option>
+                        <option value="FSC">FSC</option>
+                        <option value="PEFC">PEFC</option>
+                        <option value="ISCC">ISCC</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dedicated_energy_crop">Dedicated Energy Crop</label>
+                    <select id="dedicated_energy_crop" name="dedicated_energy_crop">
+                        <option value="">Select</option>
+                        <option value="Yes (NOT ELIGIBLE)">Yes (NOT ELIGIBLE)</option>
+                        <option value="No">No</option>
+                    </select>
                 </div>
             </div>
             <div class="form-row">
@@ -1254,6 +1264,118 @@ body .franchise-signup-container .form-container .form-step#step3 {
             </div>
             <div class="button-group">
                 <button type="button" class="btn btn-secondary" onclick="previousStep(6)">Previous</button>
+                <button type="button" class="btn btn-primary" onclick="nextStep(6)">Next Step</button>
+            </div>
+        </form>
+
+        <!-- Step 7: Emissions & Energy Accounting -->
+        <form id="step7" class="form-step">
+            <h3>Step 7: Emissions & Energy Accounting</h3>
+            <div class="section-header">
+                <h4>Harvesting/Collection Emissions</h4>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="equipment_used">Equipment Used</label>
+                    <input type="text" id="equipment_used" name="equipment_used">
+                </div>
+                <div class="form-group">
+                    <label for="fuel_type">Fuel Type</label>
+                    <select id="fuel_type" name="fuel_type" onchange="toggleOtherField('fuel_type', 'fuel_type_other_group')">
+                        <option value="">Select</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="Gasoline">Gasoline</option>
+                        <option value="Electric">Electric</option>
+                        <option value="Manual">Manual</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group" id="fuel_type_other_group" style="display:none;">
+                    <label for="fuel_type_other">Other Fuel Type</label>
+                    <input type="text" id="fuel_type_other" name="fuel_type_other">
+                </div>
+                <div class="form-group">
+                    <label for="emissions_factor">Emissions Factor (kg CO₂e/tonne)</label>
+                    <input type="number" id="emissions_factor" name="emissions_factor" step="0.01" min="0">
+                </div>
+            </div>
+            <div class="section-header">
+                <h4>Transportation Emissions</h4>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="vehicle_type">Vehicle Type</label>
+                    <input type="text" id="vehicle_type" name="vehicle_type">
+                </div>
+                <div class="form-group">
+                    <label for="fuel_efficiency">Fuel Efficiency (L/km or kWh/km)</label>
+                    <input type="number" id="fuel_efficiency" name="fuel_efficiency" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="emissions_per_tonne_km">Emissions per tonne-km (kg CO₂e/tonne-km)</label>
+                    <input type="number" id="emissions_per_tonne_km" name="emissions_per_tonne_km" step="0.01" min="0">
+                </div>
+            </div>
+            <div class="section-header">
+                <h4>Preprocessing Energy</h4>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="drying_required">Drying Required</label>
+                    <select id="drying_required" name="drying_required">
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="drying_method">Drying Method</label>
+                    <select id="drying_method" name="drying_method" onchange="toggleOtherField('drying_method', 'drying_method_other_group')">
+                        <option value="">Select</option>
+                        <option value="Sun-dried">Sun-dried</option>
+                        <option value="Kiln-dried">Kiln-dried</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group" id="drying_method_other_group" style="display:none;">
+                    <label for="drying_method_other">Other Drying Method</label>
+                    <input type="text" id="drying_method_other" name="drying_method_other">
+                </div>
+                <div class="form-group">
+                    <label for="energy_used">Energy Used (MJ/tonne)</label>
+                    <input type="number" id="energy_used" name="energy_used" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="energy_source">Energy Source</label>
+                    <select id="energy_source" name="energy_source" onchange="toggleOtherField('energy_source', 'energy_source_other_group')">
+                        <option value="">Select</option>
+                        <option value="Grid">Grid</option>
+                        <option value="Natural Gas">Natural Gas</option>
+                        <option value="Biomass">Biomass</option>
+                        <option value="Solar">Solar</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group" id="energy_source_other_group" style="display:none;">
+                    <label for="energy_source_other">Other Energy Source</label>
+                    <input type="text" id="energy_source_other" name="energy_source_other">
+                </div>
+            </div>
+            <div class="section-header">
+                <h4>Total Lifecycle Emissions</h4>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="calculated_total">Calculated Total (kg CO₂e/tonne) <span style="color:red">*</span></label>
+                    <input type="number" id="calculated_total" name="calculated_total" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="uncertainty_range">Uncertainty Range (%) <span style="color:red">*</span></label>
+                    <input type="number" id="uncertainty_range" name="uncertainty_range" step="0.01" min="0" required>
+                </div>
+            </div>
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="previousStep(7)">Previous</button>
                 <button type="button" class="btn btn-primary" onclick="submitApplication()">Submit Application</button>
             </div>
         </form>

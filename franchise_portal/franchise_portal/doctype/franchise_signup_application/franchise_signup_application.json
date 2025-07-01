@@ -125,7 +125,21 @@
   "additionality_demonstration",
   "water_resource_plan",
   "community_health_consider",
-  "soil_impact_assessment"
+  "soil_impact_assessment",
+  "emissions_energy_tab",
+  "section_break_emissions",
+  "equipment_used",
+  "fuel_type",
+  "emissions_factor",
+  "vehicle_type",
+  "fuel_efficiency",
+  "emissions_per_tonne_km",
+  "drying_required",
+  "drying_method",
+  "energy_used",
+  "energy_source",
+  "calculated_total",
+  "uncertainty_range"
  ],
  "fields": [
   {
@@ -776,6 +790,79 @@
    "fieldtype": "Select",
    "label": "Soil Impact Assessment (if applicable)",
    "options": "Completed\nN/A"
+  },
+  {
+   "fieldname": "emissions_energy_tab",
+   "fieldtype": "Tab Break",
+   "label": "Emissions & Energy Accounting"
+  },
+  {
+   "fieldname": "section_break_emissions",
+   "fieldtype": "Section Break",
+   "label": "Emissions & Energy Accounting"
+  },
+  {
+   "fieldname": "equipment_used",
+   "fieldtype": "Data",
+   "label": "Equipment Used"
+  },
+  {
+   "fieldname": "fuel_type",
+   "fieldtype": "Data",
+   "label": "Fuel Type"
+  },
+  {
+   "fieldname": "emissions_factor",
+   "fieldtype": "Float",
+   "label": "Emissions Factor (kg CO₂/tonne)"
+  },
+  {
+   "fieldname": "vehicle_type",
+   "fieldtype": "Data",
+   "label": "Vehicle Type"
+  },
+  {
+   "fieldname": "fuel_efficiency",
+   "fieldtype": "Float",
+   "label": "Fuel Efficiency (L/km or kWh/km)"
+  },
+  {
+   "fieldname": "emissions_per_tonne_km",
+   "fieldtype": "Float",
+   "label": "Emissions per tonne-km (kg CO₂/tonne-km)"
+  },
+  {
+   "fieldname": "drying_required",
+   "fieldtype": "Select",
+   "label": "Drying Required",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "drying_method",
+   "fieldtype": "Data",
+   "label": "Drying Method"
+  },
+  {
+   "fieldname": "energy_used",
+   "fieldtype": "Float",
+   "label": "Energy Used (MJ/tonne)"
+  },
+  {
+   "fieldname": "energy_source",
+   "fieldtype": "Data",
+   "label": "Energy Source"
+  },
+  {
+   "fieldname": "calculated_total",
+   "fieldtype": "Float",
+   "label": "Calculated Total (kg CO₂/tonne)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "uncertainty_range",
+   "fieldtype": "Float",
+   "label": "Uncertainty Range (%)",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
