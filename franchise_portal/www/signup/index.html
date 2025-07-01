@@ -119,6 +119,15 @@ window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
     box-sizing: border-box !important;
 }
 
+/* Override checkbox styling to prevent 100% width */
+.page-content .form-group input[type="checkbox"],
+.form-group input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px !important;
+    padding: 0 !important;
+    border-radius: 3px !important;
+}
+
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
