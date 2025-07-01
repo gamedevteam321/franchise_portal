@@ -467,7 +467,7 @@
   },
   {
    "fieldname": "section_break_origin",
-   "fieldtype": "Section Break",
+   "fieldtype": "Tab Break",
    "label": "Origin, Sourcing & Supply Chain"
   },
   {
