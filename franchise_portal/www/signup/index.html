@@ -628,15 +628,90 @@ body .franchise-signup-container .form-container .form-step#step3 {
     margin-top: 5px;
     text-align: center;
 }
+
+/* Signup Modal Styling */
+#signup-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#signup-modal {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 40px 32px 32px 32px;
+    text-align: center;
+    min-width: 320px;
+    max-width: 90vw;
+}
+#signup-modal h3 {
+    margin-bottom: 24px;
+    color: #333;
+}
+#signup-modal .btn {
+    min-width: 120px;
+    margin: 0 12px;
+    font-size: 1.1em;
+}
+#resume-modal-content {
+    display: none !important;
+}
+#resume-modal-content.show {
+    display: block !important;
+}
+#options-modal-content {
+    display: block !important;
+}
+#options-modal-content.hide {
+    display: none !important;
+}
+#resume-message {
+    margin-top: 20px;
+}
+#back-to-options {
+    margin-top: 16px;
+    background: none;
+    border: none;
+    color: #667eea;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 1em;
+}
 </style>
+
+<div id="signup-modal-overlay">
+  <div id="signup-modal">
+    <div id="options-modal-content">
+      <h3>Welcome! Please choose an option:</h3>
+      <button id="btn-signup" class="btn btn-primary" style="margin-right:20px;">Sign Up</button>
+      <button id="btn-resume" class="btn btn-secondary">Resume Sign Up</button>
+      <button id="debug-btn" class="btn btn-warning" style="margin-top:10px; display:block; width:100%;" onclick="debugModal()">🔧 Debug: Test Resume Switch</button>
+    </div>
+    <div id="resume-modal-content">
+      <h3>Resume Your Application</h3>
+      <form id="resume-form">
+        <div class="form-group">
+          <label for="resume-email">Enter your email to resume application</label>
+          <input type="email" id="resume-email" name="resume-email" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Send Resume Link</button>
+      </form>
+      <div id="resume-message"></div>
+      <button id="back-to-options">&larr; Back</button>
+    </div>
+  </div>
+</div>
 
 <div class="franchise-signup-container">
     <div class="step-header">
         <h2>Franchise Application Portal</h2>
         <p>Complete your franchise application in 5 easy steps</p>
     </div>
-    
-    <div class="step-progress">
+    <div class="step-progress" id="step-progress">
         <div class="progress-step active" id="progress-1">
             <strong>Step 1</strong><br>Supplier Information
         </div>
@@ -659,8 +734,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <strong>Step 7</strong><br>Emissions & Energy Accounting
         </div>
     </div>
-
-    <div class="form-container">
+    <div class="form-container" id="form-container">
         <!-- Step 1: Supplier Information -->
         <form id="step1" class="form-step active">
             <h3>Step 1: Supplier Information</h3>
@@ -1731,6 +1805,231 @@ body .franchise-signup-container .form-container .form-step#step3 {
         </div>
     </div>
 </div>
+
+<!-- Modal and Resume Functionality Script -->
+<script>
+// Modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Modal script loaded');
+    
+    const modalOverlay = document.getElementById('signup-modal-overlay');
+    const optionsContent = document.getElementById('options-modal-content');
+    const resumeContent = document.getElementById('resume-modal-content');
+    const btnSignup = document.getElementById('btn-signup');
+    const btnResume = document.getElementById('btn-resume');
+    const backToOptions = document.getElementById('back-to-options');
+    const resumeForm = document.getElementById('resume-form');
+    const resumeMessage = document.getElementById('resume-message');
+    const formContainer = document.getElementById('form-container');
+    
+    console.log('Elements found:', {
+        modalOverlay: !!modalOverlay,
+        optionsContent: !!optionsContent,
+        resumeContent: !!resumeContent,
+        btnSignup: !!btnSignup,
+        btnResume: !!btnResume,
+        backToOptions: !!backToOptions,
+        resumeForm: !!resumeForm,
+        resumeMessage: !!resumeMessage,
+        formContainer: !!formContainer
+    });
+    
+    // Check if there's a resume or verify token in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const resumeToken = urlParams.get('resume_token');
+    const verifyToken = urlParams.get('verify');
+
+    if (resumeToken) {
+        // Hide modal and show form, then verify token
+        modalOverlay.style.display = 'none';
+        formContainer.style.display = 'block';
+        verifyResumeToken(resumeToken);
+    } else if (verifyToken) {
+        // Hide modal and show form, then verify email token
+        modalOverlay.style.display = 'none';
+        formContainer.style.display = 'block';
+        handleEmailVerification(verifyToken);
+        setTimeout(function() {
+            if (typeof showStep === 'function') showStep(2);
+        }, 100);
+    } else {
+        // Show modal initially
+        modalOverlay.style.display = 'flex';
+        formContainer.style.display = 'none';
+    }
+    
+    // Sign Up button - hide modal and show form
+    btnSignup.addEventListener('click', function() {
+        console.log('Sign Up button clicked');
+        modalOverlay.style.display = 'none';
+        formContainer.style.display = 'block';
+    });
+    
+    // Resume button - switch to resume form
+    btnResume.addEventListener('click', function() {
+        console.log('Resume button clicked');
+        console.log('Before switch - options display:', optionsContent.style.display);
+        console.log('Before switch - resume display:', resumeContent.style.display);
+        
+        optionsContent.classList.add('hide');
+        resumeContent.classList.add('show');
+        
+        console.log('After switch - options classes:', optionsContent.className);
+        console.log('After switch - resume classes:', resumeContent.className);
+    });
+    
+    // Back to options button
+    backToOptions.addEventListener('click', function() {
+        console.log('Back button clicked');
+        resumeContent.classList.remove('show');
+        optionsContent.classList.remove('hide');
+        resumeMessage.innerHTML = '';
+        resumeForm.reset();
+    });
+    
+    // Resume form submission
+    resumeForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const email = document.getElementById('resume-email').value;
+        
+        if (!email) {
+            resumeMessage.innerHTML = '<div style="color: red; margin-top: 10px;">Please enter your email address.</div>';
+            return;
+        }
+        
+        // Show loading message
+        resumeMessage.innerHTML = '<div style="color: #667eea; margin-top: 10px;">Sending resume link...</div>';
+        
+        console.log('Sending resume email to:', email);
+        // Call backend API
+        frappe.call({
+            method: 'franchise_portal.www.signup.api.send_resume_email',
+            args: {
+                email: email
+            },
+            callback: function(response) {
+                if (response.message && response.message.success) {
+                    resumeMessage.innerHTML = '<div style="color: green; margin-top: 10px;">Resume link sent to your email! Please check your inbox.</div>';
+                } else {
+                    resumeMessage.innerHTML = '<div style="color: red; margin-top: 10px;">' + (response.message?.message || 'Failed to send resume link. Please try again.') + '</div>';
+                }
+            },
+            error: function(error) {
+                resumeMessage.innerHTML = '<div style="color: red; margin-top: 10px;">Error sending resume link. Please try again.</div>';
+                console.error('Error:', error);
+            }
+        });
+    });
+});
+
+// Function to verify resume token
+function verifyResumeToken(token) {
+    frappe.call({
+        method: 'franchise_portal.www.signup.api.verify_resume_token',
+        args: {
+            token: token
+        },
+        callback: function(response) {
+            if (response.message && response.message.success) {
+                // Pre-fill form with saved data
+                const savedData = response.message.session_data.data;
+                const currentStep = response.message.current_step || 1;
+                prefillFormData(savedData);
+                
+                // Show success message
+                const successMsg = document.createElement('div');
+                successMsg.innerHTML = '<div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #c3e6cb;">✓ Application resumed successfully! Your previous data has been loaded.</div>';
+                document.querySelector('.franchise-signup-container').insertBefore(successMsg, document.querySelector('.step-header'));
+                
+                // Move to the correct step
+                goToStep(currentStep);
+            } else {
+                // Show error and redirect to normal signup
+                alert('Invalid or expired resume link. Please start a new application.');
+                window.location.href = window.location.pathname;
+            }
+        },
+        error: function(error) {
+            console.error('Error verifying token:', error);
+            alert('Error verifying resume link. Please start a new application.');
+            window.location.href = window.location.pathname;
+        }
+    });
+}
+
+// Function to go to a specific step and update progress bar
+function goToStep(stepNumber) {
+    // Hide all steps
+    document.querySelectorAll('.form-step').forEach(el => el.classList.remove('active'));
+    // Show the correct step
+    const stepForm = document.getElementById('step' + stepNumber);
+    if (stepForm) stepForm.classList.add('active');
+
+    // Update progress bar if present
+    document.querySelectorAll('.progress-step').forEach((el, idx) => {
+        el.classList.remove('active', 'completed', 'inactive');
+        if (idx + 1 < stepNumber) el.classList.add('completed');
+        else if (idx + 1 === stepNumber) el.classList.add('active');
+        else el.classList.add('inactive');
+    });
+}
+
+// Function to pre-fill form data
+function prefillFormData(data) {
+    // Pre-fill all form fields with saved data
+    for (const [fieldName, value] of Object.entries(data)) {
+        const field = document.getElementById(fieldName);
+        if (field) {
+            field.value = value;
+            
+            // Trigger change events for fields that have onchange handlers
+            if (field.onchange) {
+                field.onchange();
+            }
+        }
+    }
+    
+    // Special handling for select fields that might trigger other changes
+    const projectType = document.getElementById('project_type');
+    if (projectType && data.project_type) {
+        projectType.value = data.project_type;
+        if (projectType.onchange) projectType.onchange();
+    }
+    
+    const primaryFeedstock = document.getElementById('primary_feedstock_category');
+    if (primaryFeedstock && data.primary_feedstock_category) {
+        primaryFeedstock.value = data.primary_feedstock_category;
+        if (primaryFeedstock.onchange) primaryFeedstock.onchange();
+    }
+}
+
+// Debug function to test modal switching
+function debugModal() {
+    console.log('Debug function called');
+    const optionsContent = document.getElementById('options-modal-content');
+    const resumeContent = document.getElementById('resume-modal-content');
+    
+    console.log('Current states:');
+    console.log('Options classes:', optionsContent.className);
+    console.log('Resume classes:', resumeContent.className);
+    console.log('Options computed style:', window.getComputedStyle(optionsContent).display);
+    console.log('Resume computed style:', window.getComputedStyle(resumeContent).display);
+    
+    // Force the switch using classes
+    optionsContent.classList.add('hide');
+    resumeContent.classList.add('show');
+    
+    console.log('After force switch:');
+    console.log('Options classes:', optionsContent.className);
+    console.log('Resume classes:', resumeContent.className);
+    console.log('Options computed style:', window.getComputedStyle(optionsContent).display);
+    console.log('Resume computed style:', window.getComputedStyle(resumeContent).display);
+    
+    // Add a visual indicator
+    resumeContent.style.border = '3px solid red';
+    resumeContent.style.backgroundColor = '#fff3cd';
+}
+</script>
 
 <!-- Google Maps API Dynamic Loading Script -->
 <script>

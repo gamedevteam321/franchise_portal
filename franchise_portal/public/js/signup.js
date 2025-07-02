@@ -6,18 +6,23 @@ let applicationData = {};
 let applicationId = null;
 let verificationToken = null;
 let emailVerified = false;
+let isResumeMode = false;
 
 // Initialize the form when page loads
 if (typeof frappe !== 'undefined' && frappe.ready) {
     frappe.ready(() => {
         console.log('Franchise signup form loaded via frappe.ready - Version 2.0 Email Verification');
         initializeForm();
+        setupSignupOptions();
+        checkResumeToken();
     });
 } else {
     // Fallback if frappe is not available
     document.addEventListener('DOMContentLoaded', () => {
         console.log('Franchise signup form loaded via DOMContentLoaded - Version 2.0 Email Verification');
         initializeForm();
+        setupSignupOptions();
+        checkResumeToken();
     });
 }
 
@@ -57,11 +62,11 @@ function initializeForm() {
     
     console.log('Form initialization complete');
     
-    // Add input listeners for auto-save
-    const inputs = document.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => {
-        input.addEventListener('blur', autoSaveStep);
-    });
+    // Disabled auto-save to prevent race conditions with manual saves
+    // const inputs = document.querySelectorAll('input, select, textarea');
+    // inputs.forEach(input => {
+    //     input.addEventListener('blur', autoSaveStep);
+    // });
 }
 
 function handleEmailVerification(token) {
@@ -78,7 +83,7 @@ function handleEmailVerification(token) {
                 emailVerified = true;
                 
                 const sessionData = response.message.session_data;
-                currentStep = sessionData.current_step + 1; // Move to next unfilled step
+                currentStep = 2; // Always show step 2 after verification
                 applicationData = sessionData.data;
                 
                 // Populate form with saved data
@@ -87,6 +92,7 @@ function handleEmailVerification(token) {
                 // Show current step
                 showStep(currentStep);
                 updateProgressIndicator();
+                document.getElementById('form-container').style.display = 'block';
                 
                 // Show success message
                 frappe.msgprint({
@@ -130,6 +136,10 @@ function nextStep(step) {
     console.log(`Current emailVerified status: ${emailVerified}`);
     console.log(`Current verificationToken: ${verificationToken}`);
     
+    // Disable the Next button to prevent double submissions
+    const nextBtn = document.querySelector(`#step${step} .btn-primary`);
+    //if (nextBtn) nextBtn.disabled = true;
+
     // Debug: Check if validation passes
     const isValid = validateStep(step);
     console.log(`Validation result: ${isValid}`);
@@ -139,6 +149,7 @@ function nextStep(step) {
         if (step === 1 && !emailVerified) {
             console.log('Step 1 completed, FORCING verification email workflow...');
             sendVerificationEmail(step);
+            //if (nextBtn) nextBtn.disabled = false;
             return; // Stop here, don't proceed to saveStepData
         }
         
@@ -149,9 +160,11 @@ function nextStep(step) {
             currentStep = step + 1;
             showStep(currentStep);
             updateProgressIndicator();
+            //if (nextBtn) nextBtn.disabled = false;
         });
     } else {
         console.log('Validation failed, staying on current step');
+        //if (nextBtn) nextBtn.disabled = false;
     }
 }
 
@@ -168,18 +181,17 @@ function previousStep(step) {
 window.previousStep = previousStep;
 
 function showStep(stepNumber) {
-    console.log(`Showing step ${stepNumber}`);
-    
+    console.log('showStep called for', stepNumber, 'element:', document.getElementById(`step${stepNumber}`));
     // Hide all steps
     document.querySelectorAll('.form-step').forEach(step => {
         step.style.display = 'none';
         step.classList.remove('active');
     });
-    
+
     // Show current step
     const currentStepElement = document.getElementById(`step${stepNumber}`);
     if (currentStepElement) {
-        currentStepElement.style.display = 'block';
+        currentStepElement.style.setProperty('display', 'block', 'important');
         currentStepElement.classList.add('active');
         
         // FORCE FIX for Step 3 layout issues
@@ -258,7 +270,6 @@ function showStep(stepNumber) {
             }
         }, 300);
     }
-    
     // Update progress indicator
     updateProgressIndicator();
 }
@@ -798,6 +809,7 @@ function saveStepData(step, callback) {
 // Throttle auto-save to reduce performance impact
 let autoSaveTimeout;
 function autoSaveStep() {
+    // Auto-save disabled to prevent race conditions with manual saves
     // Clear existing timeout to avoid too frequent saves
     if (autoSaveTimeout) {
         clearTimeout(autoSaveTimeout);
@@ -944,12 +956,80 @@ function showSuccessMessage(appId) {
 
 // Utility function to populate form if returning user
 function populateFormData(data) {
+    console.log('Populating form data:', data);
+
+    // 1. Simple fields (text, email, select, etc.)
     Object.keys(data).forEach(key => {
         const field = document.getElementById(key);
-        if (field) {
-            field.value = data[key] || '';
+        if (field && typeof data[key] !== 'object') {
+            if (field.type === 'checkbox') {
+                field.checked = !!data[key];
+            } else if (field.type === 'radio') {
+                // For radio, set the one with matching value
+                const radios = document.querySelectorAll(`input[name="${key}"]`);
+                radios.forEach(radio => {
+                    radio.checked = (radio.value === data[key]);
+                });
+            } else {
+                field.value = data[key] || '';
+            }
+            // Trigger change events for selects, checkboxes, and fields with onchange
+            if (field.type === 'select-one' || field.type === 'checkbox' || typeof field.onchange === 'function') {
+                if (typeof field.onchange === 'function') field.onchange();
+            }
         }
     });
+
+    // 2. Step 4: Generation Locations (dynamic rows)
+    if (data.generation_locations && Array.isArray(data.generation_locations)) {
+        const container = document.getElementById('generation_locations_container');
+        if (container) {
+            container.innerHTML = ''; // Clear existing
+            data.generation_locations.forEach((loc, idx) => {
+                window.addGenerationLocation(); // Add a new row
+                const addressInput = document.getElementById(`generation_location_address_${idx+1}`);
+                const gpsInput = document.getElementById(`generation_location_gps_${idx+1}`);
+                if (addressInput) addressInput.value = loc.address || '';
+                if (gpsInput) gpsInput.value = loc.gps_coordinates || '';
+            });
+        }
+    }
+
+    // 3. Step 4: Source Type (checkboxes, possibly multi-select)
+    if (data.source_type) {
+        const values = typeof data.source_type === 'string' ? data.source_type.split(',').map(v => v.trim()) : data.source_type;
+        document.querySelectorAll('input[name="source_type"]').forEach(checkbox => {
+            checkbox.checked = values.includes(checkbox.value);
+        });
+        // Show/hide "Other" field if needed
+        if (values.includes('Other') && typeof window.toggleSourceTypeOther === 'function') {
+            window.toggleSourceTypeOther();
+        }
+    }
+
+    // 4. Step 7: "Other" fields (fuel_type, drying_method, energy_source)
+    ['fuel_type', 'drying_method', 'energy_source'].forEach(fieldKey => {
+        if (data[fieldKey]) {
+            const field = document.getElementById(fieldKey);
+            if (field) {
+                field.value = data[fieldKey];
+                if (data[fieldKey] === 'Other' && typeof window.toggleOtherField === 'function') {
+                    // Show the "Other" input
+                    window.toggleOtherField(fieldKey, `${fieldKey}_other_group`);
+                    // Set the value if available
+                    const otherInput = document.getElementById(`${fieldKey}_other`);
+                    if (otherInput && data[`${fieldKey}_other`]) {
+                        otherInput.value = data[`${fieldKey}_other`];
+                    }
+                }
+            }
+        }
+    });
+
+    // 5. Any additional custom logic for other dynamic/multi fields can be added here
+
+    // 6. Trigger any UI updates or calculations needed after populating
+    if (typeof updateProgressIndicator === 'function') updateProgressIndicator();
 }
 
 // Google Maps Variables
@@ -1575,24 +1655,33 @@ window.confirmLocationForRow = function(modalId, gpsInputId) {
 };
 
 function loadGoogleMapsForLocation(modalId, gpsInputId) {
-    // Get API key from config (inserted server-side or via template)
-    const apiKey = window.GOOGLE_MAPS_API_KEY || '';
-    if (!apiKey) {
-        document.getElementById(`map_${modalId}`).innerHTML = 'Google Maps API key missing.';
-        return;
-    }
-    // Dynamically load Google Maps script if not already loaded
-    if (!window.google || !window.google.maps) {
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMapForLocation_${modalId}`;
-        script.async = true;
-        window[`initMapForLocation_${modalId}`] = function() {
-            initMapForLocation(modalId, gpsInputId);
-        };
-        document.body.appendChild(script);
-    } else {
-        initMapForLocation(modalId, gpsInputId);
-    }
+    // Fetch API key from backend instead of using the undefined window variable
+    frappe.call({
+        method: 'franchise_portal.www.signup.api.get_google_maps_api_key',
+        callback: function(response) {
+            if (response.message && response.message.success) {
+                const apiKey = response.message.api_key;
+                
+                // Dynamically load Google Maps script if not already loaded
+                if (!window.google || !window.google.maps) {
+                    const script = document.createElement('script');
+                    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMapForLocation_${modalId}`;
+                    script.async = true;
+                    window[`initMapForLocation_${modalId}`] = function() {
+                        initMapForLocation(modalId, gpsInputId);
+                    };
+                    document.body.appendChild(script);
+                } else {
+                    initMapForLocation(modalId, gpsInputId);
+                }
+            } else {
+                document.getElementById(`map_${modalId}`).innerHTML = 'Failed to get Google Maps API key.';
+            }
+        },
+        error: function(error) {
+            document.getElementById(`map_${modalId}`).innerHTML = 'Error loading Google Maps configuration.';
+        }
+    });
 }
 
 function initMapForLocation(modalId, gpsInputId) {
@@ -2621,3 +2710,103 @@ window.testFileURLCollection = function() {
     
     console.log('=== TEST COMPLETE ===');
 };
+
+// Signup Options and Resume Functionality
+function setupSignupOptions() {
+    const modalOverlay = document.getElementById('signup-modal-overlay');
+    const optionsModalContent = document.getElementById('options-modal-content');
+    const resumeModalContent = document.getElementById('resume-modal-content');
+    const btnSignup = document.getElementById('btn-signup');
+    const btnResume = document.getElementById('btn-resume');
+    const backToOptions = document.getElementById('back-to-options');
+    const resumeForm = document.getElementById('resume-form');
+    const formContainer = document.getElementById('form-container');
+    const stepProgress = document.getElementById('step-progress');
+
+    // Hide all main content until a choice is made
+    formContainer.style.display = 'none';
+    stepProgress.style.display = 'none';
+
+    // Show options by default
+    optionsModalContent.style.display = '';
+    resumeModalContent.style.display = 'none';
+
+    btnSignup.onclick = function() {
+        isResumeMode = false;
+        modalOverlay.style.display = 'none';
+        formContainer.style.display = '';
+        stepProgress.style.display = '';
+    };
+    btnResume.onclick = function() {
+        isResumeMode = true;
+        optionsModalContent.style.display = 'none';
+        resumeModalContent.style.display = '';
+        document.getElementById('resume-message').innerHTML = '';
+        document.getElementById('resume-email').value = '';
+    };
+    backToOptions.onclick = function() {
+        optionsModalContent.style.display = '';
+        resumeModalContent.style.display = 'none';
+    };
+    resumeForm.onsubmit = function(e) {
+        e.preventDefault();
+        const email = document.getElementById('resume-email').value;
+        sendResumeEmail(email);
+    };
+}
+
+function sendResumeEmail(email) {
+    const msgDiv = document.getElementById('resume-message');
+    msgDiv.innerHTML = 'Sending...';
+    frappe.call({
+        method: 'franchise_portal.www.signup.api.send_resume_email',
+        args: { email },
+        callback: function(response) {
+            if (response.message && response.message.success) {
+                msgDiv.innerHTML = 'A resume link has been sent to your email. Please check your inbox.';
+            } else {
+                msgDiv.innerHTML = response.message?.message || 'No incomplete application found or error occurred.';
+            }
+        },
+        error: function() {
+            msgDiv.innerHTML = 'Error sending resume email.';
+        }
+    });
+}
+
+function checkResumeToken() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const resumeToken = urlParams.get('resume');
+    if (resumeToken) {
+        document.getElementById('signup-modal-overlay').style.display = 'none';
+        document.getElementById('form-container').style.display = '';
+        document.getElementById('step-progress').style.display = '';
+        frappe.call({
+            method: 'franchise_portal.www.signup.api.verify_resume_token',
+            args: { token: resumeToken },
+            callback: function(response) {
+                if (response.message && response.message.success) {
+                    verificationToken = resumeToken;
+                    emailVerified = true;
+                    const sessionData = response.message.session_data;
+                    currentStep = sessionData.current_step;
+                    applicationData = sessionData.data;
+                    populateFormData(applicationData);
+                    showStep(currentStep);
+                    updateProgressIndicator();
+                } else {
+                    frappe.msgprint({
+                        title: 'Resume Failed',
+                        message: response.message?.message || 'Invalid or expired resume link.',
+                        indicator: 'red'
+                    });
+                    document.getElementById('signup-modal-overlay').style.display = '';
+                    document.getElementById('form-container').style.display = 'none';
+                    document.getElementById('step-progress').style.display = 'none';
+                    document.getElementById('options-modal-content').style.display = '';
+                    document.getElementById('resume-modal-content').style.display = 'none';
+                }
+            }
+        });
+    }
+}
