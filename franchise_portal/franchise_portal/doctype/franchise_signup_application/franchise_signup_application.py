@@ -37,6 +37,12 @@ class FranchiseSignupApplication(Document):
 		if existing:
 			frappe.throw(f"An application with email {self.email} already exists.")
 	
+	def on_update(self):
+		"""Actions to perform when the document is updated"""
+		# If email is verified, ensure the verification timestamp is set
+		if self.email_verified and not self.email_verified_at:
+			self.email_verified_at = now()
+	
 	def validate_step7_required_fields(self):
 		"""Validate required fields for Step 7 (Emissions & Energy Accounting) only when submitting"""
 		missing_fields = []

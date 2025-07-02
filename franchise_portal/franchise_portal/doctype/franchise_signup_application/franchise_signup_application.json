@@ -15,6 +15,8 @@
   "company_name",
   "contact_person",
   "email",
+  "email_verified",
+  "email_verified_at",
   "phone_number",
   "company_address",
   "country_of_operation",
@@ -190,6 +192,19 @@
    "options": "Email",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "default": 0,
+   "fieldname": "email_verified",
+   "fieldtype": "Check",
+   "label": "Email Verified",
+   "read_only": 1
+  },
+  {
+   "fieldname": "email_verified_at",
+   "fieldtype": "Datetime",
+   "label": "Email Verified At",
+   "read_only": 1
   },
   {
    "fieldname": "phone_number",
@@ -466,7 +481,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "section_break_origin",
+   "fieldname": "tab_break_origin",
    "fieldtype": "Tab Break",
    "label": "Origin, Sourcing & Supply Chain"
   },
