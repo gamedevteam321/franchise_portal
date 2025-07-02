@@ -2302,6 +2302,12 @@ function uploadFile(fileInput, file) {
     
     // Send the request
     xhr.open('POST', '/api/method/franchise_portal.www.signup.api.upload_file');
+    
+    // Add CSRF token header (required for Frappe API calls)
+    if (typeof frappe !== 'undefined' && frappe.csrf_token) {
+        xhr.setRequestHeader('X-Frappe-CSRF-Token', frappe.csrf_token);
+    }
+    
     console.log('Sending upload request...');
     xhr.send(formData);
 }

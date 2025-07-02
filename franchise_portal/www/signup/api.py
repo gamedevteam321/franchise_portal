@@ -193,9 +193,11 @@ def save_step_with_verification(token, data, step):
                 doc_name = applications[0].name
                 updates = {}
                 
-                # Collect all field updates
+                # Collect all field updates - only include fields that exist in the doctype
+                doctype_fields = frappe.get_meta("Franchise Signup Application").get_fieldnames_with_value()
+                
                 for key, value in session_data['data'].items():
-                    if key not in ['name', 'doctype', 'generation_locations', 'creation', 'modified', 'modified_by', 'owner']:
+                    if key not in ['name', 'doctype', 'generation_locations', 'creation', 'modified', 'modified_by', 'owner'] and key in doctype_fields:
                         # Convert empty strings to None for numeric fields to avoid database errors
                         if key in ['avg_transport_distance', 'heating_value', 'annual_volume_available', 'capacity', 'accuracy_rating'] and value == '':
                             value = 0
@@ -625,9 +627,11 @@ def finalize_application(session_data, token, current_step=7):
             doc_name = existing_applications[0].name
             updates = {}
             
-            # Collect all field updates (except generation_locations and system fields)
+            # Collect all field updates - only include fields that exist in the doctype
+            doctype_fields = frappe.get_meta("Franchise Signup Application").get_fieldnames_with_value()
+            
             for key, value in application_data.items():
-                if key not in ['generation_locations', 'doctype', 'name', 'creation', 'modified', 'modified_by', 'owner']:
+                if key not in ['generation_locations', 'doctype', 'name', 'creation', 'modified', 'modified_by', 'owner'] and key in doctype_fields:
                     # Convert empty strings to None for numeric fields
                     if key in ['avg_transport_distance', 'heating_value', 'annual_volume_available', 'capacity', 'accuracy_rating'] and value == '':
                         value = 0
@@ -752,9 +756,11 @@ def save_step(data):
             # Update existing application
             application = frappe.get_doc("Franchise Signup Application", existing_applications[0].name)
             
-            # Update fields from data
+            # Update fields from data - only include fields that exist in the doctype
+            doctype_fields = frappe.get_meta("Franchise Signup Application").get_fieldnames_with_value()
+            
             for key, value in data.items():
-                if hasattr(application, key) and key not in ['name', 'doctype']:
+                if key in doctype_fields and key not in ['name', 'doctype']:
                     # Special handling for generation_locations table
                     if key == 'generation_locations' and isinstance(value, list):
                         # Clear existing child records
