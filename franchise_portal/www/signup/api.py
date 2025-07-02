@@ -786,3 +786,360 @@ def test_step5_fields():
         
     except Exception as e:
         return {"success": False, "message": f"Error testing Step 5 fields: {str(e)}"}
+
+
+@frappe.whitelist(allow_guest=True)
+def upload_file():
+    """Handle file uploads for franchise application documents"""
+    try:
+        # Get uploaded file from request
+        uploaded_file = frappe.request.files.get('file')
+        field_name = frappe.form_dict.get('field_name')
+        
+        if not uploaded_file:
+            return {"success": False, "message": "No file uploaded"}
+        
+        if not field_name:
+            return {"success": False, "message": "Field name is required"}
+        
+        # Validate file size (25MB limit)
+        max_size = 25 * 1024 * 1024  # 25MB in bytes
+        file_size = len(uploaded_file.read())
+        uploaded_file.seek(0)  # Reset file pointer
+        
+        if file_size > max_size:
+            return {"success": False, "message": "File size exceeds 25MB limit"}
+        
+        # Validate file type
+        allowed_extensions = ['.pdf', '.docx', '.doc', '.xlsx', '.xls', '.csv', '.jpg', '.jpeg', '.png', '.gif', '.bmp']
+        filename = uploaded_file.filename
+        file_extension = '.' + filename.split('.')[-1].lower()
+        
+        if file_extension not in allowed_extensions:
+            return {"success": False, "message": "File type not supported"}
+        
+        # Create file document record in database using Frappe's proper file handling
+        uploaded_file.seek(0)  # Reset file pointer
+        file_content = uploaded_file.read()
+        
+        # Use Frappe's built-in file creation system
+        file_doc = frappe.get_doc({
+            "doctype": "File",
+            "file_name": filename,
+            "is_private": 1,
+            "content": file_content
+        })
+        
+        file_doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+        
+        # Use the file document's unique_url property which includes proper fid parameter
+        # This ensures proper permission checking by Frappe
+        site_url = frappe.utils.get_url()
+        file_url = f"{site_url}{file_doc.unique_url}"
+        
+        return {
+            "success": True,
+            "message": "File uploaded successfully",
+            "file_url": file_url,
+            "file_name": filename,
+            "file_size": file_size,
+            "file_id": file_doc.name
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"File upload error: {str(e)}", "Franchise File Upload")
+        return {"success": False, "message": f"Upload failed: {str(e)}"}
+
+
+@frappe.whitelist()
+def test_file_access():
+    """Test function to verify file access permissions for System Managers"""
+    try:
+        # Get current user info
+        user = frappe.session.user
+        roles = frappe.get_roles()
+        
+        # Get a recent private file from the database
+        files = frappe.get_all(
+            "File",
+            filters={"is_private": 1},
+            fields=["name", "file_name", "file_url", "owner"],
+            limit=5,
+            order_by="creation desc"
+        )
+        
+        file_access_info = []
+        for file_info in files:
+            try:
+                # Get the file document
+                file_doc = frappe.get_doc("File", file_info.name)
+                
+                # Check if user has permission to access this file
+                from frappe.core.doctype.file.file import has_permission
+                can_read = has_permission(file_doc, "read")
+                
+                file_access_info.append({
+                    "file_id": file_info.name,
+                    "file_name": file_info.file_name,
+                    "file_url": file_info.file_url,
+                    "unique_url": file_doc.unique_url,
+                    "owner": file_info.owner,
+                    "can_read": can_read,
+                    "is_private": file_doc.is_private
+                })
+            except Exception as e:
+                file_access_info.append({
+                    "file_id": file_info.name,
+                    "error": str(e)
+                })
+        
+        return {
+            "success": True,
+            "current_user": user,
+            "user_roles": roles,
+            "files_checked": len(files),
+            "file_access_info": file_access_info
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"File access test error: {str(e)}", "File Access Test")
+        return {"success": False, "message": f"Test failed: {str(e)}"}
+
+
+@frappe.whitelist()
+def fix_existing_file_urls():
+    """Fix existing file URLs in Franchise Signup Applications to use proper fid format"""
+    try:
+        # Fields that contain file URLs
+        file_fields = [
+            'feedstock_payment_file',
+            'chain_of_custody_file',
+            'supplier_agreements_file', 
+            'origin_certificates_file',
+            'transportation_records_file',
+            'environmental_permits_file',
+            'market_leakage_study_file'
+        ]
+        
+        fixed_count = 0
+        
+        # Get all applications with file URLs
+        applications = frappe.get_all(
+            "Franchise Signup Application",
+            fields=["name"] + file_fields
+        )
+        
+        for app in applications:
+            app_doc = frappe.get_doc("Franchise Signup Application", app.name)
+            needs_save = False
+            
+            for field in file_fields:
+                old_url = getattr(app_doc, field, None)
+                if old_url and not "fid=" in old_url:
+                    # Try to find the file by URL
+                    try:
+                        file_docs = frappe.get_all(
+                            "File",
+                            filters={"file_url": old_url.replace(frappe.utils.get_url(), "")},
+                            fields=["name"]
+                        )
+                        
+                        if file_docs:
+                            file_doc = frappe.get_doc("File", file_docs[0].name)
+                            # Update with proper unique URL
+                            new_url = f"{frappe.utils.get_url()}{file_doc.unique_url}"
+                            setattr(app_doc, field, new_url)
+                            needs_save = True
+                            fixed_count += 1
+                    except Exception as e:
+                        frappe.log_error(f"Error fixing URL for {field} in {app.name}: {str(e)}")
+            
+            if needs_save:
+                app_doc.save(ignore_permissions=True)
+        
+        frappe.db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Fixed {fixed_count} file URLs",
+            "applications_checked": len(applications)
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Error fixing file URLs: {str(e)}", "Fix File URLs")
+        return {"success": False, "message": f"Error: {str(e)}"}
+
+
+@frappe.whitelist()
+def test_authenticated_file_access(file_id):
+    """Test accessing a specific file through Frappe's authenticated system"""
+    try:
+        if not file_id:
+            return {"success": False, "message": "File ID required"}
+        
+        # Get the file document
+        file_doc = frappe.get_doc("File", file_id)
+        
+        # Check permissions
+        from frappe.core.doctype.file.file import has_permission
+        can_read = has_permission(file_doc, "read")
+        
+        if not can_read:
+            return {"success": False, "message": "No permission to access this file"}
+        
+        # Try to get file content (this tests if file physically exists and is accessible)
+        try:
+            content = file_doc.get_content()
+            content_size = len(content) if content else 0
+        except Exception as e:
+            return {"success": False, "message": f"Error reading file content: {str(e)}"}
+        
+        return {
+            "success": True,
+            "message": "File access successful",
+            "file_info": {
+                "name": file_doc.name,
+                "file_name": file_doc.file_name,
+                "file_url": file_doc.file_url,
+                "unique_url": file_doc.unique_url,
+                "is_private": file_doc.is_private,
+                "content_size": content_size,
+                "owner": file_doc.owner,
+                "can_read": can_read
+            }
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Error testing file access: {str(e)}", "Test File Access")
+        return {"success": False, "message": f"Error: {str(e)}"}
+
+
+@frappe.whitelist()
+def debug_file_urls():
+    """Debug function to check current file URL formats in the database"""
+    try:
+        # Get all applications with any file URLs
+        applications = frappe.get_all(
+            "Franchise Signup Application",
+            fields=["name", "feedstock_payment_file", "chain_of_custody_file", 
+                   "supplier_agreements_file", "origin_certificates_file",
+                   "transportation_records_file", "environmental_permits_file", 
+                   "market_leakage_study_file"]
+        )
+        
+        file_url_info = []
+        
+        for app in applications:
+            app_info = {"application_id": app.name, "files": {}}
+            
+            # Check each file field
+            file_fields = [
+                'feedstock_payment_file', 'chain_of_custody_file', 
+                'supplier_agreements_file', 'origin_certificates_file',
+                'transportation_records_file', 'environmental_permits_file', 
+                'market_leakage_study_file'
+            ]
+            
+            for field in file_fields:
+                url = app.get(field)
+                if url:
+                    app_info["files"][field] = {
+                        "url": url,
+                        "has_fid": "fid=" in url,
+                        "is_private": "/private/" in url,
+                        "is_full_url": url.startswith("http")
+                    }
+            
+            if app_info["files"]:
+                file_url_info.append(app_info)
+        
+        return {
+            "success": True,
+            "applications_with_files": len(file_url_info),
+            "file_url_info": file_url_info
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Error debugging file URLs: {str(e)}", "Debug File URLs")
+        return {"success": False, "message": f"Error: {str(e)}"}
+
+
+@frappe.whitelist()
+def fix_doctype_file_urls():
+    """Fix file URLs specifically for DocType display with proper fid parameters"""
+    try:
+        fixed_count = 0
+        
+        # Get all applications
+        applications = frappe.get_all("Franchise Signup Application", fields=["name"])
+        
+        for app_data in applications:
+            app_doc = frappe.get_doc("Franchise Signup Application", app_data.name)
+            needs_save = False
+            
+            # File fields to check
+            file_fields = [
+                'feedstock_payment_file', 'chain_of_custody_file', 
+                'supplier_agreements_file', 'origin_certificates_file',
+                'transportation_records_file', 'environmental_permits_file', 
+                'market_leakage_study_file'
+            ]
+            
+            for field in file_fields:
+                current_url = getattr(app_doc, field, None)
+                
+                if current_url and "/private/files/" in current_url:
+                    # If it doesn't have fid parameter, we need to find it
+                    if "fid=" not in current_url:
+                        # Extract just the file path part
+                        if current_url.startswith("http"):
+                            file_path = current_url.split("/private/files/")[1].split("?")[0]
+                        else:
+                            file_path = current_url.replace("/private/files/", "").split("?")[0]
+                        
+                        # Find the file document by file_url or file_name
+                        file_docs = frappe.get_all(
+                            "File",
+                            filters=[
+                                ["file_url", "like", f"%{file_path}%"]
+                            ],
+                            fields=["name", "file_url", "file_name"],
+                            limit=1
+                        )
+                        
+                        if not file_docs:
+                            # Try searching by file name if URL search failed
+                            file_docs = frappe.get_all(
+                                "File",
+                                filters=[
+                                    ["file_name", "=", file_path]
+                                ],
+                                fields=["name", "file_url", "file_name"],
+                                limit=1
+                            )
+                        
+                        if file_docs:
+                            file_doc = frappe.get_doc("File", file_docs[0].name)
+                            # Generate the proper URL with fid
+                            proper_url = f"{frappe.utils.get_url()}{file_doc.unique_url}"
+                            setattr(app_doc, field, proper_url)
+                            needs_save = True
+                            fixed_count += 1
+                            
+                            frappe.logger().info(f"Fixed {field} URL: {current_url} -> {proper_url}")
+            
+            if needs_save:
+                app_doc.save(ignore_permissions=True)
+        
+        frappe.db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Fixed {fixed_count} file URLs for DocType display",
+            "fixed_count": fixed_count
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Error fixing DocType file URLs: {str(e)}", "Fix DocType File URLs")
+        return {"success": False, "message": f"Error: {str(e)}"}

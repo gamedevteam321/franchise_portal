@@ -223,6 +223,40 @@ function showStep(stepNumber) {
             
             console.log('Step 3 styling fixes applied via JavaScript');
         }
+        
+        // Initialize file uploads for the current step
+        setTimeout(() => {
+            console.log(`Initializing file uploads for step ${stepNumber}`);
+            initializeFileUploads();
+            
+            // Also trigger any file upload toggles that should be active
+            if (stepNumber === 3) {
+                // Check feedstock payment field
+                const paymentField = document.getElementById('feedstock_payment');
+                if (paymentField && paymentField.value && paymentField.value !== 'No Feedstock Payment') {
+                    toggleFileUpload('feedstock_payment', 'feedstock_payment_file_group');
+                }
+            } else if (stepNumber === 4) {
+                // Check Step 4 attachment fields
+                ['chain_of_custody', 'supplier_agreements', 'origin_certificates', 'transportation_records'].forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field && field.value === 'Attached') {
+                        toggleFileUpload(fieldId, fieldId + '_file_group');
+                    }
+                });
+            } else if (stepNumber === 6) {
+                // Check Step 6 attachment fields
+                const envPermits = document.getElementById('environmental_permits');
+                if (envPermits && envPermits.value === 'Attached') {
+                    toggleFileUpload('environmental_permits', 'environmental_permits_file_group');
+                }
+                
+                const marketLeakage = document.getElementById('market_leakage_study');
+                if (marketLeakage && marketLeakage.value === 'Yes (attach)') {
+                    toggleFileUpload('market_leakage_study', 'market_leakage_study_file_group');
+                }
+            }
+        }, 300);
     }
     
     // Update progress indicator
@@ -307,7 +341,7 @@ function getStepData(step) {
         console.error(`Form step${step} not found!`);
         return {};
     }
-    
+
     const formData = new FormData(form);
     const data = {};
     
@@ -315,7 +349,65 @@ function getStepData(step) {
         data[key] = value;
     }
     
+    // Collect file upload data
+    const fileInputs = form.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+        if (input.getAttribute('data-file-url')) {
+            data[input.name + '_url'] = input.getAttribute('data-file-url');
+        }
+    });
+    
     console.log('Basic form data collected:', data);
+    
+    // Basic data sanitization for all steps (ensure no complex objects are sent)
+    if (step <= 2) {
+        // Steps 1 and 2 - Basic sanitization
+        Object.keys(data).forEach(key => {
+            if (data[key] === null || data[key] === undefined) {
+                data[key] = '';
+            } else if (typeof data[key] === 'object') {
+                console.log(`Removing complex object for key: ${key}`, data[key]);
+                delete data[key];
+            } else {
+                data[key] = String(data[key]);
+            }
+        });
+    }
+    
+    // Special handling for Step 3 - Feedstock Description & File Uploads
+    if (step === 3) {
+        console.log('Processing Step 3 feedstock and file upload fields...');
+        
+        // FIRST: Extract file URLs before sanitization removes file objects
+        const step3FileFields = ['feedstock_payment_file'];
+        step3FileFields.forEach(fieldName => {
+            // Check for file URL from uploaded files
+            const fileInput = form.querySelector(`input[name="${fieldName}"]`);
+            if (fileInput && fileInput.getAttribute('data-file-url')) {
+                data[fieldName] = fileInput.getAttribute('data-file-url');
+                console.log(`Found file URL for ${fieldName}: ${data[fieldName]}`);
+            } else {
+                // Remove file objects if no URL found
+                if (data[fieldName] && typeof data[fieldName] === 'object') {
+                    console.log(`Removing file object for ${fieldName} (no URL found)`);
+                    delete data[fieldName];
+                }
+            }
+        });
+        
+        // SECOND: Sanitize all other data values
+        Object.keys(data).forEach(key => {
+            if (!step3FileFields.includes(key)) { // Skip file fields that we already processed
+                if (data[key] === null || data[key] === undefined) {
+                    data[key] = '';
+                } else {
+                    data[key] = String(data[key]);
+                }
+            }
+        });
+        
+        console.log('Step 3 processed data:', data);
+    }
     
     // Special handling for Step 4 - Generation Locations
     if (step === 4) {
@@ -388,11 +480,54 @@ function getStepData(step) {
                 delete data[key];
             }
         });
+        
+        // FIRST: Extract file URLs before sanitization removes file objects
+        const step4FileFields = ['chain_of_custody_file', 'supplier_agreements_file', 'origin_certificates_file', 'transportation_records_file'];
+        step4FileFields.forEach(fieldName => {
+            // Check for file URL from uploaded files
+            const fileInput = form.querySelector(`input[name="${fieldName}"]`);
+            if (fileInput && fileInput.getAttribute('data-file-url')) {
+                data[fieldName] = fileInput.getAttribute('data-file-url');
+                console.log(`Found file URL for ${fieldName}: ${data[fieldName]}`);
+            } else {
+                // Remove file objects if no URL found
+                if (data[fieldName] && typeof data[fieldName] === 'object') {
+                    console.log(`Removing file object for ${fieldName} (no URL found)`);
+                    delete data[fieldName];
+                }
+            }
+        });
+        
+        // SECOND: Sanitize all other Step 4 data values
+        Object.keys(data).forEach(key => {
+            if (key !== 'generation_locations' && !step4FileFields.includes(key)) { // Skip generation_locations and file fields
+                if (data[key] === null || data[key] === undefined) {
+                    data[key] = '';
+                } else if (typeof data[key] === 'object') {
+                    console.log(`Removing complex object for key: ${key}`, data[key]);
+                    delete data[key];
+                } else {
+                    data[key] = String(data[key]);
+                }
+            }
+        });
     }
     
     // Special handling for Step 5 - Monitoring & Measurement (for debugging and validation)
     if (step === 5) {
         console.log('Processing Step 5 monitoring & measurement fields...');
+        
+        // Sanitize all Step 5 data values
+        Object.keys(data).forEach(key => {
+            if (data[key] === null || data[key] === undefined) {
+                data[key] = '';
+            } else if (typeof data[key] === 'object') {
+                console.log(`Removing complex object for key: ${key}`, data[key]);
+                delete data[key];
+            } else {
+                data[key] = String(data[key]);
+            }
+        });
         
         // Ensure testing_standards_other is only included if testing_standards_used is "Other"
         const testingStandards = data['testing_standards_used'];
@@ -403,8 +538,59 @@ function getStepData(step) {
         console.log('Step 5 processed data:', data);
     }
     
+    // Special handling for Step 6 - Clean file upload fields and sanitize data
+    if (step === 6) {
+        console.log('Processing Step 6 sustainability assessment fields...');
+        
+        // FIRST: Extract file URLs before sanitization removes file objects
+        const step6FileFields = ['environmental_permits_file', 'market_leakage_study_file'];
+        step6FileFields.forEach(fieldName => {
+            // Check for file URL from uploaded files
+            const fileInput = form.querySelector(`input[name="${fieldName}"]`);
+            if (fileInput && fileInput.getAttribute('data-file-url')) {
+                data[fieldName] = fileInput.getAttribute('data-file-url');
+                console.log(`Found file URL for ${fieldName}: ${data[fieldName]}`);
+            } else {
+                // Remove file objects if no URL found
+                if (data[fieldName] && typeof data[fieldName] === 'object') {
+                    console.log(`Removing file object for ${fieldName} (no URL found)`);
+                    delete data[fieldName];
+                }
+            }
+        });
+        
+        // SECOND: Sanitize all other data values
+        Object.keys(data).forEach(key => {
+            if (!step6FileFields.includes(key)) { // Skip file fields that we already processed
+                if (data[key] === null || data[key] === undefined) {
+                    data[key] = '';
+                } else if (typeof data[key] === 'object') {
+                    // Remove any complex objects
+                    console.log(`Removing complex object for key: ${key}`, data[key]);
+                    delete data[key];
+                } else {
+                    data[key] = String(data[key]);
+                }
+            }
+        });
+        
+        console.log('Step 6 processed data:', data);
+    }
+    
     // Special handling for Step 7 - use 'Other' text if selected
     if (step === 7) {
+        // Sanitize all Step 7 data values first
+        Object.keys(data).forEach(key => {
+            if (data[key] === null || data[key] === undefined) {
+                data[key] = '';
+            } else if (typeof data[key] === 'object') {
+                console.log(`Removing complex object for key: ${key}`, data[key]);
+                delete data[key];
+            } else {
+                data[key] = String(data[key]);
+            }
+        });
+        
         // Fuel Type
         if (data['fuel_type'] === 'Other') {
             const other = document.getElementById('fuel_type_other')?.value;
@@ -420,6 +606,8 @@ function getStepData(step) {
             const other = document.getElementById('energy_source_other')?.value;
             if (other) data['energy_source'] = other;
         }
+        
+        console.log('Step 7 processed data:', data);
     }
     
     return data;
@@ -607,16 +795,26 @@ function saveStepData(step, callback) {
     }
 }
 
+// Throttle auto-save to reduce performance impact
+let autoSaveTimeout;
 function autoSaveStep() {
-    if (currentStep <= 7) {
-        const stepData = getStepData(currentStep);
-        Object.assign(applicationData, stepData);
-        frappe.call({
-            method: 'franchise_portal.www.signup.api.save_step',
-            args: { data: stepData },
-            no_spinner: true
-        });
+    // Clear existing timeout to avoid too frequent saves
+    if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
     }
+    
+    // Throttle auto-save to once every 3 seconds
+    autoSaveTimeout = setTimeout(() => {
+        if (currentStep <= 7) {
+            const stepData = getStepData(currentStep);
+            Object.assign(applicationData, stepData);
+            frappe.call({
+                method: 'franchise_portal.www.signup.api.save_step',
+                args: { data: stepData },
+                no_spinner: true
+            });
+        }
+    }, 3000);
 }
 
 function submitApplication() {
@@ -1126,14 +1324,24 @@ function enableManualEntry() {
 function togglePaymentDetails() {
     const paymentType = document.getElementById('feedstock_payment_type').value;
     const paymentDetailsGroup = document.getElementById('payment_details_group');
+    const paymentFileSection = document.getElementById('payment_file_section');
     
     if (paymentType && paymentType !== 'No Feedstock Payment') {
         paymentDetailsGroup.style.display = 'block';
+        paymentFileSection.style.display = 'block';
         document.getElementById('payment_details').setAttribute('required', 'required');
     } else {
         paymentDetailsGroup.style.display = 'none';
+        paymentFileSection.style.display = 'none';
         document.getElementById('payment_details').removeAttribute('required');
         document.getElementById('payment_details').value = '';
+        
+        // Clear file upload when hiding
+        const fileInput = document.getElementById('feedstock_payment_file');
+        if (fileInput) {
+            fileInput.value = '';
+            clearFilePreview('feedstock_payment_file');
+        }
     }
 }
 
@@ -1590,4 +1798,826 @@ window.testComplete5StepFlow = function() {
     console.log('Step 5 fields found:', step5Fields.filter(f => allData[f]).length, '/', step5Fields.length);
     
     return allData;
+};
+
+// File Upload Functionality
+function toggleFileUpload(selectFieldId, fileGroupId) {
+    console.log(`toggleFileUpload called: ${selectFieldId} -> ${fileGroupId}`);
+    const selectField = document.getElementById(selectFieldId);
+    const fileGroup = document.getElementById(fileGroupId);
+    
+    if (selectField && fileGroup) {
+        // Check for different trigger values based on field
+        const shouldShow = selectField.value === 'Attached' || selectField.value === 'Yes (attach)';
+        console.log(`Should show file upload: ${shouldShow} (value: "${selectField.value}")`);
+        
+        if (shouldShow) {
+            fileGroup.style.display = 'block';
+            console.log(`File group ${fileGroupId} shown, initializing upload...`);
+            
+            // Initialize file upload for this specific area after showing
+            setTimeout(() => {
+                const uploadArea = fileGroup.querySelector('.file-upload-area');
+                if (uploadArea) {
+                    // Remove any existing initialization to avoid conflicts
+                    uploadArea.removeAttribute('data-initialized');
+                    initializeSpecificFileUpload(fileGroup);
+                    console.log(`File upload initialized for ${fileGroupId}`);
+                } else {
+                    console.error(`Upload area not found in ${fileGroupId}`);
+                }
+            }, 200);
+        } else {
+            fileGroup.style.display = 'none';
+            console.log(`File group ${fileGroupId} hidden`);
+            // Clear any uploaded files when hiding
+            const fileInput = fileGroup.querySelector('input[type="file"]');
+            if (fileInput) {
+                fileInput.value = '';
+                clearFilePreview(fileInput.id);
+            }
+        }
+    } else {
+        console.error(`Elements not found: selectField=${!!selectField}, fileGroup=${!!fileGroup}`);
+    }
+}
+
+function initializeSpecificFileUpload(uploadGroup) {
+    console.log('initializeSpecificFileUpload called');
+    
+    const uploadArea = uploadGroup.querySelector('.file-upload-area');
+    if (!uploadArea) {
+        console.error('Upload area not found in group');
+        return;
+    }
+    
+    if (uploadArea.hasAttribute('data-initialized')) {
+        console.log('Upload area already initialized, skipping');
+        return; // Already initialized
+    }
+    
+    const fieldName = uploadArea.getAttribute('data-field');
+    const fileInput = uploadArea.querySelector('input[type="file"]');
+    const placeholder = uploadArea.querySelector('.upload-placeholder');
+    const browseLink = uploadArea.querySelector('.browse-link');
+    
+    if (!fileInput || !placeholder || !browseLink) {
+        console.error('Missing required elements:', {
+            fileInput: !!fileInput,
+            placeholder: !!placeholder,
+            browseLink: !!browseLink,
+            fieldName
+        });
+        return;
+    }
+    
+    console.log('Initializing specific file upload for:', fieldName);
+    
+    // Clear any existing event listeners first
+    const newFileInput = fileInput.cloneNode(true);
+    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+    
+    // Set up click handler on browse link only (same as working Step 3)
+    browseLink.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log(`Browse clicked for ${fieldName}`);
+        newFileInput.click();
+    };
+    
+    // Set up file input change handler
+    newFileInput.onchange = function(e) {
+        console.log(`File selected for ${fieldName}:`, e.target.files[0]);
+        if (e.target.files.length > 0) {
+            handleFileSelection(e.target);
+        }
+    };
+    
+    // Set up drag and drop
+    uploadArea.ondragover = function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    };
+    
+    uploadArea.ondragleave = function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    };
+    
+    uploadArea.ondrop = function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            newFileInput.files = files;
+            handleFileSelection(newFileInput);
+        }
+    };
+    
+    uploadArea.setAttribute('data-initialized', 'true');
+    console.log(`File upload initialized successfully for ${fieldName}`);
+}
+
+function initializeFileUploads() {
+    console.log('Initializing all file uploads...');
+    
+    // Get all file upload areas
+    const uploadAreas = document.querySelectorAll('.file-upload-area');
+    let initializedCount = 0;
+    let skippedCount = 0;
+    
+    uploadAreas.forEach(area => {
+        const fieldName = area.getAttribute('data-field');
+        
+        // Skip if already initialized
+        if (area.hasAttribute('data-initialized')) {
+            console.log(`File upload already initialized for: ${fieldName}`);
+            return;
+        }
+        
+        const fileInput = area.querySelector('input[type="file"]');
+        const placeholder = area.querySelector('.upload-placeholder');
+        const browseLink = area.querySelector('.browse-link');
+        
+        if (!fileInput || !placeholder || !browseLink) {
+            console.warn('Missing elements for file upload area:', fieldName);
+            skippedCount++;
+            return;
+        }
+        
+        console.log('Initializing file upload for field:', fieldName);
+        
+        // Clear any existing event listeners first
+        const newFileInput = fileInput.cloneNode(true);
+        fileInput.parentNode.replaceChild(newFileInput, fileInput);
+        
+        // Set up click handler on browse link only
+        browseLink.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log(`Browse clicked for ${fieldName}`);
+            newFileInput.click();
+        };
+        
+        // Set up file input change handler
+        newFileInput.onchange = function(e) {
+            console.log(`File selected for ${fieldName}:`, e.target.files[0]);
+            if (e.target.files.length > 0) {
+                handleFileSelection(e.target);
+            }
+        };
+        
+        // Set up drag and drop
+        area.ondragover = function(e) {
+            e.preventDefault();
+            area.classList.add('dragover');
+        };
+        
+        area.ondragleave = function(e) {
+            e.preventDefault();
+            area.classList.remove('dragover');
+        };
+        
+        area.ondrop = function(e) {
+            e.preventDefault();
+            area.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                newFileInput.files = files;
+                handleFileSelection(newFileInput);
+            }
+        };
+        
+        area.setAttribute('data-initialized', 'true');
+        initializedCount++;
+    });
+    
+    console.log(`File uploads initialized: ${initializedCount} areas, ${skippedCount} skipped`);
+}
+
+function handleFileSelection(fileInput) {
+    console.log('handleFileSelection called with:', fileInput);
+    const file = fileInput.files[0];
+    console.log('Selected file:', file);
+    
+    if (!file) {
+        console.log('No file selected');
+        return;
+    }
+    
+    // Validate file
+    const validation = validateFile(file);
+    console.log('File validation result:', validation);
+    
+    if (!validation.valid) {
+        showFileError(fileInput.id, validation.message);
+        fileInput.value = '';
+        return;
+    }
+    
+    // Show file preview
+    showFilePreview(fileInput.id, file);
+    
+    // Upload file
+    console.log('Starting file upload for:', fileInput.name);
+    uploadFile(fileInput, file);
+}
+
+function validateFile(file) {
+    // Check file size (25MB = 25 * 1024 * 1024 bytes)
+    const maxSize = 25 * 1024 * 1024;
+    if (file.size > maxSize) {
+        return {
+            valid: false,
+            message: 'File size must be less than 25MB'
+        };
+    }
+    
+    // Check file type
+    const allowedTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+        'application/msword', // DOC
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
+        'application/vnd.ms-excel', // XLS
+        'text/csv',
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/gif',
+        'image/bmp'
+    ];
+    
+    const allowedExtensions = ['.pdf', '.docx', '.doc', '.xlsx', '.xls', '.csv', '.jpg', '.jpeg', '.png', '.gif', '.bmp'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+        return {
+            valid: false,
+            message: 'File type not supported. Please upload PDF, DOCX, JPG, PNG, XLSX, or CSV files.'
+        };
+    }
+    
+    return { valid: true };
+}
+
+function showFilePreview(inputId, file) {
+    const uploadArea = document.querySelector(`input#${inputId}`).closest('.file-upload-area');
+    const placeholder = uploadArea.querySelector('.upload-placeholder');
+    const preview = uploadArea.querySelector('.file-preview');
+    
+    placeholder.style.display = 'none';
+    preview.style.display = 'block';
+    
+    const fileSize = formatFileSize(file.size);
+    const fileName = file.name;
+    
+    preview.innerHTML = `
+        <div class="file-item">
+            <div class="file-item-info">
+                <div class="file-item-icon">📄</div>
+                <div class="file-item-details">
+                    <div class="file-item-name" id="filename-${inputId}">${fileName}</div>
+                    <div class="file-item-size">${fileSize}</div>
+                    <div class="file-item-status">Uploading...</div>
+                </div>
+            </div>
+            <div class="file-item-actions">
+                <button type="button" class="file-action-btn remove" onclick="removeFile('${inputId}')">Remove</button>
+            </div>
+        </div>
+    `;
+}
+
+function clearFilePreview(inputId) {
+    const uploadArea = document.querySelector(`input#${inputId}`).closest('.file-upload-area');
+    const placeholder = uploadArea.querySelector('.upload-placeholder');
+    const preview = uploadArea.querySelector('.file-preview');
+    const progress = uploadArea.querySelector('.upload-progress');
+    
+    placeholder.style.display = 'block';
+    preview.style.display = 'none';
+    progress.style.display = 'none';
+    
+    // Clear any error messages
+    const errorDiv = uploadArea.querySelector('.upload-error');
+    if (errorDiv) {
+        errorDiv.remove();
+    }
+}
+
+function removeFile(inputId) {
+    const fileInput = document.getElementById(inputId);
+    fileInput.value = '';
+    clearFilePreview(inputId);
+}
+
+function showFileError(inputId, message) {
+    const uploadArea = document.querySelector(`input#${inputId}`).closest('.file-upload-area');
+    
+    // Remove existing error messages
+    const existingError = uploadArea.querySelector('.upload-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Add new error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'upload-error';
+    errorDiv.textContent = message;
+    uploadArea.appendChild(errorDiv);
+}
+
+function uploadFile(fileInput, file) {
+    console.log('uploadFile called for:', fileInput.name, 'file:', file.name);
+    
+    const uploadArea = fileInput.closest('.file-upload-area');
+    const progress = uploadArea.querySelector('.upload-progress');
+    
+    if (!progress) {
+        console.error('Progress element not found for:', fileInput.name);
+        return;
+    }
+    
+    const progressBar = progress.querySelector('.progress-bar');
+    const progressFill = progress.querySelector('.progress-fill');
+    const progressText = progress.querySelector('.progress-text');
+    
+    progress.style.display = 'block';
+    console.log('Upload progress shown');
+    
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('field_name', fileInput.name);
+    
+    console.log('FormData created, sending request...');
+    
+    // Use XMLHttpRequest for progress tracking
+    const xhr = new XMLHttpRequest();
+    
+    // Progress tracking
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            progressFill.style.width = percentComplete + '%';
+            progressText.textContent = Math.round(percentComplete) + '%';
+            console.log('Upload progress:', Math.round(percentComplete) + '%');
+        }
+    });
+    
+    // Handle completion
+    xhr.addEventListener('load', function() {
+        console.log('Upload completed, status:', xhr.status);
+        console.log('Response:', xhr.responseText);
+        
+        progress.style.display = 'none';
+        
+        if (xhr.status === 200) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                console.log('Parsed response:', response);
+                
+                // Check for success in response.message.success (Frappe API structure)
+                const uploadSuccess = response.message && response.message.success;
+                
+                if (uploadSuccess) {
+                    console.log('File uploaded successfully, URL:', response.message.file_url);
+                    showUploadSuccess(fileInput.id);
+                    // Store file reference for later use
+                    fileInput.setAttribute('data-file-url', response.message.file_url);
+                    console.log('File URL stored in data-file-url attribute:', response.message.file_url);
+                } else {
+                    const errorMessage = response.message?.message || response.message || 'Upload failed';
+                    console.error('Upload failed:', errorMessage);
+                    showFileError(fileInput.id, errorMessage);
+                }
+            } catch (e) {
+                console.error('Failed to parse response:', e);
+                showFileError(fileInput.id, 'Upload failed - invalid response');
+            }
+        } else {
+            console.error('Upload failed with status:', xhr.status);
+            showFileError(fileInput.id, 'Upload failed. Please try again.');
+        }
+    });
+    
+    // Handle errors
+    xhr.addEventListener('error', function() {
+        console.error('Upload network error');
+        progress.style.display = 'none';
+        showFileError(fileInput.id, 'Upload failed. Please check your connection.');
+    });
+    
+    // Send the request
+    xhr.open('POST', '/api/method/franchise_portal.www.signup.api.upload_file');
+    console.log('Sending upload request...');
+    xhr.send(formData);
+}
+
+function showUploadSuccess(inputId) {
+    const uploadArea = document.querySelector(`input#${inputId}`).closest('.file-upload-area');
+    const fileInput = document.getElementById(inputId);
+    const fileUrl = fileInput.getAttribute('data-file-url');
+    
+    // Remove existing messages
+    const existingError = uploadArea.querySelector('.upload-error');
+    const existingSuccess = uploadArea.querySelector('.upload-success');
+    if (existingError) existingError.remove();
+    if (existingSuccess) existingSuccess.remove();
+    
+    // Update the file status and make it clickable
+    const statusElement = uploadArea.querySelector('.file-item-status');
+    const fileNameElement = uploadArea.querySelector(`#filename-${inputId}`);
+    
+    if (statusElement) {
+        statusElement.textContent = '✓ Uploaded successfully';
+        statusElement.style.color = '#28a745';
+    }
+    
+    // Make the file name clickable with proper download behavior
+    if (fileNameElement && fileUrl) {
+        fileNameElement.style.cursor = 'pointer';
+        fileNameElement.style.color = '#667eea';
+        fileNameElement.style.textDecoration = 'underline';
+        fileNameElement.title = 'Click to download file';
+        
+        // Add click handler for proper download
+        fileNameElement.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            downloadFileDirectly(fileUrl, fileNameElement.textContent);
+        };
+    }
+    
+    // Add temporary success message
+    const successDiv = document.createElement('div');
+    successDiv.className = 'upload-success';
+    successDiv.textContent = '✓ File uploaded successfully - Click filename to download';
+    successDiv.style.color = '#28a745';
+    successDiv.style.fontSize = '12px';
+    successDiv.style.marginTop = '5px';
+    uploadArea.appendChild(successDiv);
+    
+    // Remove success message after 5 seconds
+    setTimeout(() => {
+        if (successDiv.parentNode) {
+            successDiv.remove();
+        }
+    }, 5000);
+}
+
+function downloadFileDirectly(fileUrl, fileName) {
+    console.log('Downloading file:', fileName, 'URL:', fileUrl);
+    
+    // Show user feedback that download is starting
+    showDownloadFeedback('Starting download...');
+    
+    try {
+        // For private files with fid parameter, use Frappe's download endpoint
+        if (fileUrl.includes('/private/') && fileUrl.includes('fid=')) {
+            // Extract the file path and fid for Frappe's download method
+            const urlParts = fileUrl.split('?');
+            const filePath = urlParts[0];
+            const fid = urlParts[1].split('fid=')[1];
+            
+            // Use Frappe's authenticated download endpoint
+            const downloadUrl = `/api/method/frappe.core.doctype.file.file.download_file?file_url=${encodeURIComponent(filePath)}&fid=${fid}`;
+            
+            console.log('Using Frappe download endpoint:', downloadUrl);
+            
+            // Create a temporary link for download
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = fileName;
+            link.style.display = 'none';
+            
+            // Add to document temporarily
+            document.body.appendChild(link);
+            
+            // Trigger download
+            link.click();
+            
+            // Clean up
+            document.body.removeChild(link);
+            
+            // Success feedback
+            setTimeout(() => {
+                showDownloadFeedback('Download started! Check your downloads folder.', 'success');
+            }, 500);
+            
+        } else {
+            // For regular files, use direct download
+            const link = document.createElement('a');
+            link.href = fileUrl;
+            link.download = fileName; // This suggests browser to download instead of opening
+            link.style.display = 'none';
+            
+            // Add to document temporarily
+            document.body.appendChild(link);
+            
+            // Trigger download
+            link.click();
+            
+            // Clean up
+            document.body.removeChild(link);
+            
+            // Success feedback
+            setTimeout(() => {
+                showDownloadFeedback('Download started! Check your downloads folder.', 'success');
+            }, 500);
+        }
+        
+        console.log('Download triggered for:', fileName);
+        
+    } catch (error) {
+        console.error('Download error:', error);
+        showDownloadFeedback('Download failed. Please try again or contact support.', 'error');
+    }
+}
+
+function showDownloadFeedback(message, type = 'info') {
+    // Remove any existing feedback
+    const existing = document.querySelector('.download-feedback');
+    if (existing) {
+        existing.remove();
+    }
+    
+    // Create feedback element
+    const feedback = document.createElement('div');
+    feedback.className = 'download-feedback';
+    feedback.textContent = message;
+    
+    // Style based on type
+    const baseStyle = {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        padding: '12px 20px',
+        borderRadius: '4px',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        zIndex: '10000',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+    };
+    
+    const typeStyles = {
+        info: { backgroundColor: '#e7f3ff', color: '#0066cc', border: '1px solid #b3d9ff' },
+        success: { backgroundColor: '#d4edda', color: '#155724', border: '1px solid #c3e6cb' },
+        error: { backgroundColor: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' }
+    };
+    
+    Object.assign(feedback.style, baseStyle, typeStyles[type] || typeStyles.info);
+    
+    // Add to page
+    document.body.appendChild(feedback);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        if (feedback.parentNode) {
+            feedback.remove();
+        }
+    }, 4000);
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Initialize file uploads when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Add a small delay to ensure all elements are rendered
+    setTimeout(() => {
+        initializeFileUploads();
+    }, 1000);
+});
+
+// Also initialize when frappe is ready
+if (typeof frappe !== 'undefined' && frappe.ready) {
+    frappe.ready(() => {
+        setTimeout(() => {
+            initializeFileUploads();
+        }, 1000);
+    });
+}
+
+// Make file upload functions globally available
+window.toggleFileUpload = toggleFileUpload;
+window.removeFile = removeFile;
+window.initializeFileUploads = initializeFileUploads;
+
+// Debug function to test file uploads
+window.debugFileUploads = function() {
+    console.log('=== DEBUG: File Upload Status ===');
+    
+    // Check Step 3 file uploads
+    const step3FileGroups = [
+        {id: 'feedstock_payment_file_group', trigger: 'feedstock_payment', field: 'feedstock_payment_file'}
+    ];
+    
+    // Check Step 4 file uploads  
+    const step4FileGroups = [
+        {id: 'chain_of_custody_file_group', trigger: 'chain_of_custody', field: 'chain_of_custody_file'},
+        {id: 'supplier_agreements_file_group', trigger: 'supplier_agreements', field: 'supplier_agreements_file'},
+        {id: 'origin_certificates_file_group', trigger: 'origin_certificates', field: 'origin_certificates_file'},
+        {id: 'transportation_records_file_group', trigger: 'transportation_records', field: 'transportation_records_file'}
+    ];
+    
+    // Check Step 6 file uploads
+    const step6FileGroups = [
+        {id: 'environmental_permits_file_group', trigger: 'environmental_permits', field: 'environmental_permits_file'},
+        {id: 'market_leakage_study_file_group', trigger: 'market_leakage_study', field: 'market_leakage_study_file'}
+    ];
+    
+    const allFileGroups = [...step3FileGroups, ...step4FileGroups, ...step6FileGroups];
+    
+    allFileGroups.forEach(group => {
+        const fileGroup = document.getElementById(group.id);
+        const triggerField = document.getElementById(group.trigger);
+        const fileInput = document.querySelector(`input[name="${group.field}"]`);
+        const uploadArea = fileGroup?.querySelector('.file-upload-area');
+        
+        console.log(`\n--- ${group.field} ---`);
+        console.log(`File Group Found: ${!!fileGroup}`);
+        console.log(`Trigger Field Found: ${!!triggerField}`);
+        console.log(`Trigger Value: ${triggerField?.value || 'N/A'}`);
+        console.log(`File Input Found: ${!!fileInput}`);
+        console.log(`Upload Area Found: ${!!uploadArea}`);
+        console.log(`Upload Area Initialized: ${uploadArea?.hasAttribute('data-initialized')}`);
+        console.log(`File Group Visible: ${fileGroup?.style.display !== 'none'}`);
+        console.log(`File URL Stored: ${fileInput?.getAttribute('data-file-url') || 'None'}`);
+    });
+    
+    console.log('\n=== File Upload Initialization Test ===');
+    console.log('Running initializeFileUploads()...');
+    initializeFileUploads();
+    
+    console.log('\n=== Complete File Upload Debug Done ===');
+};
+
+// Debug function specifically for Step 6 data issues
+window.debugStep6Data = function() {
+    console.log('=== DEBUG: Step 6 Data Collection ===');
+    
+    // Force navigation to Step 6 if not already there
+    if (currentStep !== 6) {
+        console.log(`Currently on step ${currentStep}, moving to step 6...`);
+        currentStep = 6;
+        showStep(6);
+    }
+    
+    // Test data collection
+    console.log('Testing getStepData(6):');
+    const rawData = getStepData(6);
+    console.log('Raw collected data:', rawData);
+    
+    // Check data types
+    console.log('\n--- Data Type Analysis ---');
+    Object.keys(rawData).forEach(key => {
+        const value = rawData[key];
+        const type = typeof value;
+        const isObject = type === 'object' && value !== null;
+        console.log(`${key}: "${value}" (${type}${isObject ? ' - PROBLEM!' : ''})`);
+    });
+    
+    // Test Step 6 specific fields
+    const step6Fields = [
+        'ghg_assessment_conducted', 'environmental_permits', 'environmental_permits_file',
+        'market_leakage_study', 'market_leakage_study_file', 'social_impact_assessment',
+        'sustainability_certification', 'additionality_demonstration', 'regulatory_compliance'
+    ];
+    
+    console.log('\n--- Step 6 Field Values ---');
+    step6Fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        const formValue = field ? field.value : 'FIELD_NOT_FOUND';
+        const dataValue = rawData[fieldId];
+        console.log(`${fieldId}: Form="${formValue}", Data="${dataValue}"`);
+    });
+    
+    // Test file upload status
+    console.log('\n--- Step 6 File Upload Status ---');
+    const envPermitsSelect = document.getElementById('environmental_permits');
+    const envPermitsGroup = document.getElementById('environmental_permits_file_group');
+    const marketLeakageSelect = document.getElementById('market_leakage_study');
+    const marketLeakageGroup = document.getElementById('market_leakage_study_file_group');
+    
+    console.log(`Environmental Permits: "${envPermitsSelect?.value}", Upload Group Visible: ${envPermitsGroup?.style.display !== 'none'}`);
+    console.log(`Market Leakage Study: "${marketLeakageSelect?.value}", Upload Group Visible: ${marketLeakageGroup?.style.display !== 'none'}`);
+    
+    console.log('\n=== Step 6 Debug Complete ===');
+    return rawData;
+};
+
+// Comprehensive debug function for file upload issues
+window.debugUploadIssues = function() {
+    console.log('=== COMPREHENSIVE UPLOAD DEBUG ===');
+    
+    // Test file upload initialization
+    console.log('\n1. File Upload Initialization Status:');
+    const uploadAreas = document.querySelectorAll('.file-upload-area');
+    uploadAreas.forEach(area => {
+        const fieldName = area.getAttribute('data-field');
+        const isInitialized = area.hasAttribute('data-initialized');
+        const fileInput = area.querySelector('input[type="file"]');
+        const browseLink = area.querySelector('.browse-link');
+        
+        console.log(`${fieldName}: Initialized=${isInitialized}, FileInput=${!!fileInput}, BrowseLink=${!!browseLink}`);
+        
+        if (fileInput) {
+            console.log(`  - File Input ID: ${fileInput.id}, Name: ${fileInput.name}`);
+            console.log(`  - Has data-file-url: ${!!fileInput.getAttribute('data-file-url')}`);
+            console.log(`  - File URL: ${fileInput.getAttribute('data-file-url') || 'None'}`);
+        }
+    });
+    
+    // Test manual file trigger
+    console.log('\n2. Manual File Upload Test:');
+    const testField = document.querySelector('input[name="environmental_permits_file"]');
+    if (testField) {
+        console.log('Testing environmental permits file input...');
+        console.log('File input element:', testField);
+        console.log('Parent upload area:', testField.closest('.file-upload-area'));
+        console.log('Browse link:', testField.closest('.file-upload-area')?.querySelector('.browse-link'));
+    }
+    
+    // Test data collection for all steps
+    console.log('\n3. Data Collection Test:');
+    for (let step = 1; step <= 7; step++) {
+        try {
+            const stepData = getStepData(step);
+            const fieldCount = Object.keys(stepData).length;
+            console.log(`Step ${step}: ${fieldCount} fields collected`);
+            
+            // Check for file fields specifically
+            const fileFields = Object.keys(stepData).filter(key => key.includes('_file'));
+            if (fileFields.length > 0) {
+                console.log(`  File fields: ${fileFields.join(', ')}`);
+                fileFields.forEach(field => {
+                    console.log(`    ${field}: ${stepData[field] || 'Empty'}`);
+                });
+            }
+        } catch (e) {
+            console.error(`Error collecting data for step ${step}:`, e);
+        }
+    }
+    
+    console.log('\n=== DEBUG COMPLETE ===');
+};
+
+// Quick test function for file upload clicks
+window.testFileUpload = function(fieldName) {
+    console.log(`Testing file upload for: ${fieldName}`);
+    const fileInput = document.querySelector(`input[name="${fieldName}"]`);
+    if (fileInput) {
+        console.log('File input found, triggering click...');
+        fileInput.click();
+    } else {
+        console.error('File input not found for:', fieldName);
+    }
+};
+
+// Test file upload URL collection
+window.testFileURLCollection = function() {
+    console.log('=== TESTING FILE URL COLLECTION ===');
+    
+    const fileFields = [
+        'feedstock_payment_file',
+        'chain_of_custody_file', 
+        'supplier_agreements_file',
+        'origin_certificates_file', 
+        'transportation_records_file',
+        'environmental_permits_file',
+        'market_leakage_study_file'
+    ];
+    
+    fileFields.forEach(fieldName => {
+        const fileInput = document.querySelector(`input[name="${fieldName}"]`);
+        if (fileInput) {
+            const hasDataUrl = fileInput.hasAttribute('data-file-url');
+            const dataUrl = fileInput.getAttribute('data-file-url');
+            const hasFiles = fileInput.files && fileInput.files.length > 0;
+            
+            console.log(`${fieldName}:`);
+            console.log(`  - Input found: ${!!fileInput}`);
+            console.log(`  - Has data-file-url: ${hasDataUrl}`);
+            console.log(`  - URL value: ${dataUrl || 'None'}`);
+            console.log(`  - Has files: ${hasFiles}`);
+            if (hasFiles) {
+                console.log(`  - File name: ${fileInput.files[0].name}`);
+            }
+        } else {
+            console.log(`${fieldName}: Input not found`);
+        }
+    });
+    
+    console.log('=== TEST COMPLETE ===');
 };

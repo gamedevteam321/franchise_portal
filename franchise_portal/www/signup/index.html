@@ -451,6 +451,183 @@ body .franchise-signup-container .form-container .form-step#step3 {
     font-size: 14px;
     min-width: 70px;
 }
+
+/* File Upload Styling */
+.file-upload-group {
+    margin-top: 10px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+}
+
+.file-upload-area {
+    position: relative;
+    min-height: 120px;
+    border: 2px dashed #667eea;
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background-color: white;
+}
+
+.file-upload-area:hover {
+    border-color: #5a6fd8;
+    background-color: #f8f9ff;
+}
+
+.file-upload-area.dragover {
+    border-color: #28a745;
+    background-color: #f8fff8;
+}
+
+.upload-placeholder {
+    padding: 30px 20px;
+    color: #6c757d;
+}
+
+.upload-placeholder i {
+    font-size: 48px;
+    color: #667eea;
+    margin-bottom: 15px;
+}
+
+.upload-placeholder p {
+    margin: 10px 0 5px 0;
+    font-size: 16px;
+}
+
+.upload-placeholder small {
+    color: #8c9ba5;
+    font-size: 12px;
+}
+
+.browse-link {
+    color: #667eea;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.browse-link:hover {
+    color: #5a6fd8;
+}
+
+.file-preview {
+    padding: 15px;
+    background-color: white;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.file-item-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.file-item-icon {
+    width: 32px;
+    height: 32px;
+    margin-right: 10px;
+    color: #667eea;
+}
+
+.file-item-details {
+    flex: 1;
+}
+
+.file-item-name {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 2px;
+}
+
+.file-item-size {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.file-item-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.file-action-btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.file-action-btn.download {
+    background-color: #28a745;
+    color: white;
+}
+
+.file-action-btn.remove {
+    background-color: #dc3545;
+    color: white;
+}
+
+.file-action-btn:hover {
+    opacity: 0.8;
+}
+
+.upload-progress {
+    padding: 15px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #667eea;
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 3px;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: #495057;
+    text-align: center;
+    display: block;
+}
+
+.upload-error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    text-align: center;
+}
+
+.upload-success {
+    color: #28a745;
+    font-size: 12px;
+    margin-top: 5px;
+    text-align: center;
+}
 </style>
 
 <div class="franchise-signup-container">
@@ -659,6 +836,31 @@ body .franchise-signup-container .form-container .form-step#step3 {
                 <div class="form-group" id="payment_details_group" style="display: none;">
                     <label for="payment_details">Payment Details</label>
                     <textarea id="payment_details" name="payment_details" rows="2" placeholder="Enter payment details, amount, or other relevant information"></textarea>
+                </div>
+            </div>
+            
+            <!-- Payment Documentation Section (shown only when payment is involved) -->
+            <div id="payment_file_section" style="display: none;">
+                <div class="form-group">
+                    <label for="feedstock_payment_file">Payment Documentation (Optional)</label>
+                    <div class="file-upload-group">
+                        <div class="file-upload-area" data-field="feedstock_payment_file">
+                            <div class="upload-placeholder">
+                                <i class="fa fa-upload"></i>
+                                <p>Drag & drop your payment document here or <span class="browse-link">browse</span></p>
+                                <small>Supported: PDF, DOCX, JPG, PNG, XLSX (Max 25MB) - Optional</small>
+                            </div>
+                            <input type="file" id="feedstock_payment_file" name="feedstock_payment_file" 
+                                   accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.gif,.bmp" style="display: none;">
+                            <div class="file-preview" style="display: none;"></div>
+                            <div class="upload-progress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <span class="progress-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -885,37 +1087,109 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <div class="form-row">
                 <div class="form-group">
                     <label for="chain_of_custody_protocol">Chain of Custody Protocol</label>
-                    <select id="chain_of_custody_protocol" name="chain_of_custody_protocol">
+                    <select id="chain_of_custody_protocol" name="chain_of_custody_protocol" onchange="toggleFileUpload('chain_of_custody_protocol', 'chain_of_custody_file_group')">
                         <option value="">Select</option>
                         <option value="Attached">Attached</option>
                         <option value="Not Available">Not Available</option>
                     </select>
+                    <div id="chain_of_custody_file_group" class="file-upload-group" style="display: none;">
+                        <div class="file-upload-area" data-field="chain_of_custody_file">
+                            <div class="upload-placeholder">
+                                <i class="fa fa-upload"></i>
+                                <p>Drag & drop your file here or <span class="browse-link">browse</span></p>
+                                <small>Supported: PDF, DOCX, JPG, PNG, XLSX (Max 25MB)</small>
+                            </div>
+                            <input type="file" id="chain_of_custody_file" name="chain_of_custody_file" 
+                                   accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.gif,.bmp" style="display: none;">
+                            <div class="file-preview" style="display: none;"></div>
+                            <div class="upload-progress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <span class="progress-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="supplier_agreements">Supplier Agreements</label>
-                    <select id="supplier_agreements" name="supplier_agreements">
+                    <select id="supplier_agreements" name="supplier_agreements" onchange="toggleFileUpload('supplier_agreements', 'supplier_agreements_file_group')">
                         <option value="">Select</option>
                         <option value="Attached">Attached</option>
                         <option value="Not Available">Not Available</option>
                     </select>
+                    <div id="supplier_agreements_file_group" class="file-upload-group" style="display: none;">
+                        <div class="file-upload-area" data-field="supplier_agreements_file">
+                            <div class="upload-placeholder">
+                                <i class="fa fa-upload"></i>
+                                <p>Drag & drop your file here or <span class="browse-link">browse</span></p>
+                                <small>Supported: PDF, DOCX, JPG, PNG, XLSX (Max 25MB)</small>
+                            </div>
+                            <input type="file" id="supplier_agreements_file" name="supplier_agreements_file" 
+                                   accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.gif,.bmp" style="display: none;">
+                            <div class="file-preview" style="display: none;"></div>
+                            <div class="upload-progress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <span class="progress-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label for="origin_certificates">Origin Certificates</label>
-                    <select id="origin_certificates" name="origin_certificates">
+                    <select id="origin_certificates" name="origin_certificates" onchange="toggleFileUpload('origin_certificates', 'origin_certificates_file_group')">
                         <option value="">Select</option>
                         <option value="Attached">Attached</option>
                         <option value="Not Available">Not Available</option>
                     </select>
+                    <div id="origin_certificates_file_group" class="file-upload-group" style="display: none;">
+                        <div class="file-upload-area" data-field="origin_certificates_file">
+                            <div class="upload-placeholder">
+                                <i class="fa fa-upload"></i>
+                                <p>Drag & drop your file here or <span class="browse-link">browse</span></p>
+                                <small>Supported: PDF, DOCX, JPG, PNG, XLSX (Max 25MB)</small>
+                            </div>
+                            <input type="file" id="origin_certificates_file" name="origin_certificates_file" 
+                                   accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.gif,.bmp" style="display: none;">
+                            <div class="file-preview" style="display: none;"></div>
+                            <div class="upload-progress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <span class="progress-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="transportation_records">Transportation Records</label>
-                    <select id="transportation_records" name="transportation_records">
+                    <select id="transportation_records" name="transportation_records" onchange="toggleFileUpload('transportation_records', 'transportation_records_file_group')">
                         <option value="">Select</option>
                         <option value="Attached">Attached</option>
                         <option value="Not Available">Not Available</option>
                     </select>
+                    <div id="transportation_records_file_group" class="file-upload-group" style="display: none;">
+                        <div class="file-upload-area" data-field="transportation_records_file">
+                            <div class="upload-placeholder">
+                                <i class="fa fa-upload"></i>
+                                <p>Drag & drop your file here or <span class="browse-link">browse</span></p>
+                                <small>Supported: PDF, DOCX, JPG, PNG, XLSX (Max 25MB)</small>
+                            </div>
+                            <input type="file" id="transportation_records_file" name="transportation_records_file" 
+                                   accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.gif,.bmp" style="display: none;">
+                            <div class="file-preview" style="display: none;"></div>
+                            <div class="upload-progress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <span class="progress-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="button-group">
@@ -1092,12 +1366,30 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <div class="form-row">
                 <div class="form-group">
                     <label for="environmental_permits">Environmental Permits</label>
-                    <select id="environmental_permits" name="environmental_permits">
+                    <select id="environmental_permits" name="environmental_permits" onchange="toggleFileUpload('environmental_permits', 'environmental_permits_file_group')">
                         <option value="">Select</option>
                         <option value="Attached">Attached</option>
                         <option value="Not Required">Not Required</option>
                         <option value="In Process">In Process</option>
                     </select>
+                    <div id="environmental_permits_file_group" class="file-upload-group" style="display: none;">
+                        <div class="file-upload-area" data-field="environmental_permits_file">
+                            <div class="upload-placeholder">
+                                <i class="fa fa-upload"></i>
+                                <p>Drag & drop your file here or <span class="browse-link">browse</span></p>
+                                <small>Supported: PDF, DOCX, JPG, PNG, XLSX (Max 25MB)</small>
+                            </div>
+                            <input type="file" id="environmental_permits_file" name="environmental_permits_file" 
+                                   accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.gif,.bmp" style="display: none;">
+                            <div class="file-preview" style="display: none;"></div>
+                            <div class="upload-progress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <span class="progress-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="impact_assessment_performed">Impact Assessment Performed</label>
@@ -1207,11 +1499,29 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <div class="form-row">
                 <div class="form-group">
                     <label for="market_leakage_study">Market Leakage Study Performed</label>
-                    <select id="market_leakage_study" name="market_leakage_study">
+                    <select id="market_leakage_study" name="market_leakage_study" onchange="toggleFileUpload('market_leakage_study', 'market_leakage_study_file_group')">
                         <option value="">Select</option>
                         <option value="Yes (attach)">Yes (attach)</option>
                         <option value="No">No</option>
                     </select>
+                    <div id="market_leakage_study_file_group" class="file-upload-group" style="display: none;">
+                        <div class="file-upload-area" data-field="market_leakage_study_file">
+                            <div class="upload-placeholder">
+                                <i class="fa fa-upload"></i>
+                                <p>Drag & drop your file here or <span class="browse-link">browse</span></p>
+                                <small>Supported: PDF, DOCX, JPG, PNG, XLSX (Max 25MB)</small>
+                            </div>
+                            <input type="file" id="market_leakage_study_file" name="market_leakage_study_file" 
+                                   accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.gif,.bmp" style="display: none;">
+                            <div class="file-preview" style="display: none;"></div>
+                            <div class="upload-progress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <span class="progress-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="section-header">

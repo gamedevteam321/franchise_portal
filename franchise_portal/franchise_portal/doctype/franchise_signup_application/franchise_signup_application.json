@@ -37,6 +37,7 @@
   "section_break_payment",
   "feedstock_payment_type",
   "payment_details",
+  "feedstock_payment_file",
   "section_break_chemical",
   "carbon_content",
   "hydrogen_content",
@@ -80,9 +81,13 @@
   "handling_steps",
   "storage_duration",
   "chain_of_custody_protocol",
+  "chain_of_custody_file",
   "supplier_agreements",
+  "supplier_agreements_file",
   "origin_certificates",
+  "origin_certificates_file",
   "transportation_records",
+  "transportation_records_file",
   "monitoring_measurement_tab",
   "section_break_monitoring",
   "electricity_meter_id",
@@ -112,6 +117,7 @@
   "sustainability_assessment_tab",
   "section_break_sustainability",
   "environmental_permits",
+  "environmental_permits_file",
   "impact_assessment_performed",
   "regulatory_compliance",
   "certified_sustainable_source",
@@ -307,6 +313,12 @@
    "fieldname": "payment_details",
    "fieldtype": "Small Text",
    "label": "Payment Details"
+  },
+  {
+   "depends_on": "eval:doc.feedstock_payment_type && doc.feedstock_payment_type!='No Feedstock Payment'",
+   "fieldname": "feedstock_payment_file",
+   "fieldtype": "Attach",
+   "label": "Payment Documentation (Optional)"
   },
   {
    "fieldname": "section_break_chemical",
@@ -535,10 +547,22 @@
    "options": "Attached\nNot Available"
   },
   {
+   "depends_on": "eval:doc.chain_of_custody_protocol=='Attached'",
+   "fieldname": "chain_of_custody_file",
+   "fieldtype": "Attach",
+   "label": "Chain of Custody File"
+  },
+  {
    "fieldname": "supplier_agreements",
    "fieldtype": "Select",
    "label": "Supplier Agreements",
    "options": "Attached\nNot Available"
+  },
+  {
+   "depends_on": "eval:doc.supplier_agreements=='Attached'",
+   "fieldname": "supplier_agreements_file",
+   "fieldtype": "Attach",
+   "label": "Supplier Agreements File"
   },
   {
    "fieldname": "origin_certificates",
@@ -547,10 +571,22 @@
    "options": "Attached\nNot Available"
   },
   {
+   "depends_on": "eval:doc.origin_certificates=='Attached'",
+   "fieldname": "origin_certificates_file",
+   "fieldtype": "Attach",
+   "label": "Origin Certificates File"
+  },
+  {
    "fieldname": "transportation_records",
    "fieldtype": "Select",
    "label": "Transportation Records",
    "options": "Attached\nNot Available"
+  },
+  {
+   "depends_on": "eval:doc.transportation_records=='Attached'",
+   "fieldname": "transportation_records_file",
+   "fieldtype": "Attach",
+   "label": "Transportation Records File"
   },
   {
    "fieldname": "monitoring_measurement_tab",
@@ -710,6 +746,12 @@
    "options": "Attached\nNot Required\nIn Process"
   },
   {
+   "depends_on": "eval:doc.environmental_permits=='Attached'",
+   "fieldname": "environmental_permits_file",
+   "fieldtype": "Attach",
+   "label": "Environmental Permits File"
+  },
+  {
    "fieldname": "impact_assessment_performed",
    "fieldtype": "Select",
    "label": "Impact Assessment Performed",
@@ -762,6 +804,12 @@
    "fieldtype": "Select",
    "label": "Market Leakage Study Performed",
    "options": "Yes (attach)\nNo"
+  },
+  {
+   "depends_on": "eval:doc.market_leakage_study=='Yes (attach)'",
+   "fieldname": "market_leakage_study_file",
+   "fieldtype": "Attach",
+   "label": "Market Leakage Study File"
   },
   {
    "fieldname": "counterfactual_scenario",
