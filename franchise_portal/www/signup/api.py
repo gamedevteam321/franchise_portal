@@ -1241,6 +1241,9 @@ def serialize_datetimes(data):
 @frappe.whitelist(allow_guest=True)
 def send_resume_email(email):
     try:
+        # Debug log to track duplicate calls
+        frappe.logger().info(f"send_resume_email called for: {email}")
+        
         if not email or not email.strip():
             return {"success": False, "message": "Email is required"}
         # Check for incomplete application (status Draft or In Progress)
@@ -1269,9 +1272,9 @@ def send_resume_email(email):
         site_url = frappe.utils.get_url()
         resume_url = f"{site_url}/signup?resume={resume_token}"
         # Debug log before sending
-        frappe.log_error(f"About to send resume email to {email} with link {resume_url}", "DEBUG: Resume Email")
+        frappe.logger().info(f"About to send resume email to {email} with link {resume_url}")
         send_resume_email_to_user(email, doc.company_name or "", resume_url)
-        frappe.log_error(f"Resume email sent to {email}", "DEBUG: Resume Email")
+        frappe.logger().info(f"Resume email sent successfully to {email}")
         return {"success": True, "message": "Resume link sent successfully."}
     except Exception as e:
         frappe.log_error(f"Error sending resume email: {str(e)}", "Franchise Portal Resume Error")

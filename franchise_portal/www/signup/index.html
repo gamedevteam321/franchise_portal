@@ -1808,8 +1808,16 @@ body .franchise-signup-container .form-container .form-step#step3 {
 
 <!-- Modal and Resume Functionality Script -->
 <script>
-// Modal functionality
-document.addEventListener('DOMContentLoaded', function() {
+// Modal functionality - with duplicate prevention
+let modalInitialized = false;
+
+function initializeModal() {
+    if (modalInitialized) {
+        console.log('Modal already initialized, skipping...');
+        return;
+    }
+    
+    modalInitialized = true;
     console.log('Modal script loaded');
     
     const modalOverlay = document.getElementById('signup-modal-overlay');
@@ -1836,7 +1844,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Check if there's a resume or verify token in URL
     const urlParams = new URLSearchParams(window.location.search);
-    const resumeToken = urlParams.get('resume_token');
+    const resumeToken = urlParams.get('resume');
     const verifyToken = urlParams.get('verify');
 
     if (resumeToken) {
@@ -1845,13 +1853,10 @@ document.addEventListener('DOMContentLoaded', function() {
         formContainer.style.display = 'block';
         verifyResumeToken(resumeToken);
     } else if (verifyToken) {
-        // Hide modal and show form, then verify email token
+        // Hide modal and show form, email verification is handled by signup.js
         modalOverlay.style.display = 'none';
         formContainer.style.display = 'block';
-        handleEmailVerification(verifyToken);
-        setTimeout(function() {
-            if (typeof showStep === 'function') showStep(2);
-        }, 100);
+        // Note: handleEmailVerification is called from signup.js initialization
     } else {
         // Show modal initially
         modalOverlay.style.display = 'flex';
@@ -1887,40 +1892,51 @@ document.addEventListener('DOMContentLoaded', function() {
         resumeForm.reset();
     });
     
-    // Resume form submission
-    resumeForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const email = document.getElementById('resume-email').value;
-        
-        if (!email) {
-            resumeMessage.innerHTML = '<div style="color: red; margin-top: 10px;">Please enter your email address.</div>';
-            return;
-        }
-        
-        // Show loading message
-        resumeMessage.innerHTML = '<div style="color: #667eea; margin-top: 10px;">Sending resume link...</div>';
-        
-        console.log('Sending resume email to:', email);
-        // Call backend API
-        frappe.call({
-            method: 'franchise_portal.www.signup.api.send_resume_email',
-            args: {
-                email: email
-            },
-            callback: function(response) {
-                if (response.message && response.message.success) {
-                    resumeMessage.innerHTML = '<div style="color: green; margin-top: 10px;">Resume link sent to your email! Please check your inbox.</div>';
-                } else {
-                    resumeMessage.innerHTML = '<div style="color: red; margin-top: 10px;">' + (response.message?.message || 'Failed to send resume link. Please try again.') + '</div>';
-                }
-            },
-            error: function(error) {
-                resumeMessage.innerHTML = '<div style="color: red; margin-top: 10px;">Error sending resume link. Please try again.</div>';
-                console.error('Error:', error);
+    // Resume form submission - with duplicate prevention
+    if (!resumeForm.hasAttribute('data-handler-attached')) {
+        resumeForm.setAttribute('data-handler-attached', 'true');
+        resumeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('resume-email').value;
+            
+            if (!email) {
+                resumeMessage.innerHTML = '<div style="color: red; margin-top: 10px;">Please enter your email address.</div>';
+                return;
             }
+            
+            // Show loading message
+            resumeMessage.innerHTML = '<div style="color: #667eea; margin-top: 10px;">Sending resume link...</div>';
+            
+            console.log('Sending resume email to:', email);
+            // Call backend API
+            frappe.call({
+                method: 'franchise_portal.www.signup.api.send_resume_email',
+                args: {
+                    email: email
+                },
+                callback: function(response) {
+                    if (response.message && response.message.success) {
+                        resumeMessage.innerHTML = '<div style="color: green; margin-top: 10px;">Resume link sent to your email! Please check your inbox.</div>';
+                    } else {
+                        resumeMessage.innerHTML = '<div style="color: red; margin-top: 10px;">' + (response.message?.message || 'Failed to send resume link. Please try again.') + '</div>';
+                    }
+                },
+                error: function(error) {
+                    resumeMessage.innerHTML = '<div style="color: red; margin-top: 10px;">Error sending resume link. Please try again.</div>';
+                    console.error('Error:', error);
+                }
+            });
         });
-    });
-});
+    }
+}
+
+// Initialize modal on both DOMContentLoaded and when frappe is ready
+document.addEventListener('DOMContentLoaded', initializeModal);
+
+// Also initialize via frappe.ready if available
+if (typeof frappe !== 'undefined' && frappe.ready) {
+    frappe.ready(initializeModal);
+}
 
 // Function to verify resume token
 function verifyResumeToken(token) {

@@ -14,7 +14,7 @@ if (typeof frappe !== 'undefined' && frappe.ready) {
         console.log('Franchise signup form loaded via frappe.ready - Version 2.0 Email Verification');
         initializeForm();
         setupSignupOptions();
-        checkResumeToken();
+        // checkResumeToken now handled in index.html
     });
 } else {
     // Fallback if frappe is not available
@@ -22,7 +22,7 @@ if (typeof frappe !== 'undefined' && frappe.ready) {
         console.log('Franchise signup form loaded via DOMContentLoaded - Version 2.0 Email Verification');
         initializeForm();
         setupSignupOptions();
-        checkResumeToken();
+        // checkResumeToken now handled in index.html
     });
 }
 
@@ -69,8 +69,19 @@ function initializeForm() {
     // });
 }
 
+// Add global flag to prevent duplicate email verification
+let emailVerificationInProgress = false;
+
 function handleEmailVerification(token) {
     console.log('Handling email verification for token:', token);
+    
+    // Prevent duplicate verification calls
+    if (emailVerificationInProgress) {
+        console.log('Email verification already in progress, skipping duplicate call');
+        return;
+    }
+    
+    emailVerificationInProgress = true;
     
     frappe.call({
         method: 'franchise_portal.www.signup.api.verify_email',
@@ -115,6 +126,9 @@ function handleEmailVerification(token) {
                 currentStep = 1;
                 updateProgressIndicator();
             }
+            
+            // Reset flag after completion
+            emailVerificationInProgress = false;
         },
         error: function(error) {
             console.error('Verification error:', error);
@@ -127,6 +141,9 @@ function handleEmailVerification(token) {
             // Fallback to step 1
             currentStep = 1;
             updateProgressIndicator();
+            
+            // Reset flag after error
+            emailVerificationInProgress = false;
         }
     });
 }
@@ -2754,65 +2771,9 @@ function setupSignupOptions() {
         optionsModalContent.style.display = '';
         resumeModalContent.style.display = 'none';
     };
-    resumeForm.onsubmit = function(e) {
-        e.preventDefault();
-        const email = document.getElementById('resume-email').value;
-        sendResumeEmail(email);
-    };
+    // Note: Resume form submission is now handled in index.html only
 }
 
-function sendResumeEmail(email) {
-    const msgDiv = document.getElementById('resume-message');
-    msgDiv.innerHTML = 'Sending...';
-    frappe.call({
-        method: 'franchise_portal.www.signup.api.send_resume_email',
-        args: { email },
-        callback: function(response) {
-            if (response.message && response.message.success) {
-                msgDiv.innerHTML = 'A resume link has been sent to your email. Please check your inbox.';
-            } else {
-                msgDiv.innerHTML = response.message?.message || 'No incomplete application found or error occurred.';
-            }
-        },
-        error: function() {
-            msgDiv.innerHTML = 'Error sending resume email.';
-        }
-    });
-}
+// sendResumeEmail function removed - now handled in index.html
 
-function checkResumeToken() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const resumeToken = urlParams.get('resume');
-    if (resumeToken) {
-        document.getElementById('signup-modal-overlay').style.display = 'none';
-        document.getElementById('form-container').style.display = '';
-        document.getElementById('step-progress').style.display = '';
-        frappe.call({
-            method: 'franchise_portal.www.signup.api.verify_resume_token',
-            args: { token: resumeToken },
-            callback: function(response) {
-                if (response.message && response.message.success) {
-                    verificationToken = resumeToken;
-                    emailVerified = true;
-                    const sessionData = response.message.session_data;
-                    currentStep = sessionData.current_step;
-                    applicationData = sessionData.data;
-                    populateFormData(applicationData);
-                    showStep(currentStep);
-                    updateProgressIndicator();
-                } else {
-                    frappe.msgprint({
-                        title: 'Resume Failed',
-                        message: response.message?.message || 'Invalid or expired resume link.',
-                        indicator: 'red'
-                    });
-                    document.getElementById('signup-modal-overlay').style.display = '';
-                    document.getElementById('form-container').style.display = 'none';
-                    document.getElementById('step-progress').style.display = 'none';
-                    document.getElementById('options-modal-content').style.display = '';
-                    document.getElementById('resume-modal-content').style.display = 'none';
-                }
-            }
-        });
-    }
-}
+// checkResumeToken function removed - now handled in index.html
