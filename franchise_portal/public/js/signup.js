@@ -725,32 +725,27 @@ function showVerificationMessage(email) {
 }
 
 function saveStepData(step, callback) {
+    // Log the full applicationData at the start
+    console.log('DEBUG: applicationData at start of saveStepData:', JSON.stringify(window.applicationData, null, 2));
     const stepData = getStepData(step);
-    
-    // Store data locally
-    Object.assign(applicationData, stepData);
-    
-    // Always include email and company_name from stored data for all steps
-    if (applicationData.email) {
-        stepData.email = applicationData.email;
+    Object.assign(window.applicationData, stepData);
+    if (!window.applicationData.email) {
+        const emailField = document.getElementById('email');
+        if (emailField && emailField.value) window.applicationData.email = emailField.value;
     }
-    if (applicationData.company_name) {
-        stepData.company_name = applicationData.company_name;
-    }
-    
-    console.log('Saving step data:', stepData);
-    
+    const allData = { ...window.applicationData };
+    // Log the full data being sent
+    console.log('Saving step data:', JSON.stringify(allData, null, 2));
+
     if (emailVerified && verificationToken && verificationToken !== 'test-token') {
-        // Use verified session API (but not for test mode)
         frappe.call({
             method: 'franchise_portal.www.signup.api.save_step_with_verification',
             args: { 
                 token: verificationToken,
-                data: stepData,
+                data: allData,
                 step: step
             },
             callback: function(response) {
-                console.log('Verified API Response:', response);
                 if (response.message && response.message.success) {
                     if (response.message.application_id) {
                         applicationId = response.message.application_id;
@@ -758,11 +753,6 @@ function saveStepData(step, callback) {
                     if (callback) callback();
                 } else {
                     const errorMessage = response.message?.message || 'Failed to save step data. Please try again.';
-                    console.error('Verified API Error - Full details:');
-                    console.error('Response:', response);
-                    console.error('Response message:', response.message);
-                    console.error('Error message:', errorMessage);
-                    console.error('Full response object:', JSON.stringify(response, null, 2));
                     frappe.msgprint({
                         title: 'Error',
                         message: errorMessage,
@@ -771,13 +761,6 @@ function saveStepData(step, callback) {
                 }
             },
             error: function(xhr, textStatus, errorThrown) {
-                console.error('Network Error saving verified step - Full details:');
-                console.error('XHR:', xhr);
-                console.error('XHR status:', xhr.status);
-                console.error('XHR responseText:', xhr.responseText);
-                console.error('XHR responseJSON:', xhr.responseJSON);
-                console.error('Text Status:', textStatus);
-                console.error('Error Thrown:', errorThrown);
                 frappe.msgprint({
                     title: 'Network Error',
                     message: 'Failed to save step data. Please check your connection and try again.',
@@ -786,15 +769,10 @@ function saveStepData(step, callback) {
             }
         });
     } else {
-        // Fallback to original API (for test mode or non-verified users)
-        console.log('Using fallback original API (test mode or non-verified)');
         frappe.call({
             method: 'franchise_portal.www.signup.api.save_step',
-            args: { 
-                data: stepData 
-            },
+            args: { data: allData },
             callback: function(response) {
-                console.log('Fallback API Response:', response);
                 if (response.message && response.message.success) {
                     if (response.message.application_id) {
                         applicationId = response.message.application_id;
@@ -802,8 +780,6 @@ function saveStepData(step, callback) {
                     if (callback) callback();
                 } else {
                     const errorMessage = response.message?.message || 'Failed to save step data. Please try again.';
-                    console.error('Fallback API Error:', response);
-                    console.error('Full fallback error response:', JSON.stringify(response, null, 2));
                     frappe.msgprint({
                         title: 'Error',
                         message: errorMessage,
@@ -812,7 +788,6 @@ function saveStepData(step, callback) {
                 }
             },
             error: function(error) {
-                console.error('Network Error saving step:', error);
                 frappe.msgprint({
                     title: 'Network Error',
                     message: 'Failed to save step data. Please check your connection and try again.',
@@ -869,6 +844,11 @@ function submitApplication() {
         ...step6Data,
         ...step7Data
     };
+    // Always include email from step 1
+    if (!finalData.email) {
+        const step1Email = document.getElementById('email') && document.getElementById('email').value;
+        if (step1Email) finalData.email = step1Email;
+    }
     Object.assign(applicationData, finalData);
     // ... existing code for API call ...
     if (emailVerified && verificationToken && verificationToken !== 'test-token') {
@@ -2793,3 +2773,7 @@ function setupSignupOptions() {
 // sendResumeEmail function removed - now handled in index.html
 
 // checkResumeToken function removed - now handled in index.html
+
+window.applicationData = window.applicationData || {};
+Object.assign(window.applicationData, savedData);
+console.log('PATCH: applicationData after resume:', JSON.stringify(window.applicationData, null, 2));
