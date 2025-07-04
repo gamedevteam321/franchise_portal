@@ -1961,6 +1961,88 @@ window.testComplete5StepFlow = function() {
     return allData;
 };
 
+// Debug function to manually test Step 4 data saving
+window.testStep4Save = function() {
+    console.log('=== DEBUG: Testing Step 4 Data Saving ===');
+    
+    // First collect the data
+    const step4Data = getStepData(4);
+    console.log('Step 4 data to save:', step4Data);
+    
+    // Test saving with verification if available
+    if (emailVerified && verificationToken && verificationToken !== 'test-token') {
+        console.log('Using verified save method...');
+        frappe.call({
+            method: 'franchise_portal.www.signup.api.save_step_with_verification',
+            args: { 
+                token: verificationToken,
+                data: step4Data,
+                step: 4
+            },
+            callback: function(response) {
+                console.log('Step 4 save response:', response);
+                if (response.message && response.message.success) {
+                    console.log('✅ Step 4 data saved successfully!');
+                    frappe.msgprint({
+                        title: 'Success',
+                        message: 'Step 4 data saved successfully!',
+                        indicator: 'green'
+                    });
+                } else {
+                    console.error('❌ Step 4 save failed:', response.message?.message);
+                    frappe.msgprint({
+                        title: 'Error',
+                        message: response.message?.message || 'Failed to save Step 4 data',
+                        indicator: 'red'
+                    });
+                }
+            },
+            error: function(error) {
+                console.error('❌ Step 4 save network error:', error);
+                frappe.msgprint({
+                    title: 'Network Error',
+                    message: 'Failed to save Step 4 data. Please check your connection.',
+                    indicator: 'red'
+                });
+            }
+        });
+    } else {
+        console.log('Using regular save method...');
+        frappe.call({
+            method: 'franchise_portal.www.signup.api.save_step',
+            args: { 
+                data: step4Data 
+            },
+            callback: function(response) {
+                console.log('Step 4 save response:', response);
+                if (response.message && response.message.success) {
+                    console.log('✅ Step 4 data saved successfully!');
+                    frappe.msgprint({
+                        title: 'Success',
+                        message: 'Step 4 data saved successfully!',
+                        indicator: 'green'
+                    });
+                } else {
+                    console.error('❌ Step 4 save failed:', response.message?.message);
+                    frappe.msgprint({
+                        title: 'Error',
+                        message: response.message?.message || 'Failed to save Step 4 data',
+                        indicator: 'red'
+                    });
+                }
+            },
+            error: function(error) {
+                console.error('❌ Step 4 save network error:', error);
+                frappe.msgprint({
+                    title: 'Network Error',
+                    message: 'Failed to save Step 4 data. Please check your connection.',
+                    indicator: 'red'
+                });
+            }
+        });
+    }
+};
+
 // File Upload Functionality
 function toggleFileUpload(selectFieldId, fileGroupId) {
     console.log(`toggleFileUpload called: ${selectFieldId} -> ${fileGroupId}`);
@@ -2852,3 +2934,113 @@ function setupSignupOptions() {
 window.applicationData = window.applicationData || {};
 // Remove the reference to undefined savedData variable
 console.log('PATCH: applicationData after resume:', JSON.stringify(window.applicationData, null, 2));
+
+// Debug function specifically for Step 4 data issues
+window.debugStep4Data = function() {
+    console.log('=== DEBUG: Step 4 Data Collection ===');
+    
+    // Force navigation to Step 4 if not already there
+    if (currentStep !== 4) {
+        console.log(`Currently on step ${currentStep}, moving to step 4...`);
+        currentStep = 4;
+        showStep(4);
+    }
+    
+    // Test data collection
+    console.log('Testing getStepData(4):');
+    const rawData = getStepData(4);
+    console.log('Raw collected data:', rawData);
+    
+    // Check data types
+    console.log('\n--- Data Type Analysis ---');
+    Object.keys(rawData).forEach(key => {
+        const value = rawData[key];
+        const type = typeof value;
+        const isObject = type === 'object' && value !== null;
+        console.log(`${key}: "${value}" (${type}${isObject ? ' - OBJECT!' : ''})`);
+    });
+    
+    // Test Step 4 specific fields
+    const step4Fields = [
+        'source_type', 'generation_locations', 'generation_datetime', 'collection_method',
+        'number_of_suppliers', 'max_sourcing_radius', 'avg_transport_distance',
+        'primary_transport_method', 'handling_steps', 'storage_duration',
+        'chain_of_custody_protocol', 'chain_of_custody_file', 'supplier_agreements',
+        'supplier_agreements_file', 'origin_certificates', 'origin_certificates_file',
+        'transportation_records', 'transportation_records_file'
+    ];
+    
+    console.log('\n--- Step 4 Field Values ---');
+    step4Fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        const formValue = field ? field.value : 'FIELD_NOT_FOUND';
+        const dataValue = rawData[fieldId];
+        console.log(`${fieldId}: Form="${formValue}", Data="${dataValue}"`);
+    });
+    
+    // Test source_type checkboxes specifically
+    console.log('\n--- Source Type Checkbox Test ---');
+    const sourceTypeCheckboxes = document.querySelectorAll('input[name="source_type"]:checked');
+    console.log('Checked source_type checkboxes:', sourceTypeCheckboxes.length);
+    sourceTypeCheckboxes.forEach((checkbox, index) => {
+        console.log(`  Checkbox ${index + 1}: ${checkbox.value}`);
+    });
+    
+    // Test generation locations specifically
+    console.log('\n--- Generation Locations Test ---');
+    const container = document.getElementById('generation_locations_container');
+    console.log('Container found:', !!container);
+    if (container) {
+        const rows = container.querySelectorAll('.generation-location-row');
+        console.log('Location rows found:', rows.length);
+        rows.forEach((row, index) => {
+            const addressInput = row.querySelector(`input[name*="generation_location_address"]`);
+            const gpsInput = row.querySelector(`input[name*="generation_location_gps"]`);
+            console.log(`  Row ${index + 1}: Address="${addressInput?.value || 'N/A'}", GPS="${gpsInput?.value || 'N/A'}"`);
+        });
+    }
+    
+    // Test file upload status
+    console.log('\n--- Step 4 File Upload Status ---');
+    const fileFields = ['chain_of_custody', 'supplier_agreements', 'origin_certificates', 'transportation_records'];
+    fileFields.forEach(fieldId => {
+        const selectField = document.getElementById(fieldId);
+        const fileGroup = document.getElementById(fieldId + '_file_group');
+        console.log(`${fieldId}: "${selectField?.value}", Upload Group Visible: ${fileGroup?.style.display !== 'none'}`);
+    });
+    
+    console.log('\n=== Step 4 Debug Complete ===');
+    return rawData;
+};
+
+// Debug function to test complete 4-step flow
+window.testComplete4StepFlow = function() {
+    console.log('=== DEBUG: Testing Complete 4-Step Data Collection ===');
+    
+    // Collect data from all steps
+    const allData = {};
+    
+    for (let step = 1; step <= 4; step++) {
+        console.log(`Collecting data from step ${step}:`);
+        const stepData = getStepData(step);
+        console.log(`Step ${step} data:`, stepData);
+        Object.assign(allData, stepData);
+    }
+    
+    console.log('=== COMPLETE FORM DATA ===');
+    console.log('All collected data:', allData);
+    
+    // Count fields from each step
+    const step1Fields = ['company_name', 'contact_person', 'email', 'phone_number'];
+    const step2Fields = ['project_name', 'project_city', 'project_state', 'gps_coordinates'];
+    const step3Fields = ['primary_feedstock_category', 'annual_volume_available', 'heating_value'];
+    const step4Fields = ['source_type', 'generation_locations', 'collection_method'];
+    
+    console.log('=== FIELD COUNT SUMMARY ===');
+    console.log('Step 1 fields found:', step1Fields.filter(f => allData[f]).length, '/', step1Fields.length);
+    console.log('Step 2 fields found:', step2Fields.filter(f => allData[f]).length, '/', step2Fields.length);
+    console.log('Step 3 fields found:', step3Fields.filter(f => allData[f]).length, '/', step3Fields.length);
+    console.log('Step 4 fields found:', step4Fields.filter(f => allData[f]).length, '/', step4Fields.length);
+    
+    return allData;
+};

@@ -211,16 +211,41 @@ def save_step_with_verification(token, data, step):
                     if not updates.get('email_verified_at'):
                         updates['email_verified_at'] = now()
                 
-                # Single atomic database update
-                frappe.db.set_value("Franchise Signup Application", doc_name, updates)
-                
-                # Handle generation_locations only on final step to avoid version conflicts
-                if step == 7 and 'generation_locations' in session_data['data'] and isinstance(session_data['data']['generation_locations'], list):
+                # Handle generation_locations on step 4 and final step to avoid version conflicts
+                if (step == 4 or step == 5 or step == 7) and 'generation_locations' in session_data['data'] and isinstance(session_data['data']['generation_locations'], list):
+                    # Add debug logging
+                    debug_file = os.path.join(frappe.get_site_path(), 'debug_save.txt')
+                    with open(debug_file, 'a') as f:
+                        f.write(f"\n=== GENERATION_LOCATIONS PROCESSING {frappe.utils.now()} ===\n")
+                        f.write(f"Step: {step}\n")
+                        f.write(f"Generation locations data: {session_data['data']['generation_locations']}\n")
+                    
                     doc = frappe.get_doc("Franchise Signup Application", doc_name)
                     doc.set('generation_locations', [])
                     for location_data in session_data['data']['generation_locations']:
                         doc.append('generation_locations', location_data)
                     doc.save(ignore_permissions=True, ignore_version=True)
+                    
+                    # Add debug logging after save
+                    with open(debug_file, 'a') as f:
+                        f.write(f"Generation locations saved successfully\n")
+                        f.write(f"Doc generation_locations count: {len(doc.generation_locations)}\n")
+                
+                # Special handling for source_type checkbox data
+                if 'source_type' in session_data['data']:
+                    source_type_value = session_data['data']['source_type']
+                    # Ensure source_type is properly formatted as comma-separated string
+                    if isinstance(source_type_value, list):
+                        source_type_value = ', '.join(source_type_value)
+                    frappe.db.set_value("Franchise Signup Application", doc_name, 'source_type', source_type_value)
+                    
+                    # Add debug logging
+                    debug_file = os.path.join(frappe.get_site_path(), 'debug_save.txt')
+                    with open(debug_file, 'a') as f:
+                        f.write(f"SET source_type to '{source_type_value}' on app {doc_name}\n")
+                
+                # Single atomic database update
+                frappe.db.set_value("Franchise Signup Application", doc_name, updates)
                 
                 frappe.db.commit()
         
@@ -645,9 +670,6 @@ def finalize_application(session_data, token, current_step=7):
                 if not updates.get('email_verified_at'):
                     updates['email_verified_at'] = now()
             
-            # Single atomic database update for main fields
-            frappe.db.set_value("Franchise Signup Application", doc_name, updates)
-            
             # Handle generation_locations table separately if needed
             if 'generation_locations' in application_data and isinstance(application_data['generation_locations'], list):
                 doc = frappe.get_doc("Franchise Signup Application", doc_name)
@@ -759,15 +781,37 @@ def save_step(data):
             # Update fields from data - only include fields that exist in the doctype
             doctype_fields = frappe.get_meta("Franchise Signup Application").get_fieldnames_with_value()
             
+            # Debug: log doctype fields to check if generation_locations is included
+            with open(debug_file, 'a') as f:
+                f.write(f"DOCTYPE FIELDS COUNT: {len(doctype_fields)}\n")
+                f.write(f"GENERATION_LOCATIONS IN DOCTYPE FIELDS: {'generation_locations' in doctype_fields}\n")
+                if 'generation_locations' not in doctype_fields:
+                    f.write(f"CHILD TABLE FIELDS: {[f for f in doctype_fields if 'generation' in f.lower()]}\n")
+            
             for key, value in data.items():
-                if key in doctype_fields and key not in ['name', 'doctype']:
-                    # Special handling for generation_locations table
-                    if key == 'generation_locations' and isinstance(value, list):
-                        # Clear existing child records
-                        application.set('generation_locations', [])
-                        # Add new child records
-                        for location_data in value:
-                            application.append('generation_locations', location_data)
+                # Handle child table fields separately (not in doctype_fields)
+                if key == 'generation_locations' and isinstance(value, list):
+                    # Debug logging for generation_locations
+                    with open(debug_file, 'a') as f:
+                        f.write(f"PROCESSING generation_locations: {value}\n")
+                    
+                    # Clear existing child records
+                    application.set('generation_locations', [])
+                    # Add new child records
+                    for location_data in value:
+                        application.append('generation_locations', location_data)
+                        with open(debug_file, 'a') as f:
+                            f.write(f"ADDED location: {location_data}\n")
+                # Handle regular fields that exist in doctype
+                elif key in doctype_fields and key not in ['name', 'doctype']:
+                    # Special handling for source_type checkbox data
+                    if key == 'source_type':
+                        # Ensure source_type is properly formatted as comma-separated string
+                        if isinstance(value, list):
+                            value = ', '.join(value)
+                        setattr(application, key, value)
+                        with open(debug_file, 'a') as f:
+                            f.write(f"SET source_type to '{value}'\n")
                     else:
                         setattr(application, key, value)
                         # File debug: track field setting
@@ -776,7 +820,7 @@ def save_step(data):
                 else:
                     # Debug: track fields that are being skipped
                     with open(debug_file, 'a') as f:
-                        f.write(f"SKIPPED {key} (hasattr={hasattr(application, key)}, excluded={key in ['name', 'doctype']})\n")
+                        f.write(f"SKIPPED {key} (hasattr={hasattr(application, key)}, in_doctype_fields={key in doctype_fields}, excluded={key in ['name', 'doctype']})\n")
             
             application.modified_at = frappe.utils.now()
             application.save(ignore_permissions=True)
@@ -802,8 +846,22 @@ def save_step(data):
                 if hasattr(application, key) and key not in ['name', 'doctype']:
                     # Special handling for generation_locations table
                     if key == 'generation_locations' and isinstance(value, list):
+                        # Debug logging for generation_locations
+                        with open(debug_file, 'a') as f:
+                            f.write(f"NEW APP: PROCESSING generation_locations: {value}\n")
+                        
                         for location_data in value:
                             application.append('generation_locations', location_data)
+                            with open(debug_file, 'a') as f:
+                                f.write(f"NEW APP: ADDED location: {location_data}\n")
+                    # Special handling for source_type checkbox data
+                    elif key == 'source_type':
+                        # Ensure source_type is properly formatted as comma-separated string
+                        if isinstance(value, list):
+                            value = ', '.join(value)
+                        setattr(application, key, value)
+                        with open(debug_file, 'a') as f:
+                            f.write(f"NEW APP: SET source_type to '{value}'\n")
                     else:
                         setattr(application, key, value)
                         # File debug: track field setting
