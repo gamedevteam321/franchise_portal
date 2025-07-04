@@ -1,3 +1,9 @@
+console.log('=== FORCE UPDATED VERSION - CACHE BUSTED ===');
+console.log('=== NEW VERSION LOADED AT:', new Date().toISOString(), '===');
+console.log('=== CURRENT STEP FIX APPLIED ===');
+console.log('=== VERSION ID: 20250704_1600_FIXED ===');
+console.log('=== FILE MODIFIED: 2025-07-04 16:05:00 ===');
+
 // Franchise Portal Signup JavaScript
 // Version: 2.0 - Email Verification Workflow
 
@@ -7,6 +13,9 @@ let applicationId = null;
 let verificationToken = null;
 let emailVerified = false;
 let isResumeMode = false;
+
+// Ensure applicationData is available globally
+window.applicationData = applicationData;
 
 // Initialize the form when page loads
 if (typeof frappe !== 'undefined' && frappe.ready) {
@@ -175,6 +184,11 @@ function nextStep(step) {
         saveStepData(step, () => {
             console.log('Step data saved successfully, moving to next step');
             currentStep = step + 1;
+            
+            // current_step is already updated in saveStepData, just log for verification
+            console.log('Current step updated to:', currentStep);
+            console.log('applicationData.current_step is:', applicationData.current_step);
+            
             showStep(currentStep);
             updateProgressIndicator();
             //if (nextBtn) nextBtn.disabled = false;
@@ -725,17 +739,64 @@ function showVerificationMessage(email) {
 }
 
 function saveStepData(step, callback) {
+    console.log('=== UPDATED saveStepData FUNCTION CALLED ===');
+    // Ensure applicationData is properly initialized
+    if (!window.applicationData) {
+        window.applicationData = {};
+    }
+    
+    // Synchronize local and global applicationData
+    applicationData = window.applicationData;
+    
+    // If we're in resume mode, ensure current_step is correct
+    if (isResumeMode && window.applicationData.current_step) {
+        console.log('Resume mode detected, ensuring current_step is correct:', window.applicationData.current_step);
+        currentStep = window.applicationData.current_step;
+    }
+    
     // Log the full applicationData at the start
-    console.log('DEBUG: applicationData at start of saveStepData:', JSON.stringify(window.applicationData, null, 2));
     const stepData = getStepData(step);
+    console.log('DEBUG: stepData:', JSON.stringify(stepData, null, 2));
+
+    // First, update with step data
     Object.assign(window.applicationData, stepData);
+    Object.assign(applicationData, stepData); // Also update local variable
+    
+    // Handle email if missing
     if (!window.applicationData.email) {
         const emailField = document.getElementById('email');
-        if (emailField && emailField.value) window.applicationData.email = emailField.value;
+        if (emailField && emailField.value) {
+            window.applicationData.email = emailField.value;
+            applicationData.email = emailField.value;
+        }
     }
+    
+    // IMPORTANT: Set current_step to the NEXT step AFTER all other updates
+    // This ensures it doesn't get overwritten by old data from the database
+    const nextStepNumber = step + 1;
+    console.log('Setting current_step from', step, 'to', nextStepNumber);
+    console.log('Previous current_step value was:', window.applicationData.current_step);
+    
+    // Force update current_step to the next step
+    window.applicationData.current_step = nextStepNumber;
+    applicationData.current_step = nextStepNumber;
+    
+    // Also update the local currentStep variable
+    currentStep = nextStepNumber;
+    
+    console.log('DEBUG: applicationData after current_step update:', JSON.stringify(window.applicationData, null, 2));
+    console.log('Verification - current_step in window.applicationData:', window.applicationData.current_step);
+    console.log('Verification - current_step in applicationData:', applicationData.current_step);
+
+    
     const allData = { ...window.applicationData };
+    
+    // Final verification: ensure current_step is correct in the data being sent
+    allData.current_step = nextStepNumber;
+    console.log('Final verification - current_step in allData:', allData.current_step);
+
     // Log the full data being sent
-    console.log('Saving step data:', JSON.stringify(allData, null, 2));
+    console.log('Saving step data with current_step:', nextStepNumber, 'Data:', JSON.stringify(allData, null, 2));
 
     if (emailVerified && verificationToken && verificationToken !== 'test-token') {
         frappe.call({
@@ -746,13 +807,20 @@ function saveStepData(step, callback) {
                 step: step
             },
             callback: function(response) {
+                console.log('Save step with verification response:', response);
                 if (response.message && response.message.success) {
+                    console.log('Step data saved successfully with verification');
                     if (response.message.application_id) {
                         applicationId = response.message.application_id;
+                        console.log('Application ID updated:', applicationId);
                     }
-                    if (callback) callback();
+                    if (callback) {
+                        console.log('Executing callback function');
+                        callback();
+                    }
                 } else {
                     const errorMessage = response.message?.message || 'Failed to save step data. Please try again.';
+                    console.error('Save step error:', errorMessage);
                     frappe.msgprint({
                         title: 'Error',
                         message: errorMessage,
@@ -773,13 +841,20 @@ function saveStepData(step, callback) {
             method: 'franchise_portal.www.signup.api.save_step',
             args: { data: allData },
             callback: function(response) {
+                console.log('Save step (no verification) response:', response);
                 if (response.message && response.message.success) {
+                    console.log('Step data saved successfully (no verification)');
                     if (response.message.application_id) {
                         applicationId = response.message.application_id;
+                        console.log('Application ID updated:', applicationId);
                     }
-                    if (callback) callback();
+                    if (callback) {
+                        console.log('Executing callback function');
+                        callback();
+                    }
                 } else {
                     const errorMessage = response.message?.message || 'Failed to save step data. Please try again.';
+                    console.error('Save step error (no verification):', errorMessage);
                     frappe.msgprint({
                         title: 'Error',
                         message: errorMessage,
@@ -2775,5 +2850,5 @@ function setupSignupOptions() {
 // checkResumeToken function removed - now handled in index.html
 
 window.applicationData = window.applicationData || {};
-Object.assign(window.applicationData, savedData);
+// Remove the reference to undefined savedData variable
 console.log('PATCH: applicationData after resume:', JSON.stringify(window.applicationData, null, 2));

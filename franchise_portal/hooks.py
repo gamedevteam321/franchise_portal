@@ -30,7 +30,17 @@ app_include_js = "/assets/franchise_portal/js/franchise_portal.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/franchise_portal/css/franchise_portal.css"
-web_include_js = "/assets/franchise_portal/js/signup.js"
+import os
+import time
+
+# Get the modification time of the signup.js file for cache busting
+signup_js_path = os.path.join(os.path.dirname(__file__), 'public', 'js', 'signup.js')
+if os.path.exists(signup_js_path):
+    mod_time = int(os.path.getmtime(signup_js_path))
+else:
+    mod_time = int(time.time())
+
+web_include_js = f"/assets/franchise_portal/js/signup.js?v={mod_time}"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "franchise_portal/public/scss/website"

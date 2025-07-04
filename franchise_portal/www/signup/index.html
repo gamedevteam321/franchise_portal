@@ -1982,7 +1982,13 @@ function verifyResumeToken(token) {
                 // --- PATCH: Merge all saved data into applicationData for global access ---
                 window.applicationData = window.applicationData || {};
                 Object.assign(window.applicationData, savedData);
+                
+                // IMPORTANT: Ensure current_step is set correctly after resume
+                // The savedData might have an old current_step value, so we need to override it
+                window.applicationData.current_step = currentStep;
+                
                 console.log('PATCH: applicationData after resume:', window.applicationData);
+                console.log('PATCH: Current step set to:', currentStep);
                 // --- END PATCH ---
                 
                 // Show success message
@@ -2255,5 +2261,16 @@ function showMapError(container, message) {
 // Export the load function globally
 window.loadGoogleMapsAPI = loadGoogleMapsAPI;
 window.showMapError = showMapError;
+</script>
+
+<!-- Force load updated signup.js with cache busting -->
+<script>
+// Dynamic cache busting based on file modification time
+(function() {
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = '/assets/franchise_portal/js/signup.js?v=' + Date.now();
+    document.head.appendChild(script);
+})();
 </script>
 {% endblock %} 
