@@ -2746,31 +2746,47 @@ function setupSignupOptions() {
     const formContainer = document.getElementById('form-container');
     const stepProgress = document.getElementById('step-progress');
 
+    // Check if we're on the signup page (elements exist)
+    if (!formContainer || !stepProgress) {
+        console.log('Franchise signup elements not found - not on signup page');
+        return;
+    }
+
     // Hide all main content until a choice is made
-    formContainer.style.display = 'none';
-    stepProgress.style.display = 'none';
+    if(formContainer && formContainer.style) formContainer.style.display = 'none';
+    if(stepProgress && stepProgress.style) stepProgress.style.display = 'none';
 
     // Show options by default
-    optionsModalContent.style.display = '';
-    resumeModalContent.style.display = 'none';
+    if (optionsModalContent) optionsModalContent.style.display = '';
+    if (resumeModalContent) resumeModalContent.style.display = 'none';
 
-    btnSignup.onclick = function() {
-        isResumeMode = false;
-        modalOverlay.style.display = 'none';
-        formContainer.style.display = '';
-        stepProgress.style.display = '';
-    };
-    btnResume.onclick = function() {
-        isResumeMode = true;
-        optionsModalContent.style.display = 'none';
-        resumeModalContent.style.display = '';
-        document.getElementById('resume-message').innerHTML = '';
-        document.getElementById('resume-email').value = '';
-    };
-    backToOptions.onclick = function() {
-        optionsModalContent.style.display = '';
-        resumeModalContent.style.display = 'none';
-    };
+    if (btnSignup) {
+        btnSignup.onclick = function() {
+            isResumeMode = false;
+            if (modalOverlay) modalOverlay.style.display = 'none';
+            if(formContainer && formContainer.style) formContainer.style.display = '';
+            if(stepProgress && stepProgress.style) stepProgress.style.display = '';
+        };
+    }
+    
+    if (btnResume) {
+        btnResume.onclick = function() {
+            isResumeMode = true;
+            if (optionsModalContent) optionsModalContent.style.display = 'none';
+            if (resumeModalContent) resumeModalContent.style.display = '';
+            const resumeMessage = document.getElementById('resume-message');
+            const resumeEmail = document.getElementById('resume-email');
+            if (resumeMessage) resumeMessage.innerHTML = '';
+            if (resumeEmail) resumeEmail.value = '';
+        };
+    }
+    
+    if (backToOptions) {
+        backToOptions.onclick = function() {
+            if (optionsModalContent) optionsModalContent.style.display = '';
+            if (resumeModalContent) resumeModalContent.style.display = 'none';
+        };
+    }
     // Note: Resume form submission is now handled in index.html only
 }
 

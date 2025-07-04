@@ -5,6 +5,9 @@
 window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
 </script>
 <style>
+    .navbar.navbar-light.navbar-expand-lg{
+        display: none !important;
+    }
 /* Higher specificity selectors to override Frappe default styles */
 .page-content .franchise-signup-container,
 .franchise-signup-container {
@@ -1847,20 +1850,40 @@ function initializeModal() {
     const resumeToken = urlParams.get('resume');
     const verifyToken = urlParams.get('verify');
 
+    console.log('resumeToken:', resumeToken);
+    console.log('verifyToken:', verifyToken);
+
     if (resumeToken) {
         // Hide modal and show form, then verify token
-        modalOverlay.style.display = 'none';
-        formContainer.style.display = 'block';
+        console.log('Resume token detected, hiding modal and showing form');
+        if (modalOverlay) modalOverlay.style.display = 'none';
+        if (formContainer) {
+            formContainer.style.display = 'block';
+            console.log('Form container display set to block');
+            // Force the display with !important
+            formContainer.style.setProperty('display', 'block', 'important');
+        } else {
+            console.error('Form container element not found!');
+        }
         verifyResumeToken(resumeToken);
     } else if (verifyToken) {
         // Hide modal and show form, email verification is handled by signup.js
-        modalOverlay.style.display = 'none';
-        formContainer.style.display = 'block';
+        console.log('Verify token detected, hiding modal and showing form');
+        if (modalOverlay) modalOverlay.style.display = 'none';
+        if (formContainer) {
+            formContainer.style.display = 'block';
+            console.log('Form container display set to block');
+            // Force the display with !important
+            formContainer.style.setProperty('display', 'block', 'important');
+        } else {
+            console.error('Form container element not found!');
+        }
         // Note: handleEmailVerification is called from signup.js initialization
     } else {
         // Show modal initially
-        modalOverlay.style.display = 'flex';
-        formContainer.style.display = 'none';
+        console.log('No resume or verify token found, showing modal');
+        if (modalOverlay) modalOverlay.style.display = 'flex';
+        if (formContainer) formContainer.style.display = 'none';
     }
     
     // Sign Up button - hide modal and show form
@@ -1947,6 +1970,9 @@ function verifyResumeToken(token) {
         },
         callback: function(response) {
             if (response.message && response.message.success) {
+                // Ensure form container is visible
+                ensureFormContainerVisible();
+                
                 // Pre-fill form with saved data
                 const savedData = response.message.session_data.data;
                 const currentStep = response.message.current_step || 1;
@@ -1996,7 +2022,22 @@ function prefillFormData(data) {
     for (const [fieldName, value] of Object.entries(data)) {
         const field = document.getElementById(fieldName);
         if (field) {
-            field.value = value;
+            // Skip file input fields - they cannot be programmatically set
+            if (field.type === 'file') {
+                console.log(`Skipping file field: ${fieldName}`);
+                continue;
+            }
+            
+            // Handle different field types appropriately
+            if (field.type === 'checkbox') {
+                field.checked = Boolean(value);
+            } else if (field.type === 'radio') {
+                if (value) {
+                    field.checked = true;
+                }
+            } else {
+                field.value = value;
+            }
             
             // Trigger change events for fields that have onchange handlers
             if (field.onchange) {
@@ -2017,6 +2058,37 @@ function prefillFormData(data) {
         primaryFeedstock.value = data.primary_feedstock_category;
         if (primaryFeedstock.onchange) primaryFeedstock.onchange();
     }
+    
+    // Handle file fields by showing uploaded files if they exist
+    handleFileFieldRestoration(data);
+}
+
+// Function to handle file field restoration
+function handleFileFieldRestoration(data) {
+    const fileFields = [
+        'feedstock_payment_file',
+        'chain_of_custody_file', 
+        'supplier_agreements_file',
+        'origin_certificates_file',
+        'transportation_records_file',
+        'environmental_permits_file',
+        'market_leakage_study_file'
+    ];
+    
+    fileFields.forEach(fieldName => {
+        if (data[fieldName]) {
+            const fileContainer = document.querySelector(`[data-field="${fieldName}"] .file-list`);
+            if (fileContainer) {
+                // Show that files were previously uploaded
+                fileContainer.innerHTML = `
+                    <div style="background: #e7f3ff; padding: 10px; border-radius: 5px; margin: 5px 0; border: 1px solid #b3d9ff;">
+                        <span style="color: #0066cc;">📎 Previously uploaded files restored</span>
+                        <br><small style="color: #6c757d;">Files will be re-uploaded when you continue</small>
+                    </div>
+                `;
+            }
+        }
+    });
 }
 
 // Debug function to test modal switching
@@ -2044,6 +2116,18 @@ function debugModal() {
     // Add a visual indicator
     resumeContent.style.border = '3px solid red';
     resumeContent.style.backgroundColor = '#fff3cd';
+}
+
+// Helper to ensure form container is visible
+function ensureFormContainerVisible() {
+    var formContainer = document.getElementById('form-container');
+    if (formContainer) {
+        formContainer.style.display = 'block';
+        formContainer.style.setProperty('display', 'block', 'important');
+        console.log('ensureFormContainerVisible: forced display block');
+    } else {
+        console.error('ensureFormContainerVisible: form container not found');
+    }
 }
 </script>
 
