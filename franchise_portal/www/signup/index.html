@@ -1977,7 +1977,11 @@ function verifyResumeToken(token) {
                 // Pre-fill form with saved data
                 const savedData = response.message.session_data.data;
                 const currentStep = response.message.current_step || 1;
-                prefillFormData(savedData);
+                
+                // Add a small delay to ensure all functions are loaded before prefilling
+                setTimeout(() => {
+                    prefillFormData(savedData);
+                }, 100);
 
                 // --- PATCH: Merge all saved data into applicationData for global access ---
                 window.applicationData = window.applicationData || {};
@@ -2031,6 +2035,8 @@ function goToStep(stepNumber) {
 
 // Function to pre-fill form data
 function prefillFormData(data) {
+    console.log('Starting to prefill form data:', data);
+    
     // Pre-fill all form fields with saved data
     for (const [fieldName, value] of Object.entries(data)) {
         const field = document.getElementById(fieldName);
@@ -2044,18 +2050,23 @@ function prefillFormData(data) {
             // Handle different field types appropriately
             if (field.type === 'checkbox') {
                 field.checked = Boolean(value);
+                console.log(`Set checkbox ${fieldName} to:`, Boolean(value));
             } else if (field.type === 'radio') {
                 if (value) {
                     field.checked = true;
+                    console.log(`Set radio ${fieldName} to checked`);
                 }
             } else {
                 field.value = value;
+                console.log(`Set field ${fieldName} to:`, value);
             }
             
             // Trigger change events for fields that have onchange handlers
             if (field.onchange) {
                 field.onchange();
             }
+        } else {
+            console.log(`Field not found: ${fieldName}`);
         }
     }
     
@@ -2071,6 +2082,119 @@ function prefillFormData(data) {
         primaryFeedstock.value = data.primary_feedstock_category;
         if (primaryFeedstock.onchange) primaryFeedstock.onchange();
     }
+    
+    // Special handling for source_type checkboxes
+    if (data.source_type) {
+        const sourceTypeValues = data.source_type.split(', ').map(s => s.trim());
+        const sourceTypeCheckboxes = document.querySelectorAll('input[name="source_type"]');
+        sourceTypeCheckboxes.forEach(checkbox => {
+            checkbox.checked = sourceTypeValues.includes(checkbox.value);
+        });
+        // Trigger the toggle function for "Other" option
+        if (typeof window.toggleSourceTypeOther === 'function') {
+            window.toggleSourceTypeOther();
+        }
+    }
+    
+    // Special handling for Step 4: Generation Locations (dynamic rows)
+    if (data.generation_locations && Array.isArray(data.generation_locations)) {
+        console.log('Processing generation locations for resume:', data.generation_locations);
+        const container = document.getElementById('generation_locations_container');
+        if (container) {
+            container.innerHTML = ''; // Clear existing
+            data.generation_locations.forEach((loc, idx) => {
+                console.log(`Adding generation location ${idx + 1}:`, loc);
+                if (typeof window.addGenerationLocation === 'function') {
+                    window.addGenerationLocation(); // Add a new row
+                    const addressInput = document.getElementById(`generation_location_address_${idx+1}`);
+                    const gpsInput = document.getElementById(`generation_location_gps_${idx+1}`);
+                    if (addressInput) addressInput.value = loc.address || '';
+                    if (gpsInput) gpsInput.value = loc.gps_coordinates || '';
+                    console.log(`Set location ${idx + 1}: address="${loc.address || ''}", gps="${loc.gps_coordinates || ''}"`);
+                } else {
+                    console.error('addGenerationLocation function not available');
+                }
+            });
+        } else {
+            console.error('generation_locations_container not found');
+        }
+    }
+    
+    // Special handling for conditional fields that show/hide other fields
+    const conditionalFields = [
+        { field: 'feedstock_payment_type', toggleFunc: 'togglePaymentDetails' },
+        { field: 'contaminants_present', toggleFunc: 'toggleOtherContaminants' },
+        { field: 'plant_operation_schedule', toggleFunc: 'toggleSeasonalMonths' }
+    ];
+    
+    conditionalFields.forEach(({ field, toggleFunc }) => {
+        if (data[field]) {
+            const fieldElement = document.getElementById(field);
+            if (fieldElement) {
+                fieldElement.value = data[field];
+                // Trigger the toggle function to show/hide dependent fields
+                if (typeof window[toggleFunc] === 'function') {
+                    window[toggleFunc]();
+                }
+            }
+        }
+    });
+    
+    // Special handling for file upload fields that show/hide file upload areas
+    const fileUploadFields = [
+        'chain_of_custody_protocol',
+        'supplier_agreements', 
+        'origin_certificates',
+        'transportation_records',
+        'environmental_permits',
+        'market_leakage_study'
+    ];
+    
+    fileUploadFields.forEach(fieldName => {
+        if (data[fieldName]) {
+            const fieldElement = document.getElementById(fieldName);
+            if (fieldElement) {
+                fieldElement.value = data[fieldName];
+                // Trigger the file upload toggle function
+                if (typeof window.toggleFileUpload === 'function') {
+                    const fileGroupId = fieldName + '_file_group';
+                    window.toggleFileUpload(fieldName, fileGroupId);
+                }
+            }
+        }
+    });
+    
+    // Special handling for "Other" fields that need to show/hide and populate
+    const otherFields = [
+        { field: 'fuel_type', otherField: 'fuel_type_other', toggleFunc: 'toggleOtherField' },
+        { field: 'drying_method', otherField: 'drying_method_other', toggleFunc: 'toggleOtherField' },
+        { field: 'energy_source', otherField: 'energy_source_other', toggleFunc: 'toggleOtherField' },
+        { field: 'testing_standards_used', otherField: 'testing_standards_other', toggleFunc: 'toggleTestingStandardsOther' }
+    ];
+    
+    otherFields.forEach(({ field, otherField, toggleFunc }) => {
+        if (data[field]) {
+            const fieldElement = document.getElementById(field);
+            if (fieldElement) {
+                fieldElement.value = data[field];
+                // Trigger the toggle function to show/hide the "other" field
+                if (typeof window[toggleFunc] === 'function') {
+                    if (toggleFunc === 'toggleOtherField') {
+                        window[toggleFunc](field, field + '_other_group');
+                    } else {
+                        window[toggleFunc]();
+                    }
+                }
+                // Populate the "other" field if it exists
+                if (data[otherField]) {
+                    const otherElement = document.getElementById(otherField);
+                    if (otherElement) {
+                        otherElement.value = data[otherField];
+                    }
+                }
+            }
+        }
+    });
     
     // Handle file fields by showing uploaded files if they exist
     handleFileFieldRestoration(data);
