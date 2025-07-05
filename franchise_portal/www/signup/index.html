@@ -2200,6 +2200,22 @@ function prefillFormData(data) {
     handleFileFieldRestoration(data);
 }
 
+// Helper function to format file size
+function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Helper function to get file extension from filename or URL
+function getFileExtension(filename) {
+    if (!filename) return '';
+    const match = filename.match(/\.([^.]+)$/);
+    return match ? match[1].toLowerCase() : '';
+}
+
 // Function to handle file field restoration
 function handleFileFieldRestoration(data) {
     const fileFields = [
@@ -2214,15 +2230,142 @@ function handleFileFieldRestoration(data) {
     
     fileFields.forEach(fieldName => {
         if (data[fieldName]) {
-            const fileContainer = document.querySelector(`[data-field="${fieldName}"] .file-list`);
-            if (fileContainer) {
-                // Show that files were previously uploaded
-                fileContainer.innerHTML = `
-                    <div style="background: #e7f3ff; padding: 10px; border-radius: 5px; margin: 5px 0; border: 1px solid #b3d9ff;">
-                        <span style="color: #0066cc;">📎 Previously uploaded files restored</span>
-                        <br><small style="color: #6c757d;">Files will be re-uploaded when you continue</small>
+            console.log(`Processing file field: ${fieldName}`, data[fieldName]);
+            
+            // Find the file upload area for this field
+            const fileUploadArea = document.querySelector(`[data-field="${fieldName}"]`);
+            if (fileUploadArea) {
+                // Keep the upload placeholder visible for new uploads
+                // Don't hide it - users can still upload new files
+                
+                // Create or find the restored files section below the upload area
+                let restoredFilesSection = fileUploadArea.querySelector('.restored-files-section');
+                if (!restoredFilesSection) {
+                    // Create the restored files section if it doesn't exist
+                    restoredFilesSection = document.createElement('div');
+                    restoredFilesSection.className = 'restored-files-section';
+                    restoredFilesSection.style.cssText = `
+                        margin-top: 20px;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border: 1px solid #e9ecef;
+                        border-radius: 8px;
+                    `;
+                    
+                    // Insert it after the file upload area
+                    fileUploadArea.parentNode.insertBefore(restoredFilesSection, fileUploadArea.nextSibling);
+                }
+                
+                // Parse the file data - it could be a string, object, or array
+                let fileData = data[fieldName];
+                let files = [];
+                
+                if (typeof fileData === 'string') {
+                    try {
+                        fileData = JSON.parse(fileData);
+                    } catch (e) {
+                        // If it's not JSON, treat it as a single file URL
+                        files = [{ url: fileData, name: 'Uploaded File' }];
+                    }
+                }
+                
+                if (Array.isArray(fileData)) {
+                    files = fileData;
+                } else if (fileData && typeof fileData === 'object') {
+                    files = [fileData];
+                }
+                
+                // Generate HTML for each file
+                const fileHTML = files.map((file, index) => {
+                    const fileName = file.name || file.file_name || `File ${index + 1}`;
+                    const fileUrl = file.url || file.file_url || file;
+                    const fileSize = file.size || file.file_size || '';
+                    const fileType = file.type || file.file_type || '';
+                    
+                    // Get file extension for better type detection
+                    const fileExt = getFileExtension(fileName);
+                    
+                    // Determine file icon based on type and extension
+                    let fileIcon = '📄';
+                    let isImage = false;
+                    
+                    if (fileType.includes('image') || fileExt.match(/^(jpg|jpeg|png|gif|bmp|webp|svg)$/i)) {
+                        fileIcon = '🖼️';
+                        isImage = true;
+                    } else if (fileType.includes('pdf') || fileExt === 'pdf') {
+                        fileIcon = '📕';
+                    } else if (fileType.includes('word') || fileExt.match(/^(doc|docx)$/i)) {
+                        fileIcon = '📘';
+                    } else if (fileType.includes('excel') || fileExt.match(/^(xls|xlsx|csv)$/i)) {
+                        fileIcon = '📊';
+                    } else if (fileExt.match(/^(txt|md|rtf)$/i)) {
+                        fileIcon = '📝';
+                    } else if (fileExt.match(/^(zip|rar|7z|tar|gz)$/i)) {
+                        fileIcon = '📦';
+                    }
+                    
+                    // Generate thumbnail for images
+                    let thumbnailHTML = '';
+                    if (isImage && fileUrl) {
+                        thumbnailHTML = `
+                            <div style="margin: 10px 0;">
+                                <img src="${fileUrl}" alt="${fileName}" 
+                                     style="max-width: 200px; max-height: 150px; border-radius: 5px; border: 1px solid #ddd; object-fit: cover;"
+                                     onerror="this.style.display='none'">
+                            </div>
+                        `;
+                    }
+                    
+                    // Format file size if it's a number
+                    const formattedSize = typeof fileSize === 'number' ? formatFileSize(fileSize) : fileSize;
+                    
+                    return `
+                        <div class="file-item" style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #e9ecef;">
+                            <div class="file-item-info" style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <div class="file-item-icon" style="font-size: 24px; margin-right: 15px;">
+                                    ${fileIcon}
+                                </div>
+                                <div class="file-item-details" style="flex: 1;">
+                                    <div class="file-item-name" style="font-weight: 600; color: #495057; margin-bottom: 5px;">
+                                        ${fileName}
+                                    </div>
+                                    ${formattedSize ? `<div class="file-item-size" style="font-size: 12px; color: #6c757d;">Size: ${formattedSize}</div>` : ''}
+                                    ${fileType ? `<div class="file-item-type" style="font-size: 12px; color: #6c757d;">Type: ${fileType}</div>` : ''}
+                                    ${fileExt && !fileType ? `<div class="file-item-extension" style="font-size: 12px; color: #6c757d;">Extension: .${fileExt.toUpperCase()}</div>` : ''}
+                                </div>
+                            </div>
+                            ${thumbnailHTML}
+                            <div class="file-item-actions" style="display: flex; gap: 10px; margin-top: 10px;">
+                                <a href="${fileUrl}" target="_blank" class="file-action-btn download" 
+                                   style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 14px;">
+                                    📥 Download
+                                </a>
+                                <a href="${fileUrl}" target="_blank" class="file-action-btn view" 
+                                   style="background-color: #007bff; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 14px;">
+                                    👁️ View
+                                </a>
+                            </div>
+                            <div style="margin-top: 10px; padding: 8px; background: #e7f3ff; border-radius: 5px; border: 1px solid #b3d9ff;">
+                                <small style="color: #0066cc;">✓ File restored from previous session</small>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Add header and content to the restored files section
+                restoredFilesSection.innerHTML = `
+                    <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #dee2e6;">
+                        <h5 style="margin: 0; color: #495057; font-size: 16px;">
+                            📎 Previously Uploaded Files
+                        </h5>
+                        <small style="color: #6c757d;">These files were uploaded in your previous session</small>
                     </div>
+                    ${fileHTML}
                 `;
+                
+                console.log(`Displayed ${files.length} files for ${fieldName}`);
+            } else {
+                console.warn(`File upload area not found for field: ${fieldName}`);
             }
         }
     });
