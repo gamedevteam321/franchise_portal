@@ -1977,16 +1977,7 @@ function verifyResumeToken(token) {
                 // Pre-fill form with saved data
                 const savedData = response.message.session_data.data;
                 const currentStep = response.message.current_step || 1;
-                
-                // Ensure functions are available before pre-filling
-                console.log('Checking function availability before pre-fill:');
-                console.log('addGenerationLocation available:', typeof window.addGenerationLocation === 'function');
-                console.log('toggleSourceTypeOther available:', typeof window.toggleSourceTypeOther === 'function');
-                
-                // Add a small delay to ensure all scripts are loaded
-                setTimeout(() => {
-                    prefillFormData(savedData);
-                }, 100);
+                prefillFormData(savedData);
 
                 // --- PATCH: Merge all saved data into applicationData for global access ---
                 window.applicationData = window.applicationData || {};
@@ -2040,8 +2031,6 @@ function goToStep(stepNumber) {
 
 // Function to pre-fill form data
 function prefillFormData(data) {
-    console.log('Prefilling form data:', data);
-    
     // Pre-fill all form fields with saved data
     for (const [fieldName, value] of Object.entries(data)) {
         const field = document.getElementById(fieldName);
@@ -2081,43 +2070,6 @@ function prefillFormData(data) {
     if (primaryFeedstock && data.primary_feedstock_category) {
         primaryFeedstock.value = data.primary_feedstock_category;
         if (primaryFeedstock.onchange) primaryFeedstock.onchange();
-    }
-    
-    // Special handling for source_type checkboxes
-    if (data.source_type) {
-        const sourceTypeValues = data.source_type.split(', ').map(s => s.trim());
-        const sourceTypeCheckboxes = document.querySelectorAll('input[name="source_type"]');
-        sourceTypeCheckboxes.forEach(checkbox => {
-            checkbox.checked = sourceTypeValues.includes(checkbox.value);
-        });
-        // Trigger the toggle function for "Other" option
-        if (typeof window.toggleSourceTypeOther === 'function') {
-            window.toggleSourceTypeOther();
-        }
-    }
-    
-    // Special handling for Step 4: Generation Locations (dynamic rows)
-    if (data.generation_locations && Array.isArray(data.generation_locations)) {
-        console.log('Processing generation locations for resume:', data.generation_locations);
-        const container = document.getElementById('generation_locations_container');
-        if (container) {
-            container.innerHTML = ''; // Clear existing
-            data.generation_locations.forEach((loc, idx) => {
-                console.log(`Adding generation location ${idx + 1}:`, loc);
-                if (typeof window.addGenerationLocation === 'function') {
-                    window.addGenerationLocation(); // Add a new row
-                    const addressInput = document.getElementById(`generation_location_address_${idx+1}`);
-                    const gpsInput = document.getElementById(`generation_location_gps_${idx+1}`);
-                    if (addressInput) addressInput.value = loc.address || '';
-                    if (gpsInput) gpsInput.value = loc.gps_coordinates || '';
-                    console.log(`Set location ${idx + 1}: address="${loc.address || ''}", gps="${loc.gps_coordinates || ''}"`);
-                } else {
-                    console.error('addGenerationLocation function not available');
-                }
-            });
-        } else {
-            console.error('generation_locations_container not found');
-        }
     }
     
     // Handle file fields by showing uploaded files if they exist

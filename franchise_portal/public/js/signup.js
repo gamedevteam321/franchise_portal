@@ -7,12 +7,33 @@ console.log('=== FILE MODIFIED: 2025-07-04 16:05:00 ===');
 // Franchise Portal Signup JavaScript
 // Version: 2.0 - Email Verification Workflow
 
-let currentStep = 1;
-let applicationData = {};
-let applicationId = null;
-let verificationToken = null;
-let emailVerified = false;
-let isResumeMode = false;
+// Prevent variable redeclaration if script loads multiple times
+if (typeof window.currentStep === 'undefined') {
+    window.currentStep = 1;
+}
+if (typeof window.applicationData === 'undefined') {
+    window.applicationData = {};
+}
+if (typeof window.applicationId === 'undefined') {
+    window.applicationId = null;
+}
+if (typeof window.verificationToken === 'undefined') {
+    window.verificationToken = null;
+}
+if (typeof window.emailVerified === 'undefined') {
+    window.emailVerified = false;
+}
+if (typeof window.isResumeMode === 'undefined') {
+    window.isResumeMode = false;
+}
+
+// Use var instead of let to prevent redeclaration errors
+var currentStep = window.currentStep;
+var applicationData = window.applicationData;
+var applicationId = window.applicationId;
+var verificationToken = window.verificationToken;
+var emailVerified = window.emailVerified;
+var isResumeMode = window.isResumeMode;
 
 // Ensure applicationData is available globally
 window.applicationData = applicationData;
@@ -46,6 +67,23 @@ window.testNextStep = testNextStep;
 
 function initializeForm() {
     console.log('Initializing form...');
+    
+    // Recover application ID from sessionStorage if available
+    const storedApplicationId = sessionStorage.getItem('franchise_application_id');
+    if (storedApplicationId && !window.applicationId) {
+        window.applicationId = applicationId = storedApplicationId;
+        console.log('Recovered application ID from sessionStorage:', applicationId);
+    }
+    
+    // Check for form data recovery after refresh (only if not already completed)
+    const recoveryCompleted = sessionStorage.getItem('recovery_completed');
+    if (!recoveryCompleted) {
+        recoverFormDataAfterRefresh();
+    } else {
+        console.log('Recovery already completed, skipping...');
+        // Clear the flag for future use
+        sessionStorage.removeItem('recovery_completed');
+    }
     
     // Check for email verification in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -99,12 +137,21 @@ function handleEmailVerification(token) {
             console.log('Verification response:', response);
             
             if (response.message && response.message.success) {
-                verificationToken = token;
-                emailVerified = true;
+                window.verificationToken = verificationToken = token;
+                window.emailVerified = emailVerified = true;
                 
                 const sessionData = response.message.session_data;
-                currentStep = 2; // Always show step 2 after verification
-                applicationData = sessionData.data;
+                window.currentStep = currentStep = 2; // Always show step 2 after verification
+                window.applicationData = applicationData = sessionData.data;
+                
+                // Store application ID if returned
+                if (response.message.application_id) {
+                    window.applicationId = applicationId = response.message.application_id;
+                    console.log('Application ID set after email verification:', applicationId);
+                    
+                    // Store in sessionStorage for persistence
+                    sessionStorage.setItem('franchise_application_id', applicationId);
+                }
                 
                 // Populate form with saved data
                 populateFormData(applicationData);
@@ -183,7 +230,7 @@ function nextStep(step) {
         console.log('Validation passed, saving step data...');
         saveStepData(step, () => {
             console.log('Step data saved successfully, moving to next step');
-            currentStep = step + 1;
+            window.currentStep = currentStep = step + 1;
             
             // current_step is already updated in saveStepData, just log for verification
             console.log('Current step updated to:', currentStep);
@@ -675,7 +722,7 @@ function sendVerificationEmail(step) {
             console.log('Response message:', response.message);
             
             if (response.message && response.message.success) {
-                verificationToken = response.message.verification_token;
+                window.verificationToken = verificationToken = response.message.verification_token;
                 
                 // Show verification message
                 showVerificationMessage(stepData.email);
@@ -782,7 +829,7 @@ function saveStepData(step, callback) {
     applicationData.current_step = nextStepNumber;
     
     // Also update the local currentStep variable
-    currentStep = nextStepNumber;
+    window.currentStep = currentStep = nextStepNumber;
     
     console.log('DEBUG: applicationData after current_step update:', JSON.stringify(window.applicationData, null, 2));
     console.log('Verification - current_step in window.applicationData:', window.applicationData.current_step);
@@ -811,7 +858,7 @@ function saveStepData(step, callback) {
                 if (response.message && response.message.success) {
                     console.log('Step data saved successfully with verification');
                     if (response.message.application_id) {
-                        applicationId = response.message.application_id;
+                        window.applicationId = applicationId = response.message.application_id;
                         console.log('Application ID updated:', applicationId);
                     }
                     if (callback) {
@@ -845,7 +892,7 @@ function saveStepData(step, callback) {
                 if (response.message && response.message.success) {
                     console.log('Step data saved successfully (no verification)');
                     if (response.message.application_id) {
-                        applicationId = response.message.application_id;
+                        window.applicationId = applicationId = response.message.application_id;
                         console.log('Application ID updated:', applicationId);
                     }
                     if (callback) {
@@ -939,20 +986,36 @@ function submitApplication() {
                 if (response.message && response.message.success) {
                     showSuccessMessage(response.message.application_id);
                 } else {
-                    frappe.msgprint({
-                        title: 'Submission Error',
-                        message: response.message?.message || 'Failed to submit application. Please try again.',
-                        indicator: 'red'
-                    });
+                    // Enhanced error handling for API response errors
+                    const errorMessage = response.message?.message || 'Failed to submit application. Please try again.';
+                    
+                    if (isVersionConflictError(errorMessage)) {
+                        handleVersionConflictError();
+                    } else {
+                        frappe.msgprint({
+                            title: 'Submission Error',
+                            message: errorMessage,
+                            indicator: 'red'
+                        });
+                    }
                 }
             },
             error: function(error) {
                 showLoading(false);
-                frappe.msgprint({
-                    title: 'Submission Error',
-                    message: 'Failed to submit application. Please try again.',
-                    indicator: 'red'
-                });
+                console.error('Submit error:', error);
+                
+                // Enhanced error parsing for different error formats
+                const errorMessage = extractErrorMessage(error);
+                
+                if (isVersionConflictError(errorMessage)) {
+                    handleVersionConflictError();
+                } else {
+                    frappe.msgprint({
+                        title: 'Submission Error',
+                        message: 'Failed to submit application. Please try again.',
+                        indicator: 'red'
+                    });
+                }
             }
         });
     } else {
@@ -967,22 +1030,190 @@ function submitApplication() {
                 if (response.message && response.message.success) {
                     showSuccessMessage(response.message.application_id);
                 } else {
-                    frappe.msgprint({
-                        title: 'Submission Error',
-                        message: response.message?.message || 'Failed to submit application. Please try again.',
-                        indicator: 'red'
-                    });
+                    // Enhanced error handling for API response errors
+                    const errorMessage = response.message?.message || 'Failed to submit application. Please try again.';
+                    
+                    if (isVersionConflictError(errorMessage)) {
+                        handleVersionConflictError();
+                    } else {
+                        frappe.msgprint({
+                            title: 'Submission Error',
+                            message: errorMessage,
+                            indicator: 'red'
+                        });
+                    }
                 }
             },
             error: function(error) {
                 showLoading(false);
-                frappe.msgprint({
-                    title: 'Submission Error',
-                    message: 'Failed to submit application. Please try again.',
-                    indicator: 'red'
-                });
+                console.error('Submit error:', error);
+                
+                // Enhanced error parsing for different error formats
+                const errorMessage = extractErrorMessage(error);
+                
+                if (isVersionConflictError(errorMessage)) {
+                    handleVersionConflictError();
+                } else {
+                    frappe.msgprint({
+                        title: 'Submission Error',
+                        message: 'Failed to submit application. Please try again.',
+                        indicator: 'red'
+                    });
+                }
             }
         });
+    }
+}
+
+// Helper function to extract error message from different error formats
+function extractErrorMessage(error) {
+    // Try different ways to extract the error message
+    if (error.responseJSON?.message) {
+        return error.responseJSON.message;
+    }
+    if (error.responseJSON?.exc) {
+        return error.responseJSON.exc;
+    }
+    if (error.responseText) {
+        try {
+            const parsed = JSON.parse(error.responseText);
+            return parsed.message || parsed.exc || error.responseText;
+        } catch (e) {
+            return error.responseText;
+        }
+    }
+    if (error.message) {
+        return error.message;
+    }
+    if (typeof error === 'string') {
+        return error;
+    }
+    return 'Unknown error occurred';
+}
+
+// Helper function to detect version conflict errors
+function isVersionConflictError(errorMessage) {
+    const versionConflictIndicators = [
+        'Document has been modified after you have opened it',
+        'TimestampMismatchError',
+        'version conflict',
+        'document was modified',
+        'modified after you have opened',
+        'Please refresh to get the latest document'
+    ];
+    
+    return versionConflictIndicators.some(indicator => 
+        errorMessage.toLowerCase().includes(indicator.toLowerCase())
+    );
+}
+
+// Enhanced version conflict error handler
+function handleVersionConflictError() {
+    console.log('Version conflict detected, initiating recovery...');
+    
+    frappe.msgprint({
+        title: 'Form Updated',
+        message: `
+            <div style="text-align: center; padding: 10px;">
+                <h4 style="color: #f39c12; margin-bottom: 15px;">📝 Application Updated</h4>
+                <p style="margin-bottom: 15px;">This form has been updated while you were filling it out. This can happen when:</p>
+                <ul style="text-align: left; margin: 10px 0; padding-left: 20px;">
+                    <li>You have multiple tabs open</li>
+                    <li>Auto-save updated the form</li>
+                    <li>Another process modified the application</li>
+                </ul>
+                <p style="margin-top: 15px; font-weight: bold; color: #667eea;">
+                    The page will refresh automatically to load the latest version.
+                </p>
+                <div style="background: #e8f4f8; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                    <small>✅ Your current form data has been preserved and will be restored.</small>
+                </div>
+            </div>
+        `,
+        indicator: 'orange'
+    });
+    
+    // Clear any existing recovery data and flags
+    sessionStorage.removeItem('franchise_form_recovery_data');
+    sessionStorage.removeItem('franchise_form_recovery_timestamp');
+    sessionStorage.removeItem('recovery_completed');
+    
+    // Store current form data before refresh to minimize data loss
+    const currentFormData = {};
+    try {
+        // Collect current step data
+        const currentStepData = getStepData(7); // Get step 7 data since we're submitting
+        Object.assign(currentFormData, currentStepData);
+        
+        // Store in sessionStorage for recovery after refresh
+        sessionStorage.setItem('franchise_form_recovery_data', JSON.stringify(currentFormData));
+        sessionStorage.setItem('franchise_form_recovery_timestamp', new Date().toISOString());
+        
+        console.log('Stored form data for recovery:', currentFormData);
+    } catch (e) {
+        console.warn('Could not store form data for recovery:', e);
+    }
+    
+    // Auto-refresh after a short delay
+    setTimeout(() => {
+        console.log('Auto-refreshing page due to version conflict...');
+        window.location.reload();
+    }, 3000);
+}
+
+// Form recovery function to restore data after refresh
+function recoverFormDataAfterRefresh() {
+    try {
+        const recoveryData = sessionStorage.getItem('franchise_form_recovery_data');
+        const recoveryTimestamp = sessionStorage.getItem('franchise_form_recovery_timestamp');
+        
+        if (recoveryData && recoveryTimestamp) {
+            const timestamp = new Date(recoveryTimestamp);
+            const now = new Date();
+            const minutesAgo = (now - timestamp) / (1000 * 60);
+            
+            // Only recover data if it's less than 10 minutes old
+            if (minutesAgo < 10) {
+                const formData = JSON.parse(recoveryData);
+                console.log('Recovering form data from before refresh:', formData);
+                
+                // Merge recovered data into applicationData
+                Object.assign(window.applicationData, formData);
+                
+                // Populate form fields with recovered data
+                populateFormData(formData);
+                
+                // Show recovery success message
+                frappe.show_alert({
+                    message: '✅ Form data recovered successfully from before the refresh!',
+                    indicator: 'green'
+                }, 5);
+                
+                // Clear recovery data immediately after use
+                sessionStorage.removeItem('franchise_form_recovery_data');
+                sessionStorage.removeItem('franchise_form_recovery_timestamp');
+                
+                // Set a flag to prevent re-recovery
+                sessionStorage.setItem('recovery_completed', 'true');
+                
+                console.log('Recovery completed and data cleared');
+            } else {
+                // Clear old recovery data
+                sessionStorage.removeItem('franchise_form_recovery_data');
+                sessionStorage.removeItem('franchise_form_recovery_timestamp');
+                sessionStorage.removeItem('recovery_completed');
+                console.log('Old recovery data cleared (expired)');
+            }
+        } else {
+            // No recovery data found, clear any stale flags
+            sessionStorage.removeItem('recovery_completed');
+        }
+    } catch (e) {
+        console.warn('Could not recover form data:', e);
+        // Clear any corrupted recovery data
+        sessionStorage.removeItem('franchise_form_recovery_data');
+        sessionStorage.removeItem('franchise_form_recovery_timestamp');
+        sessionStorage.removeItem('recovery_completed');
     }
 }
 

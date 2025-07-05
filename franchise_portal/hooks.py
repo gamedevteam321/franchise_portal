@@ -40,7 +40,8 @@ if os.path.exists(signup_js_path):
 else:
     mod_time = int(time.time())
 
-web_include_js = f"/assets/franchise_portal/js/signup.js?v={mod_time}"
+# Force cache busting for version conflict fix
+web_include_js = f"/assets/franchise_portal/js/signup.js?v=2.0.5-{mod_time}"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "franchise_portal/public/scss/website"

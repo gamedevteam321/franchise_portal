@@ -86,13 +86,20 @@ def verify_email(token):
         frappe.cache().set_value(session_key, json.dumps(session_data), expires_in_sec=86400)
         
         # Save/update the doctype with verified email data
-        save_verified_email_to_doctype(email, session_data)
+        application_id = save_verified_email_to_doctype(email, session_data)
+        
+        # Update session data with the application ID if we got one
+        if application_id:
+            session_data["application_id"] = application_id
+            # Update cache with application ID
+            frappe.cache().set_value(session_key, json.dumps(session_data), expires_in_sec=86400)
         
         return {
             "success": True,
             "message": "Email verified successfully",
             "session_data": session_data,
-            "current_step": session_data.get("current_step", 1)
+            "current_step": session_data.get("current_step", 1),
+            "application_id": application_id
         }
         
     except Exception as e:
@@ -221,9 +228,13 @@ def save_step_with_verification(token, data, step):
                         f.write(f"Generation locations data: {session_data['data']['generation_locations']}\n")
                     
                     doc = frappe.get_doc("Franchise Signup Application", doc_name)
+                    refresh_doc_modified(doc)
+                    
                     doc.set('generation_locations', [])
                     for location_data in session_data['data']['generation_locations']:
                         doc.append('generation_locations', location_data)
+                    
+                    # Save with ignore_version=True to prevent version conflicts
                     doc.save(ignore_permissions=True, ignore_version=True)
                     
                     # Add debug logging after save
@@ -256,6 +267,7 @@ def save_step_with_verification(token, data, step):
         return {
             "success": True,
             "message": "Step data saved successfully",
+            "application_id": doc_name,
             "current_step": step
         }
         
@@ -271,66 +283,53 @@ def save_step_with_verification(token, data, step):
 def submit_application(email, data=None):
     """Submit the franchise application"""
     try:
-        # Log RAW input data BEFORE any processing
         debug_file = os.path.join(frappe.get_site_path(), 'debug_save.txt')
         with open(debug_file, 'a') as f:
             f.write(f"\n=== RAW SUBMIT API INPUT {frappe.utils.now()} ===\n")
             f.write(f"Email: {email}\n")
             f.write(f"Raw data type: {type(data)}\n")
-            f.write(f"Raw data: {str(data)[:1000]}...\n")  # First 1000 chars
-        
+            f.write(f"Raw data: {str(data)[:1000]}...\n")
         if not email:
             return {"success": False, "message": "Email is required"}
-        
-        # Handle JSON string data from frontend (same fix as save_step)
         if data and isinstance(data, str):
             import json
             data = json.loads(data)
-        
-        # Convert to frappe._dict for easier access
         if data:
             data = frappe._dict(data)
-        
-        # Find the application
         applications = frappe.get_all(
             "Franchise Signup Application",
             filters={"email": email},
             fields=["name"]
         )
-        
         if not applications:
             return {"success": False, "message": "Application not found"}
-        
-        doc = frappe.get_doc("Franchise Signup Application", applications[0].name)
-        
-        # Update with final data if provided
+        doc_name = applications[0].name
+        meta = frappe.get_meta("Franchise Signup Application")
+        valid_fields = [df.fieldname for df in meta.fields]
+        updates = {}
         if data:
-            # Handle generation_locations table data
             if 'generation_locations' in data and isinstance(data.generation_locations, list):
-                # Clear existing generation locations
+                doc = frappe.get_doc("Franchise Signup Application", doc_name)
                 doc.generation_locations = []
-                
-                # Add new generation locations
                 for location in data.generation_locations:
                     if isinstance(location, dict) and location.get('address') and location.get('gps_coordinates'):
                         doc.append('generation_locations', {
                             'address': location['address'],
                             'gps_coordinates': location['gps_coordinates']
                         })
-            
-            # Update other fields
+                doc.save(ignore_permissions=True, ignore_version=True)
             for key, value in data.items():
-                if key != 'generation_locations' and hasattr(doc, key):
-                    setattr(doc, key, value)
-        
-        # Mark as submitted
-        doc.status = "Submitted"
-        doc.save()
-        
-        return {"success": True, "message": "Application submitted successfully", "application_id": doc.name}
-        
+                if key != 'generation_locations' and key in valid_fields:
+                    updates[key] = value
+        updates['status'] = "Submitted"
+        frappe.db.set_value("Franchise Signup Application", doc_name, updates)
+        frappe.db.commit()
+        return {"success": True, "message": "Application submitted successfully", "application_id": doc_name}
     except Exception as e:
-        return {"success": False, "message": f"Error submitting application: {str(e)}"}
+        error_msg = str(e)
+        truncated_msg = error_msg[:100] + "..." if len(error_msg) > 100 else error_msg
+        frappe.log_error(f"Error submitting application: {truncated_msg}", "Franchise Portal Submission Error")
+        return {"success": False, "message": f"Error submitting application: {error_msg}"}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -611,66 +610,45 @@ def get_google_maps_api_key():
 
 
 def finalize_application(session_data, token, current_step=7):
-    """Finalize application in doctype (update existing or create new)"""
     try:
         application_data = session_data["data"]
         email = session_data["email"]
-        
-        # Validate required Step 3 fields before finalizing
         annual_volume = application_data.get('annual_volume_available')
         try:
             annual_volume_float = float(annual_volume) if annual_volume and str(annual_volume).strip() else 0
         except (ValueError, TypeError):
             annual_volume_float = 0
-            
         if annual_volume_float <= 0:
             return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
-        
-        # Only validate Step 7 fields if we're actually on Step 7
         if current_step >= 7:
             calculated_total = application_data.get('calculated_total')
             uncertainty_range = application_data.get('uncertainty_range')
-            
             missing_step7_fields = []
             if not calculated_total or str(calculated_total).strip() == '':
                 missing_step7_fields.append("Calculated Total (kg CO₂/tonne)")
             if not uncertainty_range or str(uncertainty_range).strip() == '':
                 missing_step7_fields.append("Uncertainty Range (%)")
-            
             if missing_step7_fields:
                 return {"success": False, "message": f"The following required fields are missing: {', '.join(missing_step7_fields)}"}
-        
-        # Check for existing application
         existing_applications = frappe.get_all(
             "Franchise Signup Application",
             filters={"email": email},
             fields=["name"]
         )
-        
+        meta = frappe.get_meta("Franchise Signup Application")
+        valid_fields = [df.fieldname for df in meta.fields]
         if existing_applications:
-            # Update existing using database direct updates to avoid version conflicts
             doc_name = existing_applications[0].name
             updates = {}
-            
-            # Collect all field updates - only include fields that exist in the doctype
-            doctype_fields = frappe.get_meta("Franchise Signup Application").get_fieldnames_with_value()
-            
             for key, value in application_data.items():
-                if key not in ['generation_locations', 'doctype', 'name', 'creation', 'modified', 'modified_by', 'owner'] and key in doctype_fields:
-                    # Convert empty strings to None for numeric fields
-                    if key in ['avg_transport_distance', 'heating_value', 'annual_volume_available', 'capacity', 'accuracy_rating'] and value == '':
-                        value = 0
+                if key != 'generation_locations' and key in valid_fields:
                     updates[key] = value
-            
             updates['status'] = "Submitted"
-            
-            # Ensure email verification status is preserved
             if session_data.get("verified"):
                 updates['email_verified'] = 1
                 if not updates.get('email_verified_at'):
                     updates['email_verified_at'] = now()
-            
-            # Handle generation_locations table separately if needed
+            frappe.db.set_value("Franchise Signup Application", doc_name, updates)
             if 'generation_locations' in application_data and isinstance(application_data['generation_locations'], list):
                 doc = frappe.get_doc("Franchise Signup Application", doc_name)
                 doc.generation_locations = []
@@ -681,18 +659,11 @@ def finalize_application(session_data, token, current_step=7):
                             'gps_coordinates': location['gps_coordinates']
                         })
                 doc.save(ignore_permissions=True, ignore_version=True)
-            
             frappe.db.commit()
-            
-            # Clear session after successful submission
             frappe.cache().delete_value(f"franchise_signup_{token}")
-            
             return {"success": True, "message": "Application submitted successfully!", "application_id": doc_name}
         else:
-            # Create new
             doc = frappe.new_doc("Franchise Signup Application")
-            
-            # Handle generation_locations table data
             if 'generation_locations' in application_data and isinstance(application_data['generation_locations'], list):
                 for location in application_data['generation_locations']:
                     if isinstance(location, dict) and location.get('address') and location.get('gps_coordinates'):
@@ -700,27 +671,22 @@ def finalize_application(session_data, token, current_step=7):
                             'address': location['address'],
                             'gps_coordinates': location['gps_coordinates']
                         })
-            
-            # Set other fields
             for key, value in application_data.items():
                 if key != 'generation_locations' and hasattr(doc, key):
                     setattr(doc, key, value)
-            
-            # Set email verification status if verified
             if session_data.get("verified"):
                 doc.email_verified = 1
                 doc.email_verified_at = now()
-            
             doc.status = "Submitted"
-            doc.insert()
-            
-            # Clear session after successful submission
+            doc.insert(ignore_permissions=True)
+            frappe.db.commit()
             frappe.cache().delete_value(f"franchise_signup_{token}")
-            
             return {"success": True, "message": "Application submitted successfully!", "application_id": doc.name}
-            
     except Exception as e:
-        return {"success": False, "message": f"Error finalizing application: {str(e)}"}
+        error_msg = str(e)
+        truncated_msg = error_msg[:100] + "..." if len(error_msg) > 100 else error_msg
+        frappe.log_error(f"Error finalizing application: {truncated_msg}", "Franchise Portal Finalization Error")
+        return {"success": False, "message": f"Error finalizing application: {error_msg}"}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -777,6 +743,7 @@ def save_step(data):
         if existing_applications:
             # Update existing application
             application = frappe.get_doc("Franchise Signup Application", existing_applications[0].name)
+            refresh_doc_modified(application)
             
             # Update fields from data - only include fields that exist in the doctype
             doctype_fields = frappe.get_meta("Franchise Signup Application").get_fieldnames_with_value()
@@ -823,7 +790,7 @@ def save_step(data):
                         f.write(f"SKIPPED {key} (hasattr={hasattr(application, key)}, in_doctype_fields={key in doctype_fields}, excluded={key in ['name', 'doctype']})\n")
             
             application.modified_at = frappe.utils.now()
-            application.save(ignore_permissions=True)
+            application.save(ignore_permissions=True, ignore_version=True)
             frappe.db.commit()
             
             # File debug: check what was saved (Step 5 fields)
@@ -874,7 +841,7 @@ def save_step(data):
             
             application.created_at = frappe.utils.now()
             application.modified_at = frappe.utils.now()
-            application.insert(ignore_permissions=True)
+            application.insert(ignore_permissions=True, ignore_version=True)
             frappe.db.commit()
             
             # File debug: check what was saved (Step 5 fields)
@@ -889,8 +856,11 @@ def save_step(data):
             return {"success": True, "message": "Application created successfully", "application_id": application.name}
             
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Save Step Error")
-        return {"success": False, "message": f"Error saving application: {str(e)}"}
+        error_msg = str(e)
+        # Truncate error message for logging to prevent title length issues
+        truncated_msg = error_msg[:100] + "..." if len(error_msg) > 100 else error_msg
+        frappe.log_error(f"Error saving application: {truncated_msg}", "Save Step Error")
+        return {"success": False, "message": f"Error saving application: {error_msg}"}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1395,72 +1365,70 @@ def verify_resume_token(token):
 def save_verified_email_to_doctype(email, session_data):
     """Save or update doctype with verified email data"""
     try:
+        debug_file = os.path.join(frappe.get_site_path(), 'debug_save_verified.txt')
+        with open(debug_file, 'a') as f:
+            f.write(f"\n=== ENTER save_verified_email_to_doctype {frappe.utils.now()} ===\n")
+            f.write(f"Email: {email}\n")
+            f.write(f"Session data: {json.dumps(session_data)[:1000]}...\n")
         # Check if application already exists
         existing_applications = frappe.get_all(
             "Franchise Signup Application",
             filters={"email": email},
             fields=["name"]
         )
-        
         if existing_applications:
-            # Update existing application
             doc_name = existing_applications[0].name
             updates = {
                 "email_verified": 1,
                 "email_verified_at": now()
             }
-            
-            # Update basic fields if they exist in session data
             application_data = session_data.get("data", {})
             basic_fields = [
                 "company_name", "contact_person", "phone_number", 
                 "company_address", "country_of_operation"
             ]
-            
             for field in basic_fields:
                 if field in application_data and application_data[field]:
                     updates[field] = application_data[field]
-            
-            # Update the doctype
             frappe.db.set_value("Franchise Signup Application", doc_name, updates)
             frappe.db.commit()
-            
-            frappe.log_error(f"Updated existing application {doc_name} with verified email", "Email Verification")
-            
+            with open(debug_file, 'a') as f:
+                f.write(f"Updated existing application {doc_name} with verified email\n")
+            return doc_name
         else:
-            # Create new application with verified email data
-            doc = frappe.new_doc("Franchise Signup Application")
-            
-            # Set email verification fields
-            doc.email = email
-            doc.email_verified = 1
-            doc.email_verified_at = now()
-            
-            # Set basic fields from session data if available
-            application_data = session_data.get("data", {})
-            basic_fields = [
-                "company_name", "contact_person", "phone_number", 
-                "company_address", "country_of_operation"
-            ]
-            
-            for field in basic_fields:
-                if field in application_data and application_data[field]:
-                    setattr(doc, field, application_data[field])
-            
-            # Set default values
-            doc.status = "Draft"
-            doc.current_step = 1
-            
-            doc.insert(ignore_permissions=True)
-            frappe.db.commit()
-            
-            frappe.log_error(f"Created new application {doc.name} with verified email", "Email Verification")
-        
-        return True
-        
+            try:
+                doc = frappe.new_doc("Franchise Signup Application")
+                doc.email = email
+                doc.email_verified = 1
+                doc.email_verified_at = now()
+                application_data = session_data.get("data", {})
+                basic_fields = [
+                    "company_name", "contact_person", "phone_number", 
+                    "company_address", "country_of_operation"
+                ]
+                for field in basic_fields:
+                    if field in application_data and application_data[field]:
+                        setattr(doc, field, application_data[field])
+                doc.status = "Draft"
+                doc.current_step = 1
+                if not doc.naming_series:
+                    doc.naming_series = "FSA-.YYYY.-"
+                doc.insert(ignore_permissions=True)
+                frappe.db.commit()
+                with open(debug_file, 'a') as f:
+                    f.write(f"Created new application {doc.name} with verified email\n")
+                return doc.name
+            except Exception as e:
+                with open(debug_file, 'a') as f:
+                    f.write(f"Exception during doc.insert: {str(e)}\n")
+                frappe.log_error(f"Exception during doc.insert: {str(e)}", "Email Verification Error")
+                return None
     except Exception as e:
+        debug_file = os.path.join(frappe.get_site_path(), 'debug_save_verified.txt')
+        with open(debug_file, 'a') as f:
+            f.write(f"Exception in save_verified_email_to_doctype: {str(e)}\n")
         frappe.log_error(f"Error saving verified email to doctype: {str(e)}", "Email Verification Error")
-        return False
+        return None
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1542,3 +1510,99 @@ def get_email_verification_status(email):
         
     except Exception as e:
         return {"success": False, "message": f"Error getting verification status: {str(e)}"}
+
+
+@frappe.whitelist(allow_guest=True)
+def get_application(email=None, name=None):
+    """Fetch the latest Franchise Signup Application by email or name"""
+    if not email and not name:
+        return {"success": False, "message": "Email or name is required"}
+    filters = {}
+    if email:
+        filters["email"] = email
+    if name:
+        filters["name"] = name
+    applications = frappe.get_all("Franchise Signup Application", filters=filters, fields=["name"])
+    if not applications:
+        return {"success": False, "message": "Application not found"}
+    doc = frappe.get_doc("Franchise Signup Application", applications[0].name)
+    return {"success": True, "application": doc.as_dict()}
+
+
+def refresh_doc_modified(doc):
+    """Utility to always set the latest modified timestamp before saving to avoid version conflict."""
+    current_modified = frappe.db.get_value(doc.doctype, doc.name, "modified")
+    if current_modified:
+        doc._original_modified = current_modified
+        doc.modified = current_modified
+
+
+@frappe.whitelist(allow_guest=True)
+def test_document_creation_after_verification():
+    """Test document creation after email verification without sending emails"""
+    try:
+        # Test data
+        test_email = "test_verification@example.com"
+        test_data = {
+            "company_name": "Test Company",
+            "contact_person": "Test Person",
+            "phone_number": "1234567890"
+        }
+        
+        # Step 1: Create session data (simulate send_verification_email)
+        verification_token = str(uuid.uuid4())
+        session_key = f"franchise_signup_{verification_token}"
+        session_data = {
+            "email": test_email,
+            "data": test_data,
+            "current_step": 1,
+            "verified": False,
+            "created_at": now()
+        }
+        
+        # Store in cache
+        frappe.cache().set_value(session_key, json.dumps(session_data), expires_in_sec=86400)
+        
+        # Step 2: Verify email (simulate verify_email)
+        session_data["verified"] = True
+        session_data["verified_at"] = now()
+        
+        # Update cache
+        frappe.cache().set_value(session_key, json.dumps(session_data), expires_in_sec=86400)
+        
+        # Step 3: Save to doctype
+        application_id = save_verified_email_to_doctype(test_email, session_data)
+        
+        # Step 4: Check if doctype was created
+        applications = frappe.get_all(
+            "Franchise Signup Application",
+            filters={"email": test_email},
+            fields=["name", "email_verified", "email_verified_at", "company_name", "status", "current_step"]
+        )
+        
+        if not applications:
+            return {"success": False, "message": "No application found after verification"}
+        
+        app = applications[0]
+        
+        # Clean up test data
+        try:
+            frappe.delete_doc("Franchise Signup Application", app.name)
+            frappe.db.commit()
+        except:
+            pass  # Ignore cleanup errors
+        
+        return {
+            "success": True,
+            "message": "Document creation test completed successfully",
+            "application_id": app.name,
+            "email_verified": app.email_verified,
+            "email_verified_at": app.email_verified_at,
+            "company_name": app.company_name,
+            "status": app.status,
+            "current_step": app.current_step,
+            "returned_application_id": application_id
+        }
+        
+    except Exception as e:
+        return {"success": False, "message": f"Test failed: {str(e)}"}
