@@ -8,27 +8,38 @@ window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
     .navbar.navbar-light.navbar-expand-lg{
         display: none !important;
     }
-/* Higher specificity selectors to override Frappe default styles */
+
+/* Professional Black & White Theme - Frappe/ERPNext Inspired */
 .page-content .franchise-signup-container,
 .franchise-signup-container {
-    max-width: 800px !important;
+    max-width: 900px !important;
     margin: 0 auto !important;
-    padding: 20px !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-    background: transparent !important;
+    padding: 24px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif !important;
+    background: #f8f9fa !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    min-height: 100vh !important;
 }
 
+/* Clean Header Design */
 .page-content .step-header,
 .step-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-    padding: 20px !important;
-    border-radius: 10px 10px 0 0 !important;
+    background: #ffffff !important;
+    color: #2d3436 !important;
+    padding: 32px 40px !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 8px 8px 0 0 !important;
     text-align: center !important;
-    border: none !important;
     margin-bottom: 0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.step-header h2 {
+    color: #2d3436 !important;
+    font-weight: 600 !important;
+    font-size: 24px !important;
+    margin: 0 !important;
 }
 
 /* Hide default Frappe elements */
@@ -38,51 +49,63 @@ window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
     display: none !important;
 }
 
+/* Professional Progress Bar */
 .page-content .step-progress,
 .step-progress {
     display: flex !important;
     justify-content: space-between !important;
-    margin-bottom: 30px !important;
-    padding: 0 20px !important;
+    margin-bottom: 0 !important;
+    padding: 24px 40px !important;
     background: white !important;
+    border: 1px solid #e9ecef !important;
+    border-top: none !important;
+    gap: 8px !important;
 }
 
 .page-content .progress-step,
 .progress-step {
     flex: 1 !important;
     text-align: center !important;
-    padding: 10px !important;
-    border-radius: 5px !important;
-    margin: 0 5px !important;
-    transition: all 0.3s ease !important;
-    border: none !important;
+    padding: 12px 8px !important;
+    border-radius: 6px !important;
+    transition: all 0.15s ease !important;
+    border: 1px solid #e9ecef !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    background: #f8f9fa !important;
+    color: #6c757d !important;
 }
 
 .page-content .progress-step.active,
 .progress-step.active {
-    background-color: #667eea !important;
+    background: #2d3436 !important;
     color: white !important;
+    border-color: #2d3436 !important;
 }
 
 .page-content .progress-step.completed,
 .progress-step.completed {
-    background-color: #28a745 !important;
+    background: #74b9ff !important;
     color: white !important;
+    border-color: #74b9ff !important;
 }
 
 .page-content .progress-step.inactive,
 .progress-step.inactive {
-    background-color: #f8f9fa !important;
-    color: #6c757d !important;
+    background: #f8f9fa !important;
+    color: #8e9aaf !important;
+    border-color: #e9ecef !important;
 }
 
+/* Clean Form Container */
 .page-content .form-container,
 .form-container {
     background: white !important;
     border: 1px solid #e9ecef !important;
-    border-radius: 0 0 10px 10px !important;
-    padding: 30px !important;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    border-top: none !important;
+    border-radius: 0 0 8px 8px !important;
+    padding: 40px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
     margin: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
@@ -96,17 +119,47 @@ window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
     display: block;
 }
 
+/* Step Titles */
+.form-step h3 {
+    color: #2d3436 !important;
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    margin: 0 0 32px 0 !important;
+    padding-bottom: 16px !important;
+    border-bottom: 1px solid #e9ecef !important;
+}
+
+/* Section Headers */
+.section-header {
+    margin: 32px 0 24px 0 !important;
+}
+
+.section-header h4 {
+    color: #2d3436 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    padding: 12px 16px !important;
+    background: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 6px !important;
+    border-left: 4px solid #74b9ff !important;
+}
+
+/* Form Groups */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 24px !important;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 600;
-    color: #495057;
+    display: block !important;
+    margin-bottom: 8px !important;
+    font-weight: 500 !important;
+    color: #2d3436 !important;
+    font-size: 14px !important;
 }
 
+/* Form Controls */
 .page-content .form-group input,
 .page-content .form-group select,
 .page-content .form-group textarea,
@@ -114,122 +167,268 @@ window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
 .form-group select,
 .form-group textarea {
     width: 100% !important;
-    padding: 12px !important;
-    border: 1px solid #ced4da !important;
-    border-radius: 5px !important;
+    padding: 12px 16px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 6px !important;
     font-size: 14px !important;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+    font-family: inherit !important;
+    background: white !important;
+    color: #2d3436 !important;
+    transition: all 0.15s ease !important;
     box-sizing: border-box !important;
 }
 
-/* Override checkbox styling to prevent 100% width */
-.page-content .form-group input[type="checkbox"],
-.form-group input[type="checkbox"] {
-    width: 16px !important;
-    height: 16px !important;
-    padding: 0 !important;
-    border-radius: 3px !important;
-}
-
+.page-content .form-group input:focus,
+.page-content .form-group select:focus,
+.page-content .form-group textarea:focus,
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    outline: none !important;
+    border-color: #74b9ff !important;
+    box-shadow: 0 0 0 3px rgba(116, 185, 255, 0.1) !important;
 }
 
-.form-group input[required]:invalid {
-    border-color: #dc3545;
+.page-content .form-group input:hover,
+.page-content .form-group select:hover,
+.page-content .form-group textarea:hover,
+.form-group input:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+    border-color: #bbb !important;
 }
 
+/* Readonly inputs */
+.page-content .form-group input[readonly],
+.form-group input[readonly] {
+    background: #f8f9fa !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+}
+
+/* Enhanced Checkboxes with Custom Styling */
+.page-content input[type="checkbox"],
+input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+    padding: 0 !important;
+    margin-right: 8px !important;
+    cursor: pointer !important;
+    border: 2px solid #ddd !important;
+    border-radius: 4px !important;
+    background: white !important;
+    position: relative !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+.page-content input[type="checkbox"]:checked,
+input[type="checkbox"]:checked {
+    background: #74b9ff !important;
+    border-color: #74b9ff !important;
+}
+
+.page-content input[type="checkbox"]:checked::after,
+input[type="checkbox"]:checked::after {
+    content: '✓' !important;
+    color: white !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    position: absolute !important;
+    top: -2px !important;
+    left: 2px !important;
+    line-height: 1 !important;
+}
+
+.page-content input[type="checkbox"]:hover,
+input[type="checkbox"]:hover {
+    border-color: #74b9ff !important;
+    box-shadow: 0 0 0 2px rgba(116, 185, 255, 0.1) !important;
+}
+
+#source_type_checkboxes label {
+    cursor: pointer !important;
+    font-weight: normal !important;
+    display: flex !important;
+    align-items: center !important;
+    min-width: 120px !important;
+    padding: 8px 12px !important;
+    background: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 6px !important;
+    transition: all 0.15s ease !important;
+}
+
+#source_type_checkboxes label:hover {
+    background: #e9ecef !important;
+    border-color: #74b9ff !important;
+}
+
+/* Form Rows */
 .form-row {
-    display: flex;
-    gap: 15px;
+    display: flex !important;
+    gap: 20px !important;
+    margin-bottom: 24px !important;
 }
 
 .form-row .form-group {
-    flex: 1;
+    flex: 1 !important;
+    margin-bottom: 0 !important;
 }
 
+/* Responsive Design */
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column !important;
+        gap: 0 !important;
+    }
+    
+    .form-row .form-group {
+        margin-bottom: 24px !important;
+    }
+    
+    .page-content .step-progress,
+    .step-progress {
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+    }
+    
+    .page-content .progress-step,
+    .progress-step {
+        font-size: 12px !important;
+        padding: 8px 4px !important;
+    }
+}
+
+/* Professional Button Styles */
 .page-content .btn,
 .franchise-signup-container .btn,
 .btn {
     padding: 12px 24px !important;
-    border: none !important;
-    border-radius: 5px !important;
+    border: 1px solid transparent !important;
+    border-radius: 6px !important;
     cursor: pointer !important;
     font-size: 14px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    transition: all 0.3s ease !important;
-    margin: 5px !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease !important;
+    margin: 0 8px 0 0 !important;
     text-decoration: none !important;
-    display: inline-block !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 40px !important;
+    font-family: inherit !important;
 }
 
 .page-content .btn-primary,
 .franchise-signup-container .btn-primary,
 .btn-primary {
-    background-color: #667eea !important;
+    background-color: #2d3436 !important;
     color: white !important;
+    border-color: #2d3436 !important;
 }
 
 .page-content .btn-primary:hover,
 .franchise-signup-container .btn-primary:hover,
 .btn-primary:hover {
-    background-color: #5a6fd8 !important;
-    transform: translateY(-1px) !important;
+    background-color: #636e72 !important;
+    border-color: #636e72 !important;
     color: white !important;
+    transform: none !important;
+    box-shadow: 0 2px 4px rgba(45, 52, 54, 0.15) !important;
 }
 
+.page-content .btn-secondary,
+.franchise-signup-container .btn-secondary,
 .btn-secondary {
-    background-color: #6c757d;
-    color: white;
+    background-color: white !important;
+    color: #2d3436 !important;
+    border-color: #ddd !important;
 }
 
+.page-content .btn-secondary:hover,
+.franchise-signup-container .btn-secondary:hover,
 .btn-secondary:hover {
-    background-color: #5a6268;
+    background-color: #f8f9fa !important;
+    border-color: #bbb !important;
+    color: #2d3436 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
 }
 
 .btn-success {
-    background-color: #28a745;
-    color: white;
+    background-color: #74b9ff !important;
+    color: white !important;
+    border-color: #74b9ff !important;
 }
 
 .btn-success:hover {
-    background-color: #218838;
-    transform: translateY(-1px);
+    background-color: #0984e3 !important;
+    border-color: #0984e3 !important;
+    box-shadow: 0 2px 4px rgba(116, 185, 255, 0.3) !important;
+}
+
+.btn-warning {
+    background-color: #fdcb6e !important;
+    color: #2d3436 !important;
+    border-color: #fdcb6e !important;
+}
+
+.btn-warning:hover {
+    background-color: #f39c12 !important;
+    border-color: #f39c12 !important;
 }
 
 .button-group {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 30px;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-top: 40px !important;
+    padding-top: 24px !important;
+    border-top: 1px solid #e9ecef !important;
 }
 
+/* Loading and Success Messages */
 .loading {
-    display: none;
-    text-align: center;
-    padding: 20px;
-    color: #667eea;
+    display: none !important;
+    text-align: center !important;
+    padding: 40px !important;
+    color: #2d3436 !important;
+}
+
+.loading h3 {
+    color: #2d3436 !important;
+    margin-bottom: 16px !important;
+}
+
+.loading p {
+    color: #636e72 !important;
 }
 
 .success-message {
-    display: none;
-    text-align: center;
-    padding: 40px;
-    background: #d4edda;
-    border: 1px solid #c3e6cb;
-    border-radius: 10px;
-    color: #155724;
+    display: none !important;
+    text-align: center !important;
+    padding: 40px !important;
+    background: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 8px !important;
+    color: #2d3436 !important;
 }
 
-/* GPS Container Styling */
+.success-message h3 {
+    color: #74b9ff !important;
+    margin-bottom: 16px !important;
+}
+
+.success-message p {
+    color: #636e72 !important;
+    margin-bottom: 12px !important;
+}
+
+/* Professional GPS Container Styling */
 .gps-container {
     display: flex !important;
-    gap: 10px !important;
+    gap: 12px !important;
     align-items: center !important;
 }
 
@@ -240,55 +439,122 @@ window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
 .gps-container button {
     white-space: nowrap !important;
     padding: 12px 16px !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
+    background-color: #74b9ff !important;
+    color: white !important;
+    border: 1px solid #74b9ff !important;
+    cursor: pointer !important;
+    border-radius: 6px !important;
+    transition: all 0.15s ease !important;
 }
 
-/* Map Modal Styling */
+.gps-container button:hover {
+    background-color: #0984e3 !important;
+    border-color: #0984e3 !important;
+    transform: none !important;
+}
+
+/* Professional Map Modal Styling */
 .map-modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
+    display: none !important;
+    position: fixed !important;
+    z-index: 1500 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-color: rgba(45, 52, 54, 0.6) !important;
 }
 
 .map-modal-content {
-    background-color: white;
-    margin: 50px auto;
-    padding: 0;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 700px;
-    max-height: 500px;
-    position: relative;
-    overflow: hidden;
-    border: 2px solid #667eea;
+    background-color: white !important;
+    margin: 50px auto !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    width: 90% !important;
+    max-width: 700px !important;
+    max-height: 500px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    border: 1px solid #e9ecef !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
 }
 
 .map-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    border-bottom: 1px solid #e9ecef;
-    background: white;
-    position: relative;
-    z-index: 10;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 20px 24px !important;
+    border-bottom: 1px solid #e9ecef !important;
+    background: white !important;
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+.map-modal-header h3 {
+    color: #2d3436 !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+}
+
+/* Ensure map modal works independently of signup modal */
+#mapModal {
+    z-index: 1500 !important;
+}
+
+#mapModal.map-modal {
+    display: none !important;
+}
+
+#mapModal.map-modal[style*="display: block"] {
+    display: block !important;
+}
+
+/* Fix for dynamically created Step 4 map modals - only when explicitly shown */
+div[id^="mapModal_location_"][style*="display: block"] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(45, 52, 54, 0.6) !important;
+    z-index: 2000 !important;
+}
+
+div[id^="mapModal_location_"] .map-modal-content {
+    background: white !important;
+    margin: 50px auto !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    width: 90% !important;
+    max-width: 700px !important;
+    max-height: 500px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    border: 1px solid #e9ecef !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Ensure Step 4 modals are hidden by default */
+div[id^="mapModal_location_"] {
+    display: none !important;
 }
 
 .map-close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
+    color: #636e72 !important;
+    float: right !important;
+    font-size: 24px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    padding: 4px !important;
+    border-radius: 4px !important;
+    transition: all 0.15s ease !important;
 }
 
 .map-close:hover {
-    color: #000;
+    color: #2d3436 !important;
+    background-color: #f8f9fa !important;
 }
 
 .map-content-area {
@@ -318,49 +584,49 @@ window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
 }
 
 .coordinates-display {
-    padding: 8px;
-    background: #e7f3ff;
-    border: 1px solid #b3d9ff;
-    border-radius: 5px;
-    font-family: monospace;
-    font-weight: bold;
-    color: #0066cc;
-    text-align: center;
-    font-size: 12px;
-    margin-bottom: 60px;
+    padding: 12px !important;
+    background: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 6px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", monospace !important;
+    font-weight: 500 !important;
+    color: #2d3436 !important;
+    text-align: center !important;
+    font-size: 13px !important;
+    margin-bottom: 60px !important;
 }
 
 .map-buttons {
-    position: absolute;
-    bottom: 10px;
-    left: 15px;
-    right: 15px;
-    padding: 10px;
-    text-align: right;
-    border-top: 2px solid #667eea;
-    background: #f8f9fa;
-    border-radius: 5px;
+    position: absolute !important;
+    bottom: 12px !important;
+    left: 20px !important;
+    right: 20px !important;
+    padding: 16px !important;
+    text-align: right !important;
+    border-top: 1px solid #e9ecef !important;
+    background: white !important;
+    border-radius: 0 0 8px 8px !important;
 }
 
-/* Section Headers for Step 3 */
-.section-header {
-    margin: 25px 0 15px 0;
-    padding: 10px 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 5px;
-    font-weight: 600;
-    border-left: 4px solid #5a6fd8;
+/* Section Headers Override for Consistency */
+.form-step .section-header {
+    margin: 32px 0 24px 0 !important;
 }
 
-.section-header h4 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
+.form-step .section-header h4 {
+    color: #2d3436 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    padding: 12px 16px !important;
+    background: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 6px !important;
+    border-left: 4px solid #74b9ff !important;
 }
 
-.section-header:first-child {
-    margin-top: 10px;
+.form-step .section-header:first-child {
+    margin-top: 24px !important;
 }
 
 /* Enhanced form styling for complex Step 3 - AGGRESSIVE FIX */
@@ -455,65 +721,67 @@ body .franchise-signup-container .form-container .form-step#step3 {
     min-width: 70px;
 }
 
-/* File Upload Styling */
+/* Professional File Upload Styling */
 .file-upload-group {
-    margin-top: 10px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 5px;
+    margin-top: 16px !important;
+    padding: 20px !important;
+    background-color: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 6px !important;
 }
 
 .file-upload-area {
-    position: relative;
-    min-height: 120px;
-    border: 2px dashed #667eea;
-    border-radius: 8px;
-    text-align: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    background-color: white;
+    position: relative !important;
+    min-height: 120px !important;
+    border: 2px dashed #ddd !important;
+    border-radius: 6px !important;
+    text-align: center !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+    background-color: white !important;
 }
 
 .file-upload-area:hover {
-    border-color: #5a6fd8;
-    background-color: #f8f9ff;
+    border-color: #74b9ff !important;
+    background-color: #f8f9fa !important;
 }
 
 .file-upload-area.dragover {
-    border-color: #28a745;
-    background-color: #f8fff8;
+    border-color: #74b9ff !important;
+    background-color: rgba(116, 185, 255, 0.05) !important;
 }
 
 .upload-placeholder {
-    padding: 30px 20px;
-    color: #6c757d;
+    padding: 32px 20px !important;
+    color: #636e72 !important;
 }
 
 .upload-placeholder i {
-    font-size: 48px;
-    color: #667eea;
-    margin-bottom: 15px;
+    font-size: 32px !important;
+    color: #74b9ff !important;
+    margin-bottom: 16px !important;
 }
 
 .upload-placeholder p {
-    margin: 10px 0 5px 0;
-    font-size: 16px;
+    margin: 12px 0 8px 0 !important;
+    font-size: 14px !important;
+    color: #2d3436 !important;
 }
 
 .upload-placeholder small {
-    color: #8c9ba5;
-    font-size: 12px;
+    color: #636e72 !important;
+    font-size: 12px !important;
 }
 
 .browse-link {
-    color: #667eea;
-    text-decoration: underline;
-    cursor: pointer;
+    color: #74b9ff !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    font-weight: 500 !important;
 }
 
 .browse-link:hover {
-    color: #5a6fd8;
+    color: #0984e3 !important;
 }
 
 .file-preview {
@@ -632,57 +900,112 @@ body .franchise-signup-container .form-container .form-step#step3 {
     text-align: center;
 }
 
-/* Signup Modal Styling */
+/* Professional Signup Modal Styling */
 #signup-modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: fixed !important;
+    top: 0 !important; 
+    left: 0 !important; 
+    right: 0 !important; 
+    bottom: 0 !important;
+    background: rgba(45, 52, 54, 0.6) !important;
+    z-index: 1000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
+
 #signup-modal {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-    padding: 40px 32px 32px 32px;
-    text-align: center;
-    min-width: 320px;
-    max-width: 90vw;
+    background: #fff !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+    padding: 40px 32px 32px 32px !important;
+    text-align: center !important;
+    min-width: 400px !important;
+    max-width: 90vw !important;
+    border: 1px solid #e9ecef !important;
 }
+
 #signup-modal h3 {
-    margin-bottom: 24px;
-    color: #333;
+    margin-bottom: 24px !important;
+    color: #2d3436 !important;
+    font-size: 20px !important;
+    font-weight: 600 !important;
 }
+
 #signup-modal .btn {
-    min-width: 120px;
-    margin: 0 12px;
-    font-size: 1.1em;
+    min-width: 140px !important;
+    margin: 8px 6px !important;
+    font-size: 14px !important;
+    padding: 12px 20px !important;
 }
+
+#signup-modal .form-group {
+    text-align: left !important;
+    margin-bottom: 20px !important;
+}
+
+#signup-modal .form-group label {
+    color: #2d3436 !important;
+    font-weight: 500 !important;
+    margin-bottom: 8px !important;
+}
+
+#signup-modal .form-control {
+    width: 100% !important;
+    padding: 12px 16px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+}
+
 #resume-modal-content {
     display: none !important;
 }
+
 #resume-modal-content.show {
     display: block !important;
 }
+
 #options-modal-content {
     display: block !important;
 }
+
 #options-modal-content.hide {
     display: none !important;
 }
+
 #resume-message {
-    margin-top: 20px;
+    margin-top: 20px !important;
+    text-align: left !important;
 }
+
 #back-to-options {
-    margin-top: 16px;
-    background: none;
-    border: none;
-    color: #667eea;
-    text-decoration: underline;
-    cursor: pointer;
-    font-size: 1em;
+    margin-top: 16px !important;
+    background: none !important;
+    border: none !important;
+    color: #74b9ff !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    padding: 8px !important;
+}
+
+#back-to-options:hover {
+    color: #0984e3 !important;
+}
+
+/* Modal Hidden State - High Specificity */
+#signup-modal-overlay.modal-hidden {
+    display: none !important;
+}
+
+/* Form Visible State */
+.form-visible {
+    display: block !important;
+}
+
+.progress-visible {
+    display: flex !important;
 }
 </style>
 
@@ -690,9 +1013,8 @@ body .franchise-signup-container .form-container .form-step#step3 {
   <div id="signup-modal">
     <div id="options-modal-content">
       <h3>Welcome! Please choose an option:</h3>
-      <button id="btn-signup" class="btn btn-primary" style="margin-right:20px;">Sign Up</button>
+      <button id="btn-signup" class="btn btn-primary" style="margin-right:20px;" onclick="hideModalAndShowForm()">Sign Up</button>
       <button id="btn-resume" class="btn btn-secondary">Resume Sign Up</button>
-      <button id="debug-btn" class="btn btn-warning" style="margin-top:10px; display:block; width:100%;" onclick="debugModal()">🔧 Debug: Test Resume Switch</button>
     </div>
     <div id="resume-modal-content">
       <h3>Resume Your Application</h3>
@@ -712,7 +1034,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
 <div class="franchise-signup-container">
     <div class="step-header">
         <h2>Franchise Application Portal</h2>
-        <p>Complete your franchise application in 5 easy steps</p>
+        <p style="color: #636e72; margin: 8px 0 0 0; font-size: 16px;">Complete your franchise application in 7 easy steps</p>
     </div>
     <div class="step-progress" id="step-progress">
         <div class="progress-step active" id="progress-1">
@@ -1083,24 +1405,24 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <div class="form-group">
                 <label>Source Type</label>
                 <div id="source_type_checkboxes" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 8px;">
-                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
-                        <input type="checkbox" name="source_type" value="Farm" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
+                    <label>
+                        <input type="checkbox" name="source_type" value="Farm" onchange="toggleSourceTypeOther()">
                         Farm
                     </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
-                        <input type="checkbox" name="source_type" value="Mill" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
+                    <label>
+                        <input type="checkbox" name="source_type" value="Mill" onchange="toggleSourceTypeOther()">
                         Mill
                     </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
-                        <input type="checkbox" name="source_type" value="Forest" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
+                    <label>
+                        <input type="checkbox" name="source_type" value="Forest" onchange="toggleSourceTypeOther()">
                         Forest
                     </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 140px;">
-                        <input type="checkbox" name="source_type" value="Industrial Facility" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
+                    <label style="min-width: 140px;">
+                        <input type="checkbox" name="source_type" value="Industrial Facility" onchange="toggleSourceTypeOther()">
                         Industrial Facility
                     </label>
-                    <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; min-width: 120px;">
-                        <input type="checkbox" name="source_type" value="Other" onchange="toggleSourceTypeOther()" style="margin-right: 8px; width: 16px; height: 16px; flex-shrink: 0;">
+                    <label>
+                        <input type="checkbox" name="source_type" value="Other" onchange="toggleSourceTypeOther()">
                         Other
                     </label>
                 </div>
@@ -1112,7 +1434,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <div class="form-group">
                 <label>Location(s) of Generation</label>
                 <div id="generation_locations_container"></div>
-                <button type="button" class="btn btn-secondary" onclick="addGenerationLocation()">Add Location</button>
+                <button type="button" class="btn btn-secondary" onclick="addGenerationLocationWithTest()">Add Location</button>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -1811,6 +2133,46 @@ body .franchise-signup-container .form-container .form-step#step3 {
 
 <!-- Modal and Resume Functionality Script -->
 <script>
+// Direct function to hide modal and show form - defined first
+function hideModalAndShowForm() {
+    console.log('=== Direct hideModalAndShowForm called ===');
+    
+    const modalOverlay = document.getElementById('signup-modal-overlay');
+    const formContainer = document.getElementById('form-container');
+    const stepProgress = document.getElementById('step-progress');
+    
+    // Force hide modal with multiple methods
+    if (modalOverlay) {
+        modalOverlay.style.display = 'none';
+        modalOverlay.style.setProperty('display', 'none', 'important');
+        modalOverlay.classList.add('modal-hidden');
+        modalOverlay.style.visibility = 'hidden';
+        console.log('Modal overlay forcefully hidden');
+    }
+    
+    // Force show form
+    if (formContainer) {
+        formContainer.style.display = 'block';
+        formContainer.style.setProperty('display', 'block', 'important');
+        formContainer.classList.add('form-visible');
+        formContainer.style.visibility = 'visible';
+        console.log('Form container forcefully shown');
+    }
+    
+    // Force show progress
+    if (stepProgress) {
+        stepProgress.style.display = 'flex';
+        stepProgress.style.setProperty('display', 'flex', 'important');
+        stepProgress.classList.add('progress-visible');
+        stepProgress.style.visibility = 'visible';
+        console.log('Step progress forcefully shown');
+    }
+    
+    // Set resume mode
+    window.isResumeMode = false;
+    console.log('=== hideModalAndShowForm complete ===');
+}
+
 // Modal functionality - with duplicate prevention
 let modalInitialized = false;
 
@@ -1855,42 +2217,66 @@ function initializeModal() {
 
     if (resumeToken) {
         // Hide modal and show form, then verify token
-        console.log('Resume token detected, hiding modal and showing form');
-        if (modalOverlay) modalOverlay.style.display = 'none';
-        if (formContainer) {
-            formContainer.style.display = 'block';
-            console.log('Form container display set to block');
-            // Force the display with !important
-            formContainer.style.setProperty('display', 'block', 'important');
-        } else {
-            console.error('Form container element not found!');
-        }
+        console.log('Resume token detected, using bulletproof modal hiding');
+        hideModalAndShowForm();
         verifyResumeToken(resumeToken);
     } else if (verifyToken) {
         // Hide modal and show form, email verification is handled by signup.js
-        console.log('Verify token detected, hiding modal and showing form');
-        if (modalOverlay) modalOverlay.style.display = 'none';
-        if (formContainer) {
-            formContainer.style.display = 'block';
-            console.log('Form container display set to block');
-            // Force the display with !important
-            formContainer.style.setProperty('display', 'block', 'important');
-        } else {
-            console.error('Form container element not found!');
-        }
+        console.log('Verify token detected, using bulletproof modal hiding');
+        hideModalAndShowForm();
         // Note: handleEmailVerification is called from signup.js initialization
     } else {
         // Show modal initially
         console.log('No resume or verify token found, showing modal');
-        if (modalOverlay) modalOverlay.style.display = 'flex';
-        if (formContainer) formContainer.style.display = 'none';
+        if (modalOverlay) {
+            modalOverlay.style.display = 'flex';
+            modalOverlay.classList.remove('modal-hidden');
+        }
+        if (formContainer) {
+            formContainer.style.display = 'none';
+            formContainer.classList.remove('form-visible');
+            console.log('Form container hidden initially');
+        }
+        // Also hide step progress initially
+        const stepProgress = document.getElementById('step-progress');
+        if (stepProgress) {
+            stepProgress.style.display = 'none';
+            stepProgress.classList.remove('progress-visible');
+            console.log('Step progress hidden initially');
+        }
     }
     
     // Sign Up button - hide modal and show form
     btnSignup.addEventListener('click', function() {
-        console.log('Sign Up button clicked');
-        modalOverlay.style.display = 'none';
-        formContainer.style.display = 'block';
+        console.log('=== Sign Up button clicked - modal version ===');
+        console.log('Modal overlay before:', modalOverlay ? modalOverlay.style.display : 'not found');
+        console.log('Form container before:', formContainer ? formContainer.style.display : 'not found');
+        
+        // Hide modal using CSS class and direct style
+        if (modalOverlay) {
+            modalOverlay.classList.add('modal-hidden');
+            modalOverlay.style.display = 'none';
+            modalOverlay.style.setProperty('display', 'none', 'important');
+            console.log('Modal overlay hidden with CSS class and direct style');
+        }
+        
+        // Show form container using CSS class
+        if (formContainer) {
+            formContainer.classList.add('form-visible');
+            console.log('Form container shown with CSS class');
+        }
+        
+        // Show step progress using CSS class
+        const stepProgress = document.getElementById('step-progress');
+        if (stepProgress) {
+            stepProgress.classList.add('progress-visible');
+            console.log('Step progress shown with CSS class');
+        }
+        
+        // Set resume mode to false
+        window.isResumeMode = false;
+        console.log('Resume mode set to false');
+        console.log('=== Signup button click complete ===');
     });
     
     // Resume button - switch to resume form
@@ -1950,6 +2336,154 @@ function initializeModal() {
                 }
             });
         });
+    }
+}
+
+// Enhanced function for Step 4 map buttons with visibility fixes
+function testStep4MapButton(modalId, gpsInputId) {
+    console.log('=== Step 4 Map button clicked ===');
+    console.log('Modal ID:', modalId, 'GPS Input ID:', gpsInputId);
+    
+    // Check if openMapModalForLocation function exists
+    if (typeof openMapModalForLocation === 'function') {
+        console.log('openMapModalForLocation function found, calling it...');
+        try {
+            openMapModalForLocation(modalId, gpsInputId);
+            console.log('openMapModalForLocation called successfully');
+            
+            // Check if modal is visible after a brief delay, if not apply fixes
+            setTimeout(() => {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    const isVisible = modal.offsetWidth > 0 && modal.offsetHeight > 0;
+                    console.log('Modal visibility check:', { 
+                        found: true, 
+                        visible: isVisible, 
+                        display: modal.style.display,
+                        zIndex: modal.style.zIndex 
+                    });
+                    
+                    // Only apply fixes if modal is not visible
+                    if (!isVisible) {
+                        console.log('Modal not visible, applying fixes...');
+                        modal.style.display = 'block';
+                        modal.style.position = 'fixed';
+                        modal.style.top = '0';
+                        modal.style.left = '0';
+                        modal.style.width = '100%';
+                        modal.style.height = '100%';
+                        modal.style.zIndex = '2000';
+                        modal.style.background = 'rgba(45, 52, 54, 0.6)';
+                        modal.classList.add('map-modal');
+                        console.log('Modal visibility fixes applied');
+                    } else {
+                        console.log('Modal already visible, no fixes needed');
+                    }
+                } else {
+                    console.error('Modal element not found after creation:', modalId);
+                }
+            }, 200);
+            
+        } catch (error) {
+            console.error('Error calling openMapModalForLocation:', error);
+        }
+    } else {
+        console.error('openMapModalForLocation function not found!');
+        console.log('Available map functions:', Object.keys(window).filter(key => key.toLowerCase().includes('map')));
+        
+        // Try basic modal functionality
+        console.log('Attempting fallback map modal...');
+        const mapModal = document.getElementById('mapModal');
+        if (mapModal) {
+            mapModal.style.display = 'block';
+            mapModal.style.zIndex = '2000';
+            console.log('Main map modal shown as fallback');
+        } else {
+            console.error('Main map modal element not found!');
+        }
+    }
+}
+
+// Enhanced addGenerationLocation function with better map button
+function addGenerationLocationWithTest() {
+    console.log('=== Adding Generation Location ===');
+    
+    // Check if the original function exists
+    if (typeof addGenerationLocation === 'function') {
+        console.log('Original addGenerationLocation found, calling it...');
+        try {
+            addGenerationLocation();
+            console.log('Generation location added successfully');
+            
+            // After adding, update the map buttons to use our test function
+            setTimeout(() => {
+                const container = document.getElementById('generation_locations_container');
+                if (container) {
+                    const mapButtons = container.querySelectorAll('button[onclick*="openMapModalForLocation"]');
+                    mapButtons.forEach((button, index) => {
+                        const originalOnclick = button.getAttribute('onclick');
+                        console.log('Found map button with onclick:', originalOnclick);
+                        
+                        // Extract modalId and gpsInputId from the onclick
+                        const modalMatch = originalOnclick.match(/openMapModalForLocation\('([^']+)',\s*'([^']+)'\)/);
+                        if (modalMatch) {
+                            const modalId = modalMatch[1];
+                            const gpsInputId = modalMatch[2];
+                            button.onclick = () => testStep4MapButton(modalId, gpsInputId);
+                            console.log('Updated map button to use test function');
+                        }
+                    });
+                }
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error calling addGenerationLocation:', error);
+        }
+    } else {
+        console.error('addGenerationLocation function not found!');
+        console.log('Available generation functions:', Object.keys(window).filter(key => key.toLowerCase().includes('generation')));
+    }
+}
+
+// Test function for checkboxes (call from console: testCheckboxes())
+function testCheckboxes() {
+    console.log('=== Testing Step 4 Checkboxes ===');
+    const checkboxes = document.querySelectorAll('#source_type_checkboxes input[type="checkbox"]');
+    console.log('Found checkboxes:', checkboxes.length);
+    
+    checkboxes.forEach((checkbox, index) => {
+        console.log(`Checkbox ${index + 1}:`, {
+            value: checkbox.value,
+            checked: checkbox.checked,
+            visible: checkbox.offsetWidth > 0 && checkbox.offsetHeight > 0,
+            styles: window.getComputedStyle(checkbox)
+        });
+    });
+    
+    if (checkboxes.length > 0) {
+        console.log('Testing first checkbox...');
+        const firstCheckbox = checkboxes[0];
+        firstCheckbox.checked = !firstCheckbox.checked;
+        console.log('First checkbox toggled. New state:', firstCheckbox.checked);
+    }
+}
+
+// Fallback map modal function (call from console: showFallbackMap())
+function showFallbackMap() {
+    console.log('=== Showing Fallback Map Modal ===');
+    const mapModal = document.getElementById('mapModal');
+    if (mapModal) {
+        mapModal.style.display = 'block';
+        mapModal.style.zIndex = '2000';
+        mapModal.style.position = 'fixed';
+        mapModal.style.top = '0';
+        mapModal.style.left = '0';
+        mapModal.style.width = '100%';
+        mapModal.style.height = '100%';
+        mapModal.style.background = 'rgba(45, 52, 54, 0.6)';
+        console.log('Fallback map modal shown');
+    } else {
+        console.error('Main map modal not found');
     }
 }
 
@@ -2155,9 +2689,14 @@ function prefillFormData(data) {
             const fieldElement = document.getElementById(fieldName);
             if (fieldElement) {
                 fieldElement.value = data[fieldName];
-                // Trigger the file upload toggle function
+                // Trigger the file upload toggle function with correct mapping
                 if (typeof window.toggleFileUpload === 'function') {
-                    const fileGroupId = fieldName + '_file_group';
+                    let fileGroupId;
+                    if (fieldName === 'chain_of_custody_protocol') {
+                        fileGroupId = 'chain_of_custody_file_group';
+                    } else {
+                        fileGroupId = fieldName + '_file_group';
+                    }
                     window.toggleFileUpload(fieldName, fileGroupId);
                 }
             }

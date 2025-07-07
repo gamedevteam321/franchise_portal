@@ -328,10 +328,20 @@ function showStep(stepNumber) {
                 }
             } else if (stepNumber === 4) {
                 // Check Step 4 attachment fields
-                ['chain_of_custody', 'supplier_agreements', 'origin_certificates', 'transportation_records'].forEach(fieldId => {
+                // Use correct field to file group mappings instead of automatic generation
+                const step4FileMapping = {
+                    'chain_of_custody_protocol': 'chain_of_custody_file_group',
+                    'supplier_agreements': 'supplier_agreements_file_group', 
+                    'origin_certificates': 'origin_certificates_file_group',
+                    'transportation_records': 'transportation_records_file_group'
+                };
+                
+                Object.keys(step4FileMapping).forEach(fieldId => {
                     const field = document.getElementById(fieldId);
+                    const fileGroupId = step4FileMapping[fieldId];
                     if (field && field.value === 'Attached') {
-                        toggleFileUpload(fieldId, fieldId + '_file_group');
+                        console.log(`Triggering file upload for ${fieldId} -> ${fileGroupId}`);
+                        toggleFileUpload(fieldId, fileGroupId);
                     }
                 });
             } else if (stepNumber === 6) {
@@ -1942,7 +1952,78 @@ window.openMapModalForLocation = function(modalId, gpsInputId) {
     if (!window["mapInstance_"+modalId]) {
         loadGoogleMapsForLocation(modalId, gpsInputId);
     }
+    
+    // Apply enhanced visibility fixes for Step 4 modals
+    enhanceStep4ModalVisibility(modalId);
 };
+
+// Enhanced Step 4 map modal visibility function
+function enhanceStep4ModalVisibility(modalId) {
+    console.log(`Enhancing visibility for modal: ${modalId}`);
+    
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error(`Modal ${modalId} not found`);
+        return;
+    }
+    
+    // Apply aggressive CSS fixes to ensure visibility
+    modal.style.setProperty('display', 'block', 'important');
+    modal.style.setProperty('position', 'fixed', 'important');
+    modal.style.setProperty('top', '0', 'important');
+    modal.style.setProperty('left', '0', 'important');
+    modal.style.setProperty('width', '100%', 'important');
+    modal.style.setProperty('height', '100%', 'important');
+    modal.style.setProperty('z-index', '2000', 'important');
+    modal.style.setProperty('background-color', 'rgba(45, 52, 54, 0.8)', 'important');
+    modal.style.setProperty('overflow', 'auto', 'important');
+    modal.style.setProperty('visibility', 'visible', 'important');
+    modal.style.setProperty('opacity', '1', 'important');
+    
+    // Remove any conflicting classes
+    modal.classList.remove('hidden', 'hide', 'd-none');
+    modal.classList.add('map-modal', 'visible');
+    
+    // Ensure parent containers don't interfere
+    let parent = modal.parentElement;
+    while (parent && parent !== document.body) {
+        // Don't hide parent containers
+        if (parent.style.display === 'none') {
+            console.log('Found hidden parent, making visible:', parent);
+            parent.style.setProperty('display', 'block', 'important');
+        }
+        
+        // Ensure parent doesn't have overflow hidden that could clip the modal
+        if (window.getComputedStyle(parent).overflow === 'hidden') {
+            parent.style.setProperty('overflow', 'visible', 'important');
+        }
+        
+        parent = parent.parentElement;
+    }
+    
+    // Log final state for debugging
+    const computedStyle = window.getComputedStyle(modal);
+    console.log(`Modal ${modalId} final state:`, {
+        display: modal.style.display,
+        position: modal.style.position,
+        zIndex: modal.style.zIndex,
+        visibility: modal.style.visibility,
+        opacity: modal.style.opacity,
+        computedDisplay: computedStyle.display,
+        computedVisibility: computedStyle.visibility,
+        offsetWidth: modal.offsetWidth,
+        offsetHeight: modal.offsetHeight
+    });
+    
+    // Add click handler to modal background for closing
+    modal.onclick = function(e) {
+        if (e.target === modal) {
+            closeMapModalForLocation(modalId);
+        }
+    };
+    
+    console.log(`Enhanced visibility applied to modal: ${modalId}`);
+}
 
 window.closeMapModalForLocation = function(modalId) {
     const modal = document.getElementById(modalId);
@@ -3128,14 +3209,8 @@ function setupSignupOptions() {
     if (optionsModalContent) optionsModalContent.style.display = '';
     if (resumeModalContent) resumeModalContent.style.display = 'none';
 
-    if (btnSignup) {
-        btnSignup.onclick = function() {
-            isResumeMode = false;
-            if (modalOverlay) modalOverlay.style.display = 'none';
-            if(formContainer && formContainer.style) formContainer.style.display = '';
-            if(stepProgress && stepProgress.style) stepProgress.style.display = '';
-        };
-    }
+    // Note: Sign Up button click is now handled in index.html modal initialization
+    // to avoid conflicts and ensure proper display property setting
     
     if (btnResume) {
         btnResume.onclick = function() {
@@ -3274,4 +3349,164 @@ window.testComplete4StepFlow = function() {
     console.log('Step 4 fields found:', step4Fields.filter(f => allData[f]).length, '/', step4Fields.length);
     
     return allData;
+};
+
+// Debug function to test Step 4 map modals
+window.debugStep4Maps = function() {
+    console.log('=== DEBUG: Step 4 Map Modal Test ===');
+    
+    // First, add a test generation location if none exist
+    if (typeof addGenerationLocation === 'function') {
+        console.log('Adding test generation location...');
+        addGenerationLocation();
+        
+        // Find the newly added row
+        const container = document.getElementById('generation_locations_container');
+        if (container) {
+            const rows = container.querySelectorAll('.generation-location-row');
+            const lastRow = rows[rows.length - 1];
+            
+            if (lastRow) {
+                // Fill with test data
+                const addressInput = lastRow.querySelector('input[name*="generation_location_address"]');
+                const gpsInput = lastRow.querySelector('input[name*="generation_location_gps"]');
+                
+                if (addressInput) {
+                    addressInput.value = 'Test Location Address';
+                    console.log('Set test address');
+                }
+                if (gpsInput) {
+                    gpsInput.value = '21.3099, 77.7192';
+                    console.log('Set test GPS coordinates');
+                }
+                
+                // Find the map button and test it
+                const mapButton = lastRow.querySelector('button[onclick*="openMapModalForLocation"]');
+                if (mapButton) {
+                    console.log('Found map button, testing click...');
+                    
+                    // Extract modal ID and GPS input ID from onclick
+                    const onclickText = mapButton.getAttribute('onclick');
+                    const match = onclickText.match(/openMapModalForLocation\('([^']+)',\s*'([^']+)'\)/);
+                    
+                    if (match) {
+                        const modalId = match[1];
+                        const gpsInputId = match[2];
+                        
+                        console.log(`Testing modal: ${modalId}, GPS input: ${gpsInputId}`);
+                        
+                        // Test the map modal function directly
+                        if (typeof openMapModalForLocation === 'function') {
+                            console.log('Calling openMapModalForLocation...');
+                            openMapModalForLocation(modalId, gpsInputId);
+                            
+                            // Check if modal became visible
+                            setTimeout(() => {
+                                const modal = document.getElementById(modalId);
+                                if (modal) {
+                                    const isVisible = modal.offsetWidth > 0 && modal.offsetHeight > 0;
+                                    const styles = window.getComputedStyle(modal);
+                                    
+                                    console.log(`Modal visibility check:`, {
+                                        found: true,
+                                        visible: isVisible,
+                                        display: modal.style.display,
+                                        computedDisplay: styles.display,
+                                        zIndex: modal.style.zIndex,
+                                        position: modal.style.position,
+                                        offsetWidth: modal.offsetWidth,
+                                        offsetHeight: modal.offsetHeight
+                                    });
+                                    
+                                    if (isVisible) {
+                                        console.log('✅ Map modal is now visible!');
+                                    } else {
+                                        console.log('❌ Map modal is still not visible, applying enhanced fixes...');
+                                        enhanceStep4ModalVisibility(modalId);
+                                    }
+                                } else {
+                                    console.error(`Modal ${modalId} not found after creation`);
+                                }
+                            }, 1000);
+                            
+                        } else {
+                            console.error('openMapModalForLocation function not found');
+                        }
+                    } else {
+                        console.error('Could not parse onclick attribute:', onclickText);
+                    }
+                } else {
+                    console.error('Map button not found in the generated row');
+                }
+            } else {
+                console.error('Could not find the last generation location row');
+            }
+        } else {
+            console.error('generation_locations_container not found');
+        }
+    } else {
+        console.error('addGenerationLocation function not found');
+    }
+    
+    console.log('=== Step 4 Map Debug Complete ===');
+};
+
+// Debug function to manually create and show a Step 4 map modal
+window.forceShowStep4MapModal = function() {
+    console.log('=== FORCE SHOWING Step 4 Map Modal ===');
+    
+    const testModalId = 'mapModal_test_debug';
+    const testGpsInputId = 'test_gps_input';
+    
+    // Create a test modal div if it doesn't exist
+    let testModal = document.getElementById(testModalId);
+    if (!testModal) {
+        testModal = document.createElement('div');
+        testModal.id = testModalId;
+        testModal.className = 'map-modal';
+        document.body.appendChild(testModal);
+        console.log('Created test modal element');
+    }
+    
+    // Create a test GPS input if it doesn't exist
+    let testGpsInput = document.getElementById(testGpsInputId);
+    if (!testGpsInput) {
+        testGpsInput = document.createElement('input');
+        testGpsInput.id = testGpsInputId;
+        testGpsInput.type = 'text';
+        testGpsInput.style.display = 'none';
+        document.body.appendChild(testGpsInput);
+        console.log('Created test GPS input');
+    }
+    
+    // Use the openMapModalForLocation function
+    if (typeof openMapModalForLocation === 'function') {
+        console.log('Calling openMapModalForLocation with test parameters...');
+        openMapModalForLocation(testModalId, testGpsInputId);
+        
+        // Additional aggressive visibility fixes
+        setTimeout(() => {
+            const modal = document.getElementById(testModalId);
+            if (modal) {
+                modal.style.setProperty('border', '5px solid red', 'important');
+                modal.style.setProperty('background-color', 'rgba(255, 0, 0, 0.3)', 'important');
+                console.log('Applied red border for visibility test');
+                
+                const isVisible = modal.offsetWidth > 0 && modal.offsetHeight > 0;
+                console.log(`Test modal visible: ${isVisible}`);
+                
+                if (isVisible) {
+                    console.log('✅ SUCCESS: Test modal is visible!');
+                } else {
+                    console.log('❌ FAILURE: Test modal is still not visible');
+                    console.log('Modal computed styles:', window.getComputedStyle(modal));
+                }
+            }
+        }, 500);
+        
+    } else {
+        console.error('openMapModalForLocation function not available');
+    }
+    
+    console.log('=== Force Show Test Complete ===');
 };
