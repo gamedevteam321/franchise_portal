@@ -1,7 +1,7 @@
 // Franchise Portal - Main JavaScript file
 
-// Initialize when frappe is ready
-frappe.ready(() => {
+// Initialize when document is ready  
+$(document).ready(function() {
     console.log('Franchise Portal loaded');
 });
 
