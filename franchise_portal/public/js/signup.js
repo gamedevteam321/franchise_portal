@@ -228,6 +228,14 @@ function nextStep(step) {
         
         // For verified users or steps 2+
         console.log('Validation passed, saving step data...');
+        
+        // Special handling for the final step (step 7)
+        if (step === 7) {
+            console.log('Final step reached, submitting application...');
+            submitApplication();
+            return;
+        }
+        
         saveStepData(step, () => {
             console.log('Step data saved successfully, moving to next step');
             window.currentStep = currentStep = step + 1;

@@ -425,7 +425,7 @@ def send_confirmation_email(email, application_id, applicant_name=None):
                         </tr>
                         <tr>
                             <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Submitted On:</td>
-                            <td style="padding: 8px 0; color: #2d3436;">{frappe.format_date(now(), 'medium')}</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{frappe.utils.format_date(now(), 'medium')}</td>
                         </tr>
                     </table>
                 </div>
@@ -658,7 +658,7 @@ def send_confirmation_email(email, application_id, applicant_name=None):
                         </tr>
                         <tr>
                             <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Submitted On:</td>
-                            <td style="padding: 8px 0; color: #2d3436;">{frappe.format_date(now(), 'medium')}</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{frappe.utils.format_date(now(), 'medium')}</td>
                         </tr>
                     </table>
                 </div>
