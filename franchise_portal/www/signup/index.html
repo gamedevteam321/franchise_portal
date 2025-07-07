@@ -648,12 +648,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
 }
 
 /* Force proper display for Step 3 elements */
-body .franchise-signup-container .form-container .form-step#step3 * {
-    margin-left: 0 !important;
-    padding-left: 0 !important;
-    position: relative !important;
-    left: 0 !important;
-}
+
 
 /* Ensure form-container works properly with Step 3 */
 body .franchise-signup-container .form-container:has(#step3.active),
@@ -1174,7 +1169,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
         </form>
 
         <!-- Step 3: Feedstock Description & Classification -->
-        <form id="step3" class="form-step" style="padding: 30px 50px 30px 50px !important; margin-left: 0 !important; width: 100% !important; box-sizing: border-box !important; position: relative !important; left: 0 !important; overflow: visible !important;" >
+        <form id="step3" class="form-step" >
             <h3>Step 3: Feedstock Description & Classification</h3>
             
             <!-- Basic Information Section -->
@@ -1394,6 +1389,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
                 <button type="button" class="btn btn-secondary" onclick="previousStep(3)">Previous</button>
                 <button type="button" class="btn btn-primary" onclick="nextStep(3)">Next Step</button>
             </div>
+            
         </form>
 
         <!-- Step 4: Origin, Sourcing & Supply Chain -->

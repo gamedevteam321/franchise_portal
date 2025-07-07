@@ -1265,6 +1265,97 @@ function showSuccessMessage(appId) {
     document.querySelectorAll('.progress-step').forEach(step => {
         step.className = 'progress-step completed';
     });
+    
+    // Send confirmation email to the user
+    sendConfirmationEmail(appId);
+}
+
+// New function to send confirmation email after successful submission
+function sendConfirmationEmail(applicationId) {
+    console.log('Sending confirmation email for application:', applicationId);
+    
+    // Get user email from applicationData or from the form
+    const userEmail = applicationData.email || document.getElementById('email')?.value;
+    
+    if (!userEmail) {
+        console.warn('No email address found to send confirmation');
+        return;
+    }
+    
+    // Call the backend API to send confirmation email
+    frappe.call({
+        method: 'franchise_portal.www.signup.api.send_confirmation_email',
+        args: {
+            email: userEmail,
+            application_id: applicationId,
+            applicant_name: applicationData.contact_person || applicationData.company_name || 'Applicant'
+        },
+        callback: function(response) {
+            console.log('Confirmation email response:', response);
+            if (response.message && response.message.success) {
+                console.log('✅ Confirmation email sent successfully');
+                
+                // Show additional success message about email
+                const successDiv = document.getElementById('success');
+                if (successDiv) {
+                    const emailNotification = document.createElement('div');
+                    emailNotification.innerHTML = `
+                        <div style="background: #e8f4f8; border: 1px solid #bee5eb; border-radius: 6px; padding: 15px; margin-top: 20px; text-align: center;">
+                            <div style="color: #0c5460; font-weight: 500; margin-bottom: 8px;">
+                                📧 Confirmation Email Sent!
+                            </div>
+                            <div style="color: #0c5460; font-size: 14px;">
+                                We've sent a confirmation email to <strong>${userEmail}</strong><br>
+                                Please check your inbox (and spam folder) for details about your application.
+                            </div>
+                        </div>
+                    `;
+                    successDiv.appendChild(emailNotification);
+                }
+            } else {
+                console.warn('Failed to send confirmation email:', response.message?.message);
+                
+                // Show warning about email failure (but don't disrupt the success flow)
+                const successDiv = document.getElementById('success');
+                if (successDiv) {
+                    const emailWarning = document.createElement('div');
+                    emailWarning.innerHTML = `
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin-top: 20px; text-align: center;">
+                            <div style="color: #856404; font-weight: 500; margin-bottom: 8px;">
+                                ⚠️ Email Notification
+                            </div>
+                            <div style="color: #856404; font-size: 14px;">
+                                Your application was submitted successfully, but we couldn't send the confirmation email.<br>
+                                Please save your Application ID: <strong>${applicationId}</strong>
+                            </div>
+                        </div>
+                    `;
+                    successDiv.appendChild(emailWarning);
+                }
+            }
+        },
+        error: function(error) {
+            console.error('Error sending confirmation email:', error);
+            
+            // Show warning about email failure (but don't disrupt the success flow)
+            const successDiv = document.getElementById('success');
+            if (successDiv) {
+                const emailError = document.createElement('div');
+                emailError.innerHTML = `
+                    <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin-top: 20px; text-align: center;">
+                        <div style="color: #721c24; font-weight: 500; margin-bottom: 8px;">
+                            📧 Email Service Unavailable
+                        </div>
+                        <div style="color: #721c24; font-size: 14px;">
+                            Your application was submitted successfully, but email service is temporarily unavailable.<br>
+                            Please save your Application ID: <strong>${applicationId}</strong>
+                        </div>
+                    </div>
+                `;
+                successDiv.appendChild(emailError);
+            }
+        }
+    });
 }
 
 // Utility function to populate form if returning user

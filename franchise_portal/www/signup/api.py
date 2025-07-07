@@ -362,6 +362,176 @@ def get_application_status(email):
         }
 
 
+@frappe.whitelist(allow_guest=True)
+def send_confirmation_email(email, application_id, applicant_name=None):
+    """Send confirmation email after successful application submission"""
+    try:
+        if not email or not application_id:
+            return {"success": False, "message": "Email and application ID are required"}
+        
+        # Get the application document
+        try:
+            doc = frappe.get_doc("Franchise Signup Application", application_id)
+        except frappe.DoesNotExistError:
+            return {"success": False, "message": "Application not found"}
+        
+        # Use the applicant name from the doc if not provided
+        if not applicant_name:
+            applicant_name = doc.contact_person or doc.company_name or "Applicant"
+        
+        # Send confirmation email to the applicant
+        subject = f"✅ Application Submitted Successfully - {doc.company_name or 'Your Company'}"
+        
+        message = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                <h1 style="margin: 0; font-size: 24px; font-weight: 600;">🎉 Application Submitted Successfully!</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">Thank you for choosing Nexchar Ventures</p>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px 20px;">
+                <p style="font-size: 16px; color: #2d3436; margin-bottom: 20px;">Dear <strong>{applicant_name}</strong>,</p>
+                
+                <p style="color: #636e72; line-height: 1.6; margin-bottom: 25px;">
+                    Congratulations! Your franchise application has been successfully submitted and is now under review. 
+                    We appreciate your interest in partnering with Nexchar Ventures.
+                </p>
+                
+                <!-- Application Details Card -->
+                <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #74b9ff;">
+                    <h3 style="margin: 0 0 15px 0; color: #2d3436; font-size: 18px;">📋 Your Application Details</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72; width: 35%;">Application ID:</td>
+                            <td style="padding: 8px 0; color: #2d3436; font-family: monospace; background: #e8f4f8; padding: 4px 8px; border-radius: 4px; font-weight: 600;">{doc.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Company Name:</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{doc.company_name or 'Not specified'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Project Name:</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{doc.project_name or 'Not specified'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Email:</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{doc.email}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Status:</td>
+                            <td style="padding: 8px 0; color: #74b9ff; font-weight: 600;">✅ Under Review</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Submitted On:</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{frappe.format_date(now(), 'medium')}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Next Steps -->
+                <div style="background: #e8f4f8; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                    <h4 style="margin: 0 0 15px 0; color: #0c5460; font-size: 16px;">🚀 What Happens Next?</h4>
+                    <ul style="color: #0c5460; margin: 0; padding-left: 20px; line-height: 1.8;">
+                        <li><strong>Initial Review:</strong> Our team will review your application within 2-3 business days</li>
+                        <li><strong>Technical Assessment:</strong> We'll evaluate your project details and feasibility</li>
+                        <li><strong>Direct Contact:</strong> A franchise specialist will contact you for further discussion</li>
+                        <li><strong>Partnership Decision:</strong> We'll provide feedback and next steps for partnership</li>
+                    </ul>
+                </div>
+                
+                <!-- Important Notice -->
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 25px 0;">
+                    <h4 style="margin: 0 0 10px 0; color: #856404; font-size: 14px;">📝 Important Information</h4>
+                    <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.5;">
+                        Please save your <strong>Application ID: {doc.name}</strong> for future reference. 
+                        Our team will contact you at <strong>{doc.email}</strong> or <strong>{doc.phone_number or 'your provided contact number'}</strong> 
+                        with updates on your application status.
+                    </p>
+                </div>
+                
+                <!-- Contact Info -->
+                <div style="text-align: center; margin: 30px 0 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="margin: 0 0 10px 0; color: #2d3436;">Questions or Need Assistance?</h4>
+                    <p style="margin: 0; color: #636e72;">Contact our support team:</p>
+                    <p style="margin: 10px 0 0 0; color: #74b9ff; font-weight: 600;">
+                        📧 support@nexcharventures.com<br>
+                        📞 +91-XXX-XXX-XXXX
+                    </p>
+                </div>
+                
+                <p style="color: #636e72; line-height: 1.6; margin-top: 30px;">
+                    Thank you for choosing Nexchar Ventures as your franchise partner. We look forward to working with you!
+                </p>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <p style="margin: 0; color: #2d3436; font-weight: 600;">Best regards,</p>
+                    <p style="margin: 5px 0 0 0; color: #74b9ff; font-weight: 700; font-size: 16px;">The Nexchar Ventures Team</p>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background: #f8f9fa; color: #636e72; text-align: center; padding: 20px; border-radius: 0 0 8px 8px; font-size: 12px;">
+                <p style="margin: 0;">© 2024 Nexchar Ventures. All rights reserved.</p>
+                <p style="margin: 5px 0 0 0;">This is an automated message. Please do not reply to this email.</p>
+            </div>
+        </div>
+        """
+        
+        # Send the email
+        frappe.sendmail(
+            recipients=[email],
+            subject=subject,
+            message=message,
+            now=True
+        )
+        
+        # Also send notification to admins (optional)
+        try:
+            admin_subject = f"📨 New Application Submitted: {doc.company_name}"
+            admin_message = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #667eea;">New Franchise Application Notification</h2>
+                <p>A new franchise application has been submitted and confirmation email sent to the applicant.</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #495057;">Quick Overview</h3>
+                    <p><strong>Application ID:</strong> {doc.name}</p>
+                    <p><strong>Company:</strong> {doc.company_name}</p>
+                    <p><strong>Contact:</strong> {applicant_name} ({doc.email})</p>
+                    <p><strong>Project:</strong> {doc.project_name or 'Not specified'}</p>
+                    <p><strong>Confirmation Email:</strong> ✅ Sent to {email}</p>
+                </div>
+                
+                <p>Please review this application in the system and follow up accordingly.</p>
+            </div>
+            """
+            
+            frappe.sendmail(
+                recipients=["admin@nexcharventures.com"],  # Configure this email
+                subject=admin_subject,
+                message=admin_message,
+                now=True
+            )
+        except Exception as admin_email_error:
+            frappe.log_error(f"Failed to send admin notification: {str(admin_email_error)}", "Admin Email Notification Error")
+        
+        return {
+            "success": True,
+            "message": "Confirmation email sent successfully",
+            "email_sent_to": email,
+            "application_id": application_id
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Error sending confirmation email: {str(e)}", "Franchise Portal Confirmation Email Error")
+        return {
+            "success": False,
+            "message": f"Failed to send confirmation email: {str(e)}"
+        }
+
+
 def send_notification_email(doc):
     """Send notification email to administrators"""
     subject = f"New Franchise Application: {doc.company_name}"
@@ -425,41 +595,174 @@ def send_notification_email(doc):
     )
 
 
-def send_confirmation_email(doc):
-    """Send confirmation email to the applicant"""
-    subject = f"Application Received - {doc.company_name}"
-    
-    message = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #667eea;">Application Received Successfully</h2>
+@frappe.whitelist(allow_guest=True)
+def send_confirmation_email(email, application_id, applicant_name=None):
+    """Send confirmation email after successful application submission"""
+    try:
+        if not email or not application_id:
+            return {"success": False, "message": "Email and application ID are required"}
         
-        <p>Dear {doc.contact_person or 'Applicant'},</p>
+        # Get the application document
+        try:
+            doc = frappe.get_doc("Franchise Signup Application", application_id)
+        except frappe.DoesNotExistError:
+            return {"success": False, "message": "Application not found"}
         
-        <p>Thank you for submitting your franchise application. We have received your information and will review it within 2-3 business days.</p>
+        # Use the applicant name from the doc if not provided
+        if not applicant_name:
+            applicant_name = doc.contact_person or doc.company_name or "Applicant"
         
-        <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #0066cc;">Your Application Details</h3>
-            <p><strong>Application ID:</strong> {doc.name}</p>
-            <p><strong>Company:</strong> {doc.company_name}</p>
-            <p><strong>Project:</strong> {doc.project_name or 'N/A'}</p>
-            <p><strong>Status:</strong> Under Review</p>
+        # Send confirmation email to the applicant
+        subject = f"✅ Application Submitted Successfully - {doc.company_name or 'Your Company'}"
+        
+        message = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                <h1 style="margin: 0; font-size: 24px; font-weight: 600;">🎉 Application Submitted Successfully!</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">Thank you for choosing Nexchar Ventures</p>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px 20px;">
+                <p style="font-size: 16px; color: #2d3436; margin-bottom: 20px;">Dear <strong>{applicant_name}</strong>,</p>
+                
+                <p style="color: #636e72; line-height: 1.6; margin-bottom: 25px;">
+                    Congratulations! Your franchise application has been successfully submitted and is now under review. 
+                    We appreciate your interest in partnering with Nexchar Ventures.
+                </p>
+                
+                <!-- Application Details Card -->
+                <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #74b9ff;">
+                    <h3 style="margin: 0 0 15px 0; color: #2d3436; font-size: 18px;">📋 Your Application Details</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72; width: 35%;">Application ID:</td>
+                            <td style="padding: 8px 0; color: #2d3436; font-family: monospace; background: #e8f4f8; padding: 4px 8px; border-radius: 4px; font-weight: 600;">{doc.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Company Name:</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{doc.company_name or 'Not specified'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Project Name:</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{doc.project_name or 'Not specified'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Email:</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{doc.email}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Status:</td>
+                            <td style="padding: 8px 0; color: #74b9ff; font-weight: 600;">✅ Under Review</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; font-weight: 600; color: #636e72;">Submitted On:</td>
+                            <td style="padding: 8px 0; color: #2d3436;">{frappe.format_date(now(), 'medium')}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Next Steps -->
+                <div style="background: #e8f4f8; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                    <h4 style="margin: 0 0 15px 0; color: #0c5460; font-size: 16px;">🚀 What Happens Next?</h4>
+                    <ul style="color: #0c5460; margin: 0; padding-left: 20px; line-height: 1.8;">
+                        <li><strong>Initial Review:</strong> Our team will review your application within 2-3 business days</li>
+                        <li><strong>Technical Assessment:</strong> We'll evaluate your project details and feasibility</li>
+                        <li><strong>Direct Contact:</strong> A franchise specialist will contact you for further discussion</li>
+                        <li><strong>Partnership Decision:</strong> We'll provide feedback and next steps for partnership</li>
+                    </ul>
+                </div>
+                
+                <!-- Important Notice -->
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 25px 0;">
+                    <h4 style="margin: 0 0 10px 0; color: #856404; font-size: 14px;">📝 Important Information</h4>
+                    <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.5;">
+                        Please save your <strong>Application ID: {doc.name}</strong> for future reference. 
+                        Our team will contact you at <strong>{doc.email}</strong> or <strong>{doc.phone_number or 'your provided contact number'}</strong> 
+                        with updates on your application status.
+                    </p>
+                </div>
+                
+                <!-- Contact Info -->
+                <div style="text-align: center; margin: 30px 0 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="margin: 0 0 10px 0; color: #2d3436;">Questions or Need Assistance?</h4>
+                    <p style="margin: 0; color: #636e72;">Contact our support team:</p>
+                    <p style="margin: 10px 0 0 0; color: #74b9ff; font-weight: 600;">
+                        📧 support@nexcharventures.com<br>
+                        📞 +91-XXX-XXX-XXXX
+                    </p>
+                </div>
+                
+                <p style="color: #636e72; line-height: 1.6; margin-top: 30px;">
+                    Thank you for choosing Nexchar Ventures as your franchise partner. We look forward to working with you!
+                </p>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <p style="margin: 0; color: #2d3436; font-weight: 600;">Best regards,</p>
+                    <p style="margin: 5px 0 0 0; color: #74b9ff; font-weight: 700; font-size: 16px;">The Nexchar Ventures Team</p>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background: #f8f9fa; color: #636e72; text-align: center; padding: 20px; border-radius: 0 0 8px 8px; font-size: 12px;">
+                <p style="margin: 0;">© 2024 Nexchar Ventures. All rights reserved.</p>
+                <p style="margin: 5px 0 0 0;">This is an automated message. Please do not reply to this email.</p>
+            </div>
         </div>
+        """
         
-        <p>Our team will contact you at {doc.email} or {doc.phone_number or 'the provided contact information'} once we have completed our initial review.</p>
+        # Send the email
+        frappe.sendmail(
+            recipients=[email],
+            subject=subject,
+            message=message,
+            now=True
+        )
         
-        <p>If you have any questions, please don't hesitate to contact us.</p>
+        # Also send notification to admins (optional)
+        try:
+            admin_subject = f"📨 New Application Submitted: {doc.company_name}"
+            admin_message = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #667eea;">New Franchise Application Notification</h2>
+                <p>A new franchise application has been submitted and confirmation email sent to the applicant.</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #495057;">Quick Overview</h3>
+                    <p><strong>Application ID:</strong> {doc.name}</p>
+                    <p><strong>Company:</strong> {doc.company_name}</p>
+                    <p><strong>Contact:</strong> {applicant_name} ({doc.email})</p>
+                    <p><strong>Project:</strong> {doc.project_name or 'Not specified'}</p>
+                    <p><strong>Confirmation Email:</strong> ✅ Sent to {email}</p>
+                </div>
+                
+                <p>Please review this application in the system and follow up accordingly.</p>
+            </div>
+            """
+            
+            frappe.sendmail(
+                recipients=["admin@nexcharventures.com"],  # Configure this email
+                subject=admin_subject,
+                message=admin_message,
+                now=True
+            )
+        except Exception as admin_email_error:
+            frappe.log_error(f"Failed to send admin notification: {str(admin_email_error)}", "Admin Email Notification Error")
         
-        <p>Best regards,<br>
-        <strong>Nexchar Ventures Team</strong></p>
-    </div>
-    """
-    
-    frappe.sendmail(
-        recipients=[doc.email],
-        subject=subject,
-        message=message,
-        now=True
-    )
+        return {
+            "success": True,
+            "message": "Confirmation email sent successfully",
+            "email_sent_to": email,
+            "application_id": application_id
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Error sending confirmation email: {str(e)}", "Franchise Portal Confirmation Email Error")
+        return {
+            "success": False,
+            "message": f"Failed to send confirmation email: {str(e)}"
+        }
 
 
 def send_verification_email_to_user(email, company_name, verification_url):
@@ -667,10 +970,7 @@ def finalize_application(session_data, token, current_step=7):
             if 'generation_locations' in application_data and isinstance(application_data['generation_locations'], list):
                 for location in application_data['generation_locations']:
                     if isinstance(location, dict) and location.get('address') and location.get('gps_coordinates'):
-                        doc.append('generation_locations', {
-                            'address': location['address'],
-                            'gps_coordinates': location['gps_coordinates']
-                        })
+                        doc.append('generation_locations', location_data)
             for key, value in application_data.items():
                 if key != 'generation_locations' and hasattr(doc, key):
                     setattr(doc, key, value)
