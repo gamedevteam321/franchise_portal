@@ -211,25 +211,82 @@ class FranchiseSignupApplication(Document):
 			abbr = f"{self._generate_company_abbr(original_name)}{counter}"
 			counter += 1
 		
-		# Create the company
+		# Determine parent company based on project type
+		parent_company = None
+		project_type = getattr(self, 'project_type', '')
+		
+		# Map project type to parent company groups under Nexchar Ventures
+		if project_type == "Franchise":
+			parent_company = "Franchise"  # This should be the group company under Nexchar Ventures
+		elif project_type == "Internal Company":
+			parent_company = "Internal Company"  # This should be the group company under Nexchar Ventures
+		
+		# Ensure parent company structure exists
+		if parent_company:
+			parent_company = self._ensure_company_hierarchy(parent_company, project_type)
+		
+		# Create the company with Indian defaults as requested
 		company_doc = frappe.get_doc({
 			"doctype": "Company",
 			"company_name": company_name,
 			"abbr": abbr,
-			"default_currency": "USD",  # You can change this based on country
-			"country": getattr(self, 'country_of_operation', 'India'),
+			"default_currency": "INR",  # Set to INR as requested
+			"country": "India",  # Set to India as requested
+			"parent_company": parent_company,  # Set parent based on project type
 			"domain": "Manufacturing",
 			"email": self.email,
 			"phone_no": getattr(self, 'phone_number', ''),
-			"company_description": f"Franchise company created from application {self.name}",
+			"company_description": f"{project_type} company created from franchise application {self.name}",
 			"date_of_establishment": getattr(self, 'project_start_date', None),
-			# Add more fields as needed
+			"date_of_incorporation": getattr(self, 'project_start_date', None),
+			# Additional fields for better organization
+			"website": getattr(self, 'website', ''),
+			"tax_id": getattr(self, 'tax_id', ''),
 		})
 		
 		company_doc.insert(ignore_permissions=True)
 		frappe.db.commit()
 		
+		# Log successful creation
+		frappe.logger().info(f"Company '{company_name}' created successfully under parent '{parent_company}' for {project_type} application {self.name}")
+		
 		return company_doc.name
+	
+	def _ensure_company_hierarchy(self, target_parent, project_type):
+		"""Ensure the company hierarchy exists: Nexchar Ventures -> Franchise/Internal Company -> New Company"""
+		
+		# First, ensure Nexchar Ventures exists as the root company
+		nexchar_ventures = "Nexchar Ventures"
+		if not frappe.db.exists("Company", nexchar_ventures):
+			frappe.log_error(f"Root company '{nexchar_ventures}' not found. Cannot create proper hierarchy.")
+			return None
+		
+		# Check if the target parent (Franchise or Internal Company) exists
+		if not frappe.db.exists("Company", target_parent):
+			try:
+				# Create the group company under Nexchar Ventures
+				group_company_doc = frappe.get_doc({
+					"doctype": "Company",
+					"company_name": target_parent,
+					"abbr": "FRA" if target_parent == "Franchise" else "INT",
+					"default_currency": "INR",
+					"country": "India",
+					"parent_company": nexchar_ventures,
+					"is_group": 1,  # Mark as group company
+					"domain": "Manufacturing",
+					"company_description": f"Group company for {project_type} companies under Nexchar Ventures",
+				})
+				
+				group_company_doc.insert(ignore_permissions=True)
+				frappe.db.commit()
+				
+				frappe.logger().info(f"Created group company '{target_parent}' under '{nexchar_ventures}'")
+				
+			except Exception as e:
+				frappe.log_error(f"Failed to create group company '{target_parent}': {str(e)}")
+				return None
+		
+		return target_parent
 	
 	def _create_user(self, company_name):
 		"""Create user from franchise application data"""
@@ -306,8 +363,16 @@ class FranchiseSignupApplication(Document):
 								<td style="padding: 8px 0;">{self.name}</td>
 							</tr>
 							<tr>
+								<td style="padding: 8px 0; font-weight: bold;">Project Type:</td>
+								<td style="padding: 8px 0;">{getattr(self, 'project_type', 'N/A')}</td>
+							</tr>
+							<tr>
 								<td style="padding: 8px 0; font-weight: bold;">Company Created:</td>
 								<td style="padding: 8px 0;">{company_name}</td>
+							</tr>
+							<tr>
+								<td style="padding: 8px 0; font-weight: bold;">Company Hierarchy:</td>
+								<td style="padding: 8px 0;">Nexchar Ventures → {getattr(self, 'project_type', 'Unknown')} → {company_name}</td>
 							</tr>
 							<tr>
 								<td style="padding: 8px 0; font-weight: bold;">User Account:</td>
@@ -343,7 +408,9 @@ class FranchiseSignupApplication(Document):
 				message=f"""
 				<h3>Franchise Application Approved & Processed</h3>
 				<p><strong>Application ID:</strong> {self.name}</p>
+				<p><strong>Project Type:</strong> {getattr(self, 'project_type', 'N/A')}</p>
 				<p><strong>Company Created:</strong> {company_name}</p>
+				<p><strong>Company Hierarchy:</strong> Nexchar Ventures → {getattr(self, 'project_type', 'Unknown')} → {company_name}</p>
 				<p><strong>User Created:</strong> {user_email}</p>
 				<p><strong>Approved By:</strong> {frappe.get_value('User', self.approved_by, 'full_name') or self.approved_by}</p>
 				<p><strong>Contact Email:</strong> {self.email}</p>
