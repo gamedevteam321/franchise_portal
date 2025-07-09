@@ -1280,7 +1280,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
 <div class="franchise-signup-container">
     <div class="step-header">
         <h2>Franchise Application Portal</h2>
-        <p style="color: #636e72; margin: 8px 0 0 0; font-size: 16px;">Complete your franchise application in 7 easy steps</p>
+        <p style="color: #636e72; margin: 8px 0 0 0; font-size: 16px;">Complete your franchise application in 8 easy steps</p>
     </div>
     <div class="step-progress" id="step-progress">
         <div class="progress-step active" id="progress-1">
@@ -1303,6 +1303,9 @@ body .franchise-signup-container .form-container .form-step#step3 {
         </div>
         <div class="progress-step inactive" id="progress-7">
             <strong>Step 7</strong><br>Emissions & Energy Accounting
+        </div>
+        <div class="progress-step inactive" id="progress-8">
+            <strong>Step 8</strong><br>Employee Details
         </div>
     </div>
     <div class="form-container" id="form-container">
@@ -2332,6 +2335,112 @@ body .franchise-signup-container .form-container .form-step#step3 {
             </div>
             <div class="button-group">
                 <button type="button" class="btn btn-secondary" onclick="previousStep(7)">Previous</button>
+                <button type="button" class="btn btn-primary" onclick="nextStep(7)">Next Step</button>
+            </div>
+        </form>
+
+        <!-- Step 8: Employee Details -->
+        <form id="step8" class="form-step">
+            <h3>Step 8: Employee Details</h3>
+            
+            <div class="section-header">
+                <h4>👤 Employee Information</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="employee_first_name">First Name *</label>
+                    <input type="text" id="employee_first_name" name="employee_first_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee_middle_name">Middle Name</label>
+                    <input type="text" id="employee_middle_name" name="employee_middle_name">
+                </div>
+                <div class="form-group">
+                    <label for="employee_last_name">Last Name</label>
+                    <input type="text" id="employee_last_name" name="employee_last_name">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="employee_gender">Gender *</label>
+                    <select id="employee_gender" name="employee_gender" required>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="employee_date_of_birth">Date of Birth *</label>
+                    <input type="date" id="employee_date_of_birth" name="employee_date_of_birth" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee_date_of_joining">Date of Joining *</label>
+                    <input type="date" id="employee_date_of_joining" name="employee_date_of_joining" required>
+                </div>
+            </div>
+            
+            <div class="section-header">
+                <h4>💼 Employment Details</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="employee_salutation">Salutation</label>
+                    <select id="employee_salutation" name="employee_salutation">
+                        <option value="">Select Salutation</option>
+                        <option value="Mr">Mr</option>
+                        <option value="Ms">Ms</option>
+                        <option value="Mrs">Mrs</option>
+                        <option value="Dr">Dr</option>
+                        <option value="Prof">Prof</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="employee_designation">Designation</label>
+                    <input type="text" id="employee_designation" name="employee_designation" value="Franchise Partner">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="employee_department">Department</label>
+                    <input type="text" id="employee_department" name="employee_department" value="Management">
+                </div>
+                <div class="form-group">
+                    <label for="employee_branch">Branch</label>
+                    <input type="text" id="employee_branch" name="employee_branch">
+                </div>
+                <div class="form-group">
+                    <label for="employee_reports_to">Reports to</label>
+                    <input type="text" id="employee_reports_to" name="employee_reports_to">
+                </div>
+            </div>
+            
+            <div class="section-header">
+                <h4>📞 Additional Information</h4>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="employee_grade">Grade</label>
+                    <input type="text" id="employee_grade" name="employee_grade">
+                </div>
+                <div class="form-group">
+                    <label for="employee_personal_email">Personal Email</label>
+                    <input type="email" id="employee_personal_email" name="employee_personal_email">
+                </div>
+                <div class="form-group">
+                    <label for="employee_phone">Phone Number</label>
+                    <input type="tel" id="employee_phone" name="employee_phone">
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="previousStep(8)">Previous</button>
                 <button type="button" class="btn btn-primary" onclick="submitApplication()">Submit Application</button>
             </div>
         </form>

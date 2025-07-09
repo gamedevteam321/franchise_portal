@@ -229,8 +229,8 @@ function nextStep(step) {
         // For verified users or steps 2+
         console.log('Validation passed, saving step data...');
         
-        // Special handling for the final step (step 7)
-        if (step === 7) {
+        // Special handling for the final step (step 8)
+        if (step === 8) {
             console.log('Final step reached, submitting application...');
             submitApplication();
             return;
@@ -717,6 +717,25 @@ function getStepData(step) {
         console.log('Step 7 processed data:', data);
     }
     
+    // Special handling for Step 8 - Employee Details (basic sanitization)
+    if (step === 8) {
+        console.log('Processing Step 8 employee details fields...');
+        
+        // Sanitize all Step 8 data values
+        Object.keys(data).forEach(key => {
+            if (data[key] === null || data[key] === undefined) {
+                data[key] = '';
+            } else if (typeof data[key] === 'object') {
+                console.log(`Removing complex object for key: ${key}`, data[key]);
+                delete data[key];
+            } else {
+                data[key] = String(data[key]);
+            }
+        });
+        
+        console.log('Step 8 processed data:', data);
+    }
+    
     return data;
 }
 
@@ -949,7 +968,7 @@ function autoSaveStep() {
     
     // Throttle auto-save to once every 3 seconds
     autoSaveTimeout = setTimeout(() => {
-        if (currentStep <= 7) {
+        if (currentStep <= 8) {
             const stepData = getStepData(currentStep);
             Object.assign(applicationData, stepData);
             frappe.call({
@@ -962,11 +981,11 @@ function autoSaveStep() {
 }
 
 function submitApplication() {
-    if (!validateStep(7)) {
+    if (!validateStep(8)) {
         return;
     }
     showLoading(true);
-    // Collect data from ALL steps (1-7) before submitting
+    // Collect data from ALL steps (1-8) before submitting
     const step1Data = getStepData(1);
     const step2Data = getStepData(2);
     const step3Data = getStepData(3);
@@ -974,6 +993,7 @@ function submitApplication() {
     const step5Data = getStepData(5);
     const step6Data = getStepData(6);
     const step7Data = getStepData(7);
+    const step8Data = getStepData(8);
     // Merge all step data into one object
     const finalData = {
         ...step1Data,
@@ -982,7 +1002,8 @@ function submitApplication() {
         ...step4Data,
         ...step5Data,
         ...step6Data,
-        ...step7Data
+        ...step7Data,
+        ...step8Data
     };
     // Always include email from step 1
     if (!finalData.email) {
@@ -997,7 +1018,7 @@ function submitApplication() {
             args: { 
                 token: verificationToken,
                 data: finalData,
-                step: 7
+                step: 8  // Changed from 7 to 8 for final submission
             },
             callback: function(response) {
                 showLoading(false);

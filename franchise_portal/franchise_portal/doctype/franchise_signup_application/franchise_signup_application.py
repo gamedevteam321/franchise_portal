@@ -4,10 +4,30 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import now
+import frappe.utils
 import re
 
 
 class FranchiseSignupApplication(Document):
+	
+	def _safe_log_error(self, title, message):
+		"""Safely log errors with truncated titles to prevent cascading failures"""
+		try:
+			# Truncate title to fit within 140 character limit with buffer
+			max_title_length = 130  # Leave some buffer for safety
+			if len(title) > max_title_length:
+				title = title[:max_title_length-3] + "..."
+			
+			# Also truncate the message if it's extremely long
+			max_message_length = 5000  # Reasonable limit for error message
+			if len(message) > max_message_length:
+				message = message[:max_message_length-3] + "..."
+			
+			frappe.log_error(message, title)
+		except Exception:
+			# If even the safe logging fails, just pass to avoid infinite recursion
+			pass
+
 	def before_save(self):
 		"""Update modified_at timestamp before saving"""
 		self.modified_at = now()
@@ -24,9 +44,10 @@ class FranchiseSignupApplication(Document):
 		if self.email:
 			self.validate_email_uniqueness()
 		
-		# Only validate Step 7 fields when application is being submitted/finalized
+		# Only validate Step 7 and Step 8 fields when application is being submitted/finalized
 		if self.status == "Submitted":
 			self.validate_step7_required_fields()
+			self.validate_step8_required_fields()
 	
 	def validate_email_uniqueness(self):
 		"""Ensure email is unique across all applications"""
@@ -57,6 +78,25 @@ class FranchiseSignupApplication(Document):
 		if missing_fields:
 			frappe.throw(f"The following required fields are missing: {', '.join(missing_fields)}")
 	
+	def validate_step8_required_fields(self):
+		"""Validate required fields for Step 8 (Employee Details) only when submitting"""
+		missing_fields = []
+		
+		if not getattr(self, 'employee_first_name', None):
+			missing_fields.append("Employee First Name")
+		
+		if not getattr(self, 'employee_gender', None):
+			missing_fields.append("Employee Gender")
+		
+		if not getattr(self, 'employee_date_of_birth', None):
+			missing_fields.append("Employee Date of Birth")
+		
+		if not getattr(self, 'employee_date_of_joining', None):
+			missing_fields.append("Employee Date of Joining")
+		
+		if missing_fields:
+			frappe.throw(f"The following Step 8 (Employee Details) required fields are missing: {', '.join(missing_fields)}")
+	
 	def on_submit(self):
 		"""Actions to perform when the application is submitted"""
 		self.status = "Submitted"
@@ -83,7 +123,7 @@ class FranchiseSignupApplication(Document):
 				now=True
 			)
 		except Exception as e:
-			frappe.log_error(f"Failed to send notification email: {str(e)}")
+			self._safe_log_error("Notification Email Failed", f"Failed to send notification email: {str(e)}")
 	
 	@frappe.whitelist()
 	def update_step_data(self, step_data):
@@ -138,7 +178,9 @@ class FranchiseSignupApplication(Document):
 			frappe.msgprint(
 				f"✅ Application approved successfully!<br>"
 				f"• Company created: {company_name}<br>"
-				f"• User created: {user_email}",
+				f"• User created: {user_email}<br>"
+				f"• Employee record created<br>"
+				f"• Roles assigned: Franchise Partner, Employee, System Manager",
 				title="Approval Successful",
 				indicator="green"
 			)
@@ -151,7 +193,7 @@ class FranchiseSignupApplication(Document):
 			}
 			
 		except Exception as e:
-			frappe.log_error(f"Error approving application {self.name}: {str(e)}")
+			self._safe_log_error("Application Approval Error", f"Error approving application {self.name}: {str(e)}")
 			frappe.throw(f"Error processing approval: {str(e)}")
 	
 	@frappe.whitelist()
@@ -194,7 +236,7 @@ class FranchiseSignupApplication(Document):
 			}
 			
 		except Exception as e:
-			frappe.log_error(f"Error rejecting application {self.name}: {str(e)}")
+			self._safe_log_error("Application Rejection Error", f"Error rejecting application {self.name}: {str(e)}")
 			frappe.throw(f"Error processing rejection: {str(e)}")
 	
 	def _create_company(self):
@@ -258,7 +300,7 @@ class FranchiseSignupApplication(Document):
 		# First, ensure Nexchar Ventures exists as the root company
 		nexchar_ventures = "Nexchar Ventures"
 		if not frappe.db.exists("Company", nexchar_ventures):
-			frappe.log_error(f"Root company '{nexchar_ventures}' not found. Cannot create proper hierarchy.")
+			self._safe_log_error("Root Company Missing", f"Root company '{nexchar_ventures}' not found. Cannot create proper hierarchy.")
 			return None
 		
 		# Check if the target parent (Franchise or Internal Company) exists
@@ -283,31 +325,33 @@ class FranchiseSignupApplication(Document):
 				frappe.logger().info(f"Created group company '{target_parent}' under '{nexchar_ventures}'")
 				
 			except Exception as e:
-				frappe.log_error(f"Failed to create group company '{target_parent}': {str(e)}")
+				self._safe_log_error("Group Company Creation Failed", f"Failed to create group company '{target_parent}': {str(e)}")
 				return None
 		
 		return target_parent
 	
 	def _create_user(self, company_name):
-		"""Create user from franchise application data"""
+		"""Create user and employee from franchise application data"""
 		email = self.email
 		
 		# Check if user already exists
 		if frappe.db.exists("User", email):
 			user_doc = frappe.get_doc("User", email)
 			
-			# Add franchise-related roles if not already present
+			# Add all required roles if not already present
 			existing_roles = [role.role for role in user_doc.roles]
-			roles_to_add = ["Franchise Partner"]
+			roles_to_add = ["Franchise Partner", "Employee", "System Manager"]
 			
 			for role in roles_to_add:
 				if role not in existing_roles:
 					user_doc.append("roles", {"role": role})
 			
+			# Assign the newly created company to the user
+			user_doc.company = company_name
 			user_doc.save(ignore_permissions=True)
 		else:
-			# Create new user
-			first_name = getattr(self, 'contact_person', email.split('@')[0])
+			# Create new user with all required roles
+			first_name = getattr(self, 'employee_first_name', None) or getattr(self, 'contact_person', email.split('@')[0])
 			if ' ' in first_name:
 				first_name = first_name.split(' ')[0]
 			
@@ -315,18 +359,118 @@ class FranchiseSignupApplication(Document):
 				"doctype": "User",
 				"email": email,
 				"first_name": first_name,
+				"company": company_name,  # Assign the newly created company
 				"user_type": "System User",
 				"send_welcome_email": 1,
 				"enabled": 1,
 				"roles": [
 					{"role": "Franchise Partner"},
 					{"role": "Employee"},
+					{"role": "System Manager"},
 				]
 			})
 			user_doc.insert(ignore_permissions=True)
 		
+		# Create Employee record if employee details are provided
+		self._create_employee_record(email, company_name)
+		
 		frappe.db.commit()
 		return email
+	
+	def _create_employee_record(self, email, company_name):
+		"""Create Employee record with data from Step 8"""
+		try:
+			# Check if Employee record already exists for this user
+			existing_employee = frappe.db.get_value("Employee", {"user_id": email}, "name")
+			if existing_employee:
+				frappe.logger().info(f"Employee record already exists for {email}: {existing_employee}")
+				return existing_employee
+			
+			# Ensure required master data exists
+			self._ensure_employee_master_data(company_name)
+			
+			# Get employee data from Step 8 fields
+			first_name = getattr(self, 'employee_first_name', None) or getattr(self, 'contact_person', email.split('@')[0])
+			middle_name = getattr(self, 'employee_middle_name', '')
+			last_name = getattr(self, 'employee_last_name', '')
+			
+			# Build full employee name
+			employee_name_parts = [first_name]
+			if middle_name:
+				employee_name_parts.append(middle_name)
+			if last_name:
+				employee_name_parts.append(last_name)
+			employee_name = ' '.join(employee_name_parts)
+			
+			# Create Employee record with Step 8 data
+			employee_doc = frappe.get_doc({
+				"doctype": "Employee",
+				"first_name": first_name,
+				"middle_name": middle_name,
+				"last_name": last_name,
+				"employee_name": employee_name,
+				"gender": getattr(self, 'employee_gender', 'Prefer not to say'),
+				"date_of_birth": getattr(self, 'employee_date_of_birth', None),
+				"date_of_joining": getattr(self, 'employee_date_of_joining', frappe.utils.today()),
+				"company": company_name,
+				"status": 'Active',  # Default to Active since status field is removed from form
+				"salutation": getattr(self, 'employee_salutation', ''),
+				"user_id": email,
+				"personal_email": getattr(self, 'employee_personal_email', email),
+				"company_email": email,
+				"cell_number": getattr(self, 'employee_phone', getattr(self, 'phone_number', '')),
+				"designation": getattr(self, 'employee_designation', 'Franchise Partner'),
+				"department": getattr(self, 'employee_department', 'Management'),
+				"branch": getattr(self, 'employee_branch', ''),
+				"reports_to": getattr(self, 'employee_reports_to', ''),
+				"grade": getattr(self, 'employee_grade', ''),
+				"employee_number": frappe.generate_hash()[:8].upper(),  # Generate unique employee number
+			})
+			
+			# Use flags to bypass validations that might cause issues
+			employee_doc.flags.ignore_validate = True
+			employee_doc.flags.ignore_links = True
+			employee_doc.flags.ignore_permissions = True
+			
+			employee_doc.insert(ignore_permissions=True)
+			frappe.logger().info(f"Created Employee record for {email}: {employee_doc.name}")
+			
+			return employee_doc.name
+			
+		except Exception as e:
+			self._safe_log_error("Employee Creation Failed", f"Failed to create Employee record for {email}: {str(e)}")
+			# Don't re-raise the exception - Employee creation failure shouldn't break user creation
+			return None
+	
+	def _ensure_employee_master_data(self, company_name):
+		"""Ensure required master data exists for Employee creation"""
+		try:
+			# Ensure Department exists
+			department_name = getattr(self, 'employee_department', 'Management')
+			if not frappe.db.exists("Department", department_name):
+				dept_doc = frappe.get_doc({
+					"doctype": "Department",
+					"department_name": department_name,
+					"company": company_name,
+					"is_group": 0
+				})
+				dept_doc.insert(ignore_permissions=True)
+				frappe.logger().info(f"Created Department: {department_name} for {company_name}")
+			
+			# Ensure Designation exists
+			designation_name = getattr(self, 'employee_designation', 'Franchise Partner')
+			if not frappe.db.exists("Designation", designation_name):
+				desig_doc = frappe.get_doc({
+					"doctype": "Designation",
+					"designation_name": designation_name
+				})
+				desig_doc.insert(ignore_permissions=True)
+				frappe.logger().info(f"Created Designation: {designation_name}")
+				
+		except Exception as e:
+			self._safe_log_error("Master Data Creation Failed", f"Failed to create master data: {str(e)}")
+			# Continue with Employee creation even if master data creation fails
+
 	
 	def _generate_company_abbr(self, company_name):
 		"""Generate company abbreviation from company name"""
@@ -379,6 +523,14 @@ class FranchiseSignupApplication(Document):
 								<td style="padding: 8px 0;">{user_email}</td>
 							</tr>
 							<tr>
+								<td style="padding: 8px 0; font-weight: bold;">Employee Name:</td>
+								<td style="padding: 8px 0;">{getattr(self, 'employee_first_name', 'N/A')} {getattr(self, 'employee_last_name', '')}</td>
+							</tr>
+							<tr>
+								<td style="padding: 8px 0; font-weight: bold;">Roles Assigned:</td>
+								<td style="padding: 8px 0;">Franchise Partner, Employee, System Manager</td>
+							</tr>
+							<tr>
 								<td style="padding: 8px 0; font-weight: bold;">Approved By:</td>
 								<td style="padding: 8px 0;">{frappe.get_value('User', self.approved_by, 'full_name') or self.approved_by}</td>
 							</tr>
@@ -412,6 +564,10 @@ class FranchiseSignupApplication(Document):
 				<p><strong>Company Created:</strong> {company_name}</p>
 				<p><strong>Company Hierarchy:</strong> Nexchar Ventures → {getattr(self, 'project_type', 'Unknown')} → {company_name}</p>
 				<p><strong>User Created:</strong> {user_email}</p>
+				<p><strong>Employee Name:</strong> {getattr(self, 'employee_first_name', 'N/A')} {getattr(self, 'employee_last_name', '')}</p>
+				<p><strong>Employee Designation:</strong> {getattr(self, 'employee_designation', 'Franchise Partner')}</p>
+				<p><strong>Employee Department:</strong> {getattr(self, 'employee_department', 'Management')}</p>
+				<p><strong>Roles Assigned:</strong> Franchise Partner, Employee, System Manager</p>
 				<p><strong>Approved By:</strong> {frappe.get_value('User', self.approved_by, 'full_name') or self.approved_by}</p>
 				<p><strong>Contact Email:</strong> {self.email}</p>
 				<p><strong>Approval Comments:</strong> {self.approval_comments or 'None'}</p>
@@ -419,7 +575,7 @@ class FranchiseSignupApplication(Document):
 				now=True
 			)
 		except Exception as e:
-			frappe.log_error(f"Failed to send approval notification: {str(e)}")
+			self._safe_log_error("Approval Notification Failed", f"Failed to send approval notification: {str(e)}")
 	
 	def _send_rejection_notification(self, reason):
 		"""Send email notification after rejection"""
@@ -479,4 +635,4 @@ class FranchiseSignupApplication(Document):
 				now=True
 			)
 		except Exception as e:
-			frappe.log_error(f"Failed to send rejection notification: {str(e)}") 
+			self._safe_log_error("Rejection Notification Failed", f"Failed to send rejection notification: {str(e)}") 

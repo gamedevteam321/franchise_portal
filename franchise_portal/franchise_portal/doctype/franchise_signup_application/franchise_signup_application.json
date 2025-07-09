@@ -148,7 +148,28 @@
   "energy_used",
   "energy_source",
   "calculated_total",
-  "uncertainty_range"
+  "uncertainty_range",
+  "employee_details_tab",
+  "section_break_employee",
+  "employee_first_name",
+  "employee_middle_name",
+  "employee_last_name",
+  "column_break_employee_1",
+  "employee_gender",
+  "employee_date_of_birth",
+  "employee_date_of_joining",
+  "section_break_employee_2",
+  "employee_status",
+  "employee_salutation",
+  "employee_designation",
+  "column_break_employee_3",
+  "employee_department",
+  "employee_branch",
+  "employee_reports_to",
+  "section_break_employee_3",
+  "employee_grade",
+  "employee_personal_email",
+  "employee_phone"
  ],
  "fields": [
   {
@@ -925,6 +946,116 @@
    "fieldname": "uncertainty_range",
    "fieldtype": "Float",
    "label": "Uncertainty Range (%)"
+  },
+  {
+   "fieldname": "employee_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Employee Details"
+  },
+  {
+   "fieldname": "section_break_employee",
+   "fieldtype": "Section Break",
+   "label": "Employee Information"
+  },
+  {
+   "fieldname": "employee_first_name",
+   "fieldtype": "Data",
+   "label": "First Name"
+  },
+  {
+   "fieldname": "employee_middle_name",
+   "fieldtype": "Data",
+   "label": "Middle Name"
+  },
+  {
+   "fieldname": "employee_last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "column_break_employee_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "employee_gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "Male\nFemale\nOther\nPrefer not to say"
+  },
+  {
+   "fieldname": "employee_date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth"
+  },
+  {
+   "fieldname": "employee_date_of_joining",
+   "fieldtype": "Date",
+   "label": "Date of Joining"
+  },
+  {
+   "fieldname": "section_break_employee_2",
+   "fieldtype": "Section Break",
+   "label": "Employment Details"
+  },
+  {
+   "fieldname": "employee_status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nInactive\nLeft",
+   "default": "Active"
+  },
+  {
+   "fieldname": "employee_salutation",
+   "fieldtype": "Select",
+   "label": "Salutation",
+   "options": "Mr\nMs\nMrs\nDr\nProf"
+  },
+  {
+   "fieldname": "employee_designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "default": "Franchise Partner"
+  },
+  {
+   "fieldname": "column_break_employee_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "employee_department",
+   "fieldtype": "Data",
+   "label": "Department",
+   "default": "Management"
+  },
+  {
+   "fieldname": "employee_branch",
+   "fieldtype": "Data",
+   "label": "Branch"
+  },
+  {
+   "fieldname": "employee_reports_to",
+   "fieldtype": "Data",
+   "label": "Reports to"
+  },
+  {
+   "fieldname": "section_break_employee_3",
+   "fieldtype": "Section Break",
+   "label": "Additional Information"
+  },
+  {
+   "fieldname": "employee_grade",
+   "fieldtype": "Data",
+   "label": "Grade"
+  },
+  {
+   "fieldname": "employee_personal_email",
+   "fieldtype": "Data",
+   "label": "Personal Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "employee_phone",
+   "fieldtype": "Data",
+   "label": "Phone Number"
   }
  ],
  "index_web_pages_for_search": 1,

@@ -157,7 +157,7 @@ def save_step_with_verification(token, data, step):
         # Convert step to integer (it comes as string from frontend)
         try:
             step = int(step)
-            if step < 1 or step > 7:
+            if step < 1 or step > 8:
                 step = 1
         except (ValueError, TypeError):
             step = 1
@@ -260,9 +260,14 @@ def save_step_with_verification(token, data, step):
                 
                 frappe.db.commit()
         
-        # If this is the final step (step 7), save to doctype
-        if step >= 7:
-            return finalize_application(session_data, token, step)
+        # If this is the final step (8), finalize the application
+        if step >= 8:
+            finalize_result = finalize_application(session_data, token, step)
+            if finalize_result.get("success"):
+                return finalize_result
+            else:
+                # If finalization failed, return the error
+                return finalize_result
         
         return {
             "success": True,
@@ -321,6 +326,36 @@ def submit_application(email, data=None):
             for key, value in data.items():
                 if key != 'generation_locations' and key in valid_fields:
                     updates[key] = value
+        # Validate Step 7 (Emissions & Energy Accounting) required fields
+        calculated_total = data.get('calculated_total') if data else None
+        uncertainty_range = data.get('uncertainty_range') if data else None
+        missing_step7_fields = []
+        if not calculated_total or str(calculated_total).strip() == '':
+            missing_step7_fields.append("Calculated Total (kg CO₂/tonne)")
+        if not uncertainty_range or str(uncertainty_range).strip() == '':
+            missing_step7_fields.append("Uncertainty Range (%)")
+        if missing_step7_fields:
+            return {"success": False, "message": f"The following Step 7 required fields are missing: {', '.join(missing_step7_fields)}"}
+        
+        # Validate Step 8 (Employee Details) required fields
+        employee_first_name = data.get('employee_first_name') if data else None
+        employee_gender = data.get('employee_gender') if data else None
+        employee_date_of_birth = data.get('employee_date_of_birth') if data else None
+        employee_date_of_joining = data.get('employee_date_of_joining') if data else None
+        
+        missing_step8_fields = []
+        if not employee_first_name or str(employee_first_name).strip() == '':
+            missing_step8_fields.append("Employee First Name")
+        if not employee_gender or str(employee_gender).strip() == '':
+            missing_step8_fields.append("Employee Gender")
+        if not employee_date_of_birth or str(employee_date_of_birth).strip() == '':
+            missing_step8_fields.append("Employee Date of Birth")
+        if not employee_date_of_joining or str(employee_date_of_joining).strip() == '':
+            missing_step8_fields.append("Employee Date of Joining")
+        
+        if missing_step8_fields:
+            return {"success": False, "message": f"The following Step 8 (Employee Details) required fields are missing: {', '.join(missing_step8_fields)}"}
+        
         updates['status'] = "Submitted"
         frappe.db.set_value("Franchise Signup Application", doc_name, updates)
         frappe.db.commit()
@@ -912,7 +947,7 @@ def get_google_maps_api_key():
         }
 
 
-def finalize_application(session_data, token, current_step=7):
+def finalize_application(session_data, token, current_step=8):
     try:
         application_data = session_data["data"]
         email = session_data["email"]
@@ -933,6 +968,26 @@ def finalize_application(session_data, token, current_step=7):
                 missing_step7_fields.append("Uncertainty Range (%)")
             if missing_step7_fields:
                 return {"success": False, "message": f"The following required fields are missing: {', '.join(missing_step7_fields)}"}
+        
+        if current_step >= 8:
+            # Validate Step 8 (Employee Details) required fields
+            employee_first_name = application_data.get('employee_first_name')
+            employee_gender = application_data.get('employee_gender')
+            employee_date_of_birth = application_data.get('employee_date_of_birth')
+            employee_date_of_joining = application_data.get('employee_date_of_joining')
+            
+            missing_step8_fields = []
+            if not employee_first_name or str(employee_first_name).strip() == '':
+                missing_step8_fields.append("Employee First Name")
+            if not employee_gender or str(employee_gender).strip() == '':
+                missing_step8_fields.append("Employee Gender")
+            if not employee_date_of_birth or str(employee_date_of_birth).strip() == '':
+                missing_step8_fields.append("Employee Date of Birth")
+            if not employee_date_of_joining or str(employee_date_of_joining).strip() == '':
+                missing_step8_fields.append("Employee Date of Joining")
+            
+            if missing_step8_fields:
+                return {"success": False, "message": f"The following Step 8 (Employee Details) required fields are missing: {', '.join(missing_step8_fields)}"}
         existing_applications = frappe.get_all(
             "Franchise Signup Application",
             filters={"email": email},
