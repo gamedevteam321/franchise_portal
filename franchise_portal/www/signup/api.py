@@ -849,6 +849,85 @@ def send_verification_email_to_user(email, company_name, verification_url):
     )
 
 
+def send_reapplication_verification_email(email, company_name, verification_url, previous_rejected_app=None):
+    """Helper function to send verification email for reapplications after rejection"""
+    try:
+        # Build rejection context if available
+        rejection_context = ""
+        if previous_rejected_app:
+            rejection_context = f"""
+            <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                <h4 style="margin-top: 0; color: #856404;">📋 Previous Application Reference</h4>
+                <p style="margin-bottom: 0; color: #856404;">
+                    <strong>Previous Application ID:</strong> {previous_rejected_app.get('name', 'N/A')}<br>
+                    <strong>Company:</strong> {previous_rejected_app.get('company_name', 'N/A')}<br>
+                    <strong>Status:</strong> Rejected
+                </p>
+            </div>
+            """
+        
+        frappe.sendmail(
+            recipients=[email],
+            subject=f"🔄 New Application Verification - {company_name}",
+            message=f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #28a745;">🔄 Starting Your New Franchise Application</h2>
+                
+                <p>Dear Applicant,</p>
+                
+                <p>We're pleased that you're ready to submit a new franchise application for <strong>{company_name}</strong>. To continue with your fresh application, please verify your email address.</p>
+                
+                {rejection_context}
+                
+                <div style="background: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+                    <h4 style="margin-top: 0; color: #155724;">✨ Fresh Start</h4>
+                    <p style="margin-bottom: 0; color: #155724;">This is a completely new application. None of your previous application data will be carried over, giving you the opportunity to address any previous concerns and provide updated information.</p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{verification_url}" 
+                       style="background-color: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                        ✅ Verify Email & Start New Application
+                    </a>
+                </div>
+                
+                <p>After verification, you'll complete your new franchise application in 8 steps:</p>
+                <ul>
+                    <li>Step 1: Supplier Information</li>
+                    <li>Step 2: Project Information</li>
+                    <li>Step 3: Feedstock Description</li>
+                    <li>Step 4: Origin, Sourcing & Supply Chain</li>
+                    <li>Step 5: Monitoring & Measurement</li>
+                    <li>Step 6: Sustainability Assessment & Market Impact</li>
+                    <li>Step 7: Emissions & Energy Accounting</li>
+                    <li>Step 8: Employee Details</li>
+                </ul>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h4 style="margin-top: 0; color: #495057;">💡 Tips for Success</h4>
+                    <ul style="margin-bottom: 0; color: #495057;">
+                        <li>Review any feedback from your previous application</li>
+                        <li>Ensure all documents are updated and complete</li>
+                        <li>Double-check all information for accuracy</li>
+                        <li>Save your progress regularly as you complete each step</li>
+                    </ul>
+                </div>
+                
+                <p>This verification link will expire in 24 hours.</p>
+                
+                <p>If you didn't request this new application, please ignore this email.</p>
+                
+                <p>We look forward to reviewing your new application!</p>
+                
+                <p>Best regards,<br>Nexchar Ventures Franchise Team</p>
+            </div>
+            """,
+            now=True
+        )
+    except Exception as e:
+        frappe.log_error(f"Failed to send reapplication verification email: {str(e)}", "Franchise Portal Reapplication Email Error")
+
+
 def send_final_confirmation_email(doc):
     """Send final confirmation email after application completion"""
     subject = f"Application Submitted Successfully - {doc.company_name}"
@@ -1718,42 +1797,28 @@ def verify_resume_token(token):
 
 
 def save_verified_email_to_doctype(email, session_data):
-    """Save or update doctype with verified email data"""
+    """Save or update doctype with verified email data - handles reapplications"""
     try:
         debug_file = os.path.join(frappe.get_site_path(), 'debug_save_verified.txt')
         with open(debug_file, 'a') as f:
             f.write(f"\n=== ENTER save_verified_email_to_doctype {frappe.utils.now()} ===\n")
             f.write(f"Email: {email}\n")
+            f.write(f"Is reapplication: {session_data.get('is_reapplication', False)}\n")
             f.write(f"Session data: {json.dumps(session_data)[:1000]}...\n")
-        # Check if application already exists
-        existing_applications = frappe.get_all(
-            "Franchise Signup Application",
-            filters={"email": email},
-            fields=["name"]
-        )
-        if existing_applications:
-            doc_name = existing_applications[0].name
-            updates = {
-                "email_verified": 1,
-                "email_verified_at": now()
-            }
-            application_data = session_data.get("data", {})
-            basic_fields = [
-                "company_name", "contact_person", "phone_number", 
-                "company_address", "country_of_operation"
-            ]
-            for field in basic_fields:
-                if field in application_data and application_data[field]:
-                    updates[field] = application_data[field]
-            frappe.db.set_value("Franchise Signup Application", doc_name, updates)
-            frappe.db.commit()
+        
+        # Check if this is a reapplication after rejection
+        is_reapplication = session_data.get("is_reapplication", False)
+        
+        if is_reapplication:
+            # For reapplications: Always create a NEW application, don't update existing rejected one
             with open(debug_file, 'a') as f:
-                f.write(f"Updated existing application {doc_name} with verified email\n")
-            return doc_name
-        else:
+                f.write(f"🔄 REAPPLICATION: Creating new application instead of updating existing\n")
+            
+            # Create new application document
             try:
                 doc = frappe.new_doc("Franchise Signup Application")
                 doc.email = email
+                doc.original_email = email  # Set original email to prevent auto-modification
                 doc.email_verified = 1
                 doc.email_verified_at = now()
                 application_data = session_data.get("data", {})
@@ -1768,16 +1833,117 @@ def save_verified_email_to_doctype(email, session_data):
                 doc.current_step = 1
                 if not doc.naming_series:
                     doc.naming_series = "FSA-.YYYY.-"
+                
+                # Use flag to prevent automatic email modification 
+                frappe.flags.ignore_email_uniqueness = True
                 doc.insert(ignore_permissions=True)
+                frappe.flags.ignore_email_uniqueness = False
+                
                 frappe.db.commit()
                 with open(debug_file, 'a') as f:
-                    f.write(f"Created new application {doc.name} with verified email\n")
+                    f.write(f"✅ Created NEW reapplication {doc.name} for email {email} (original preserved)\n")
                 return doc.name
             except Exception as e:
                 with open(debug_file, 'a') as f:
-                    f.write(f"Exception during doc.insert: {str(e)}\n")
-                frappe.log_error(f"Exception during doc.insert: {str(e)}", "Email Verification Error")
+                    f.write(f"❌ Exception during reapplication doc.insert: {str(e)}\n")
+                frappe.log_error(f"Exception during reapplication doc.insert: {str(e)}", "Reapplication Creation Error")
                 return None
+        else:
+            # For regular verification: Check if application already exists and update it
+            existing_applications = frappe.get_all(
+                "Franchise Signup Application",
+                filters={"email": email},
+                fields=["name", "status"]
+            )
+            if existing_applications:
+                # Only update if it's not a rejected application
+                existing_app = existing_applications[0]
+                if existing_app.get("status") == "Rejected":
+                    with open(debug_file, 'a') as f:
+                        f.write(f"⚠️ Found rejected application {existing_app['name']}, creating new instead\n")
+                    # Even for regular verification, if existing app is rejected, create new
+                    try:
+                        doc = frappe.new_doc("Franchise Signup Application")
+                        doc.email = email
+                        doc.original_email = email  # Set original email to prevent auto-modification
+                        doc.email_verified = 1
+                        doc.email_verified_at = now()
+                        application_data = session_data.get("data", {})
+                        basic_fields = [
+                            "company_name", "contact_person", "phone_number", 
+                            "company_address", "country_of_operation"
+                        ]
+                        for field in basic_fields:
+                            if field in application_data and application_data[field]:
+                                setattr(doc, field, application_data[field])
+                        doc.status = "Draft"
+                        doc.current_step = 1
+                        if not doc.naming_series:
+                            doc.naming_series = "FSA-.YYYY.-"
+                        
+                        # Use flag to prevent automatic email modification
+                        frappe.flags.ignore_email_uniqueness = True
+                        doc.insert(ignore_permissions=True)
+                        frappe.flags.ignore_email_uniqueness = False
+                        
+                        frappe.db.commit()
+                        with open(debug_file, 'a') as f:
+                            f.write(f"✅ Created NEW application {doc.name} (existing was rejected, original email preserved)\n")
+                        return doc.name
+                    except Exception as e:
+                        with open(debug_file, 'a') as f:
+                            f.write(f"❌ Exception during new doc creation: {str(e)}\n")
+                        frappe.log_error(f"Exception during new doc creation: {str(e)}", "Email Verification Error")
+                        return None
+                else:
+                    # Update existing non-rejected application
+                    doc_name = existing_app["name"]
+                    updates = {
+                        "email_verified": 1,
+                        "email_verified_at": now()
+                    }
+                    application_data = session_data.get("data", {})
+                    basic_fields = [
+                        "company_name", "contact_person", "phone_number", 
+                        "company_address", "country_of_operation"
+                    ]
+                    for field in basic_fields:
+                        if field in application_data and application_data[field]:
+                            updates[field] = application_data[field]
+                    frappe.db.set_value("Franchise Signup Application", doc_name, updates)
+                    frappe.db.commit()
+                    with open(debug_file, 'a') as f:
+                        f.write(f"Updated existing application {doc_name} with verified email\n")
+                    return doc_name
+            else:
+                # No existing application found - create new one
+                try:
+                    doc = frappe.new_doc("Franchise Signup Application")
+                    doc.email = email
+                    doc.email_verified = 1
+                    doc.email_verified_at = now()
+                    application_data = session_data.get("data", {})
+                    basic_fields = [
+                        "company_name", "contact_person", "phone_number", 
+                        "company_address", "country_of_operation"
+                    ]
+                    for field in basic_fields:
+                        if field in application_data and application_data[field]:
+                            setattr(doc, field, application_data[field])
+                    doc.status = "Draft"
+                    doc.current_step = 1
+                    if not doc.naming_series:
+                        doc.naming_series = "FSA-.YYYY.-"
+                    doc.insert(ignore_permissions=True)
+                    frappe.db.commit()
+                    with open(debug_file, 'a') as f:
+                        f.write(f"Created new application {doc.name} with verified email\n")
+                    return doc.name
+                except Exception as e:
+                    with open(debug_file, 'a') as f:
+                        f.write(f"Exception during doc.insert: {str(e)}\n")
+                    frappe.log_error(f"Exception during doc.insert: {str(e)}", "Email Verification Error")
+                    return None
     except Exception as e:
         debug_file = os.path.join(frappe.get_site_path(), 'debug_save_verified.txt')
         with open(debug_file, 'a') as f:
@@ -1882,6 +2048,141 @@ def get_application(email=None, name=None):
         return {"success": False, "message": "Application not found"}
     doc = frappe.get_doc("Franchise Signup Application", applications[0].name)
     return {"success": True, "application": doc.as_dict()}
+
+
+@frappe.whitelist(allow_guest=True)
+def check_reapplication_eligibility(email):
+    """Check if a user can create a new application after rejection"""
+    try:
+        if not email or not email.strip():
+            return {"success": False, "message": "Email is required"}
+        
+        # Get all applications for this email
+        applications = frappe.get_all(
+            "Franchise Signup Application",
+            filters={"email": email},
+            fields=["name", "status", "company_name", "rejected_at", "rejection_reason"],
+            order_by="creation desc"
+        )
+        
+        if not applications:
+            return {
+                "success": True, 
+                "can_reapply": True, 
+                "message": "No previous applications found. You can proceed with a new application.",
+                "previous_applications": []
+            }
+        
+        # Check application statuses
+        rejected_apps = [app for app in applications if app.status == "Rejected"]
+        non_rejected_apps = [app for app in applications if app.status != "Rejected"]
+        
+        if non_rejected_apps:
+            # Has active applications (Draft, In Progress, Submitted, Approved)
+            active_app = non_rejected_apps[0]
+            
+            # Special message for approved applications - they're already franchise partners
+            if active_app.status == "Approved":
+                return {
+                    "success": True,
+                    "can_reapply": False,
+                    "message": "🎉 You are already an approved franchise partner! You cannot submit another application as you are already part of our franchise network. If you need assistance with your existing franchise, please contact our support team.",
+                    "active_application": active_app,
+                    "previous_applications": applications,
+                    "is_approved_partner": True
+                }
+            else:
+                # Generic message for other active statuses (Draft, In Progress, Submitted)
+                return {
+                    "success": True,
+                    "can_reapply": False,
+                    "message": f"You have an active application (Status: {active_app.status}) with ID: {active_app.name}. You can only create a new application if your previous application was rejected.",
+                    "active_application": active_app,
+                    "previous_applications": applications,
+                    "is_approved_partner": False
+                }
+            
+        else:
+            # Only has rejected applications - can reapply
+            latest_rejected = rejected_apps[0] if rejected_apps else None
+            return {
+                "success": True,
+                "can_reapply": True,
+                "message": "Your previous application was rejected. You can submit a new application.",
+                "latest_rejected_application": latest_rejected,
+                "previous_applications": applications
+            }
+            
+    except Exception as e:
+        frappe.log_error(f"Error checking reapplication eligibility: {str(e)}", "Franchise Portal Reapplication Check")
+        return {
+            "success": False,
+            "message": f"Error checking eligibility: {str(e)}"
+        }
+
+
+@frappe.whitelist(allow_guest=True)
+def start_new_application_after_rejection(email, data):
+    """Start a new application process after rejection, with proper validation"""
+    try:
+        if not email or not email.strip():
+            return {"success": False, "message": "Email is required"}
+        
+        # Handle JSON string data from frontend
+        if isinstance(data, str):
+            data = json.loads(data)
+        
+        # First check if user is eligible to create a new application
+        eligibility_check = check_reapplication_eligibility(email)
+        if not eligibility_check.get("success") or not eligibility_check.get("can_reapply"):
+            return {
+                "success": False, 
+                "message": eligibility_check.get("message", "You are not eligible to create a new application at this time.")
+            }
+        
+        # Validate required data
+        if not data.get("company_name") or not data.get("company_name").strip():
+            return {"success": False, "message": "Company name is required"}
+        
+        # Generate verification token for the new application
+        verification_token = str(uuid.uuid4())
+        
+        # Store session data temporarily (expires in 24 hours)
+        session_key = f"franchise_signup_{verification_token}"
+        session_data = {
+            "email": email,
+            "data": data,
+            "current_step": 1,
+            "verified": False,
+            "created_at": now(),
+            "is_reapplication": True,
+            "previous_applications": eligibility_check.get("previous_applications", [])
+        }
+        
+        # Store in cache for 24 hours (86400 seconds)
+        frappe.cache().set_value(session_key, json.dumps(session_data), expires_in_sec=86400)
+        
+        # Create verification URL
+        site_url = frappe.utils.get_url()
+        verification_url = f"{site_url}/signup?verify={verification_token}"
+        
+        # Send verification email with reapplication context
+        send_reapplication_verification_email(email, data.get("company_name", ""), verification_url, eligibility_check.get("latest_rejected_application"))
+        
+        return {
+            "success": True,
+            "message": "New application verification email sent successfully",
+            "requires_verification": True,
+            "verification_token": verification_token,
+            "is_reapplication": True
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Error starting new application after rejection: {str(e)}", "Franchise Portal Reapplication Start")
+        return {
+            "success": False,
+            "message": f"Error starting new application: {str(e)}"
+        }
 
 
 def refresh_doc_modified(doc):

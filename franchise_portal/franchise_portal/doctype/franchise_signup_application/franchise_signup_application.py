@@ -50,14 +50,44 @@ class FranchiseSignupApplication(Document):
 			self.validate_step8_required_fields()
 	
 	def validate_email_uniqueness(self):
-		"""Ensure email is unique across all applications"""
+		"""Smart email handling for reapplications - auto-modify email for reapplications"""
+		# Skip validation if this is a system/admin operation
+		if frappe.flags.ignore_email_uniqueness:
+			return
+		
+		# Check if this already has an original_email (it's a processed reapplication)
+		if hasattr(self, 'original_email') and self.original_email:
+			return
+		
 		existing = frappe.get_all(
 			"Franchise Signup Application",
 			filters={"email": self.email, "name": ["!=", self.name]},
-			limit=1
+			fields=["name", "status"],
+			limit=10  # Get more to check if any are non-rejected
 		)
 		if existing:
-			frappe.throw(f"An application with email {self.email} already exists.")
+			# Check if any existing applications are not rejected
+			non_rejected_applications = [app for app in existing if app.status != "Rejected"]
+			rejected_applications = [app for app in existing if app.status == "Rejected"]
+			
+			if non_rejected_applications:
+				frappe.throw(f"An active application with email {self.email} already exists. You can only create a new application if your previous application was rejected.")
+			elif rejected_applications:
+				# This is a reapplication! Modify email to make it unique and store original
+				import time
+				import uuid
+				
+				self.original_email = self.email
+				# Create unique email by appending timestamp and short uuid
+				unique_suffix = f"reapp{int(time.time())}.{str(uuid.uuid4())[:8]}"
+				email_parts = self.email.split('@')
+				self.email = f"{email_parts[0]}.{unique_suffix}@{email_parts[1]}"
+				
+				frappe.msgprint(
+					f"✅ Reapplication detected for {self.original_email}. Creating new independent application.",
+					title="Reapplication Created",
+					indicator="blue"
+				)
 	
 	def on_update(self):
 		"""Actions to perform when the document is updated"""
@@ -580,9 +610,14 @@ class FranchiseSignupApplication(Document):
 	def _send_rejection_notification(self, reason):
 		"""Send email notification after rejection"""
 		try:
-			# Email to applicant
+			# Get site URL for creating links
+			site_url = frappe.utils.get_url()
+			signup_url = f"{site_url}/signup"
+			
+			# Email to applicant - use original_email if this is a reapplication
+			notification_email = getattr(self, 'original_email', None) or self.email
 			frappe.sendmail(
-				recipients=[self.email],
+				recipients=[notification_email],
 				subject=f"Franchise Application Update - {self.company_name}",
 				message=f"""
 				<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -610,9 +645,33 @@ class FranchiseSignupApplication(Document):
 						</table>
 					</div>
 					
-					<p>We encourage you to address the concerns mentioned and reapply in the future.</p>
+					<div style="background: #d1ecf1; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #bee5eb;">
+						<h3 style="margin-top: 0; color: #0c5460;">🔄 Ready to Reapply?</h3>
+						<p style="margin-bottom: 15px;">We encourage you to address the concerns mentioned above and submit a new application. You can create a new application using the same email address.</p>
+						
+						<div style="text-align: center; margin: 20px 0;">
+							<a href="{signup_url}" 
+							   style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+								📝 Submit New Application
+							</a>
+						</div>
+						
+						<p style="font-size: 14px; color: #0c5460; margin-bottom: 0;">
+							<strong>Important:</strong> This will create a completely new application. Your previous application data will not be carried over, so please prepare all your information and documents beforehand.
+						</p>
+					</div>
 					
-					<p>For any questions, please contact our franchise team.</p>
+					<h3 style="color: #495057;">Next Steps:</h3>
+					<ol style="color: #495057;">
+						<li>Review the rejection reason above and address any concerns</li>
+						<li>Prepare all required documents and information</li>
+						<li>Click the "Submit New Application" button to start fresh</li>
+						<li>Complete all 8 steps of the application process</li>
+					</ol>
+					
+					<p>For any questions about the rejection reason or application process, please contact our franchise team at <a href="mailto:admin@nexcharventures.com">admin@nexcharventures.com</a>.</p>
+					
+					<p>We look forward to receiving your improved application!</p>
 					
 					<p>Best regards,<br>Franchise Management Team</p>
 				</div>
@@ -629,7 +688,9 @@ class FranchiseSignupApplication(Document):
 				<p><strong>Application ID:</strong> {self.name}</p>
 				<p><strong>Company:</strong> {self.company_name}</p>
 				<p><strong>Rejected By:</strong> {frappe.get_value('User', self.rejected_by, 'full_name') or self.rejected_by}</p>
-				<p><strong>Contact Email:</strong> {self.email}</p>
+				<p><strong>Contact Email:</strong> {notification_email}</p>
+				<p><strong>Original Email:</strong> {getattr(self, 'original_email', 'N/A')}</p>
+				<p><strong>Database Email:</strong> {self.email}</p>
 				<p><strong>Rejection Reason:</strong> {reason or 'No reason provided'}</p>
 				""",
 				now=True

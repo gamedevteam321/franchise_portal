@@ -1,8 +1,8 @@
 console.log('=== FORCE UPDATED VERSION - CACHE BUSTED ===');
 console.log('=== NEW VERSION LOADED AT:', new Date().toISOString(), '===');
-console.log('=== CURRENT STEP FIX APPLIED ===');
-console.log('=== VERSION ID: 20250704_1600_FIXED ===');
-console.log('=== FILE MODIFIED: 2025-07-04 16:05:00 ===');
+console.log('=== REAPPLICATION RESPONSE FIX APPLIED ===');
+console.log('=== VERSION ID: 20250711_0930_REAPPLICATION_FIXED ===');
+console.log('=== FILE MODIFIED: 2025-01-11 09:30:00 ===');
 
 // Franchise Portal Signup JavaScript
 // Version: 2.0 - Email Verification Workflow
@@ -116,8 +116,9 @@ function initializeForm() {
     // });
 }
 
-// Add global flag to prevent duplicate email verification
-let emailVerificationInProgress = false;
+// Add global flag to prevent duplicate email verification (fixed for multiple script loads)
+window.emailVerificationInProgress = window.emailVerificationInProgress || false;
+var emailVerificationInProgress = window.emailVerificationInProgress;
 
 function handleEmailVerification(token) {
     console.log('Handling email verification for token:', token);
@@ -747,40 +748,159 @@ function sendVerificationEmail(step) {
     
     console.log('Sending verification email for:', stepData);
     
+    // First check if this is a reapplication scenario
+    console.log('Checking reapplication eligibility for email:', stepData.email);
+    
     frappe.call({
-        method: 'franchise_portal.www.signup.api.send_verification_email',
-        args: { 
-            email: stepData.email,
-            data: stepData 
-        },
-        callback: function(response) {
-            console.log('Verification email response:', response);
-            console.log('Response success check:', response.message?.success);
-            console.log('Response message:', response.message);
+        method: 'franchise_portal.www.signup.api.check_reapplication_eligibility',
+        args: { email: stepData.email },
+        callback: function(eligibilityResponse) {
+            console.log('Reapplication eligibility response:', eligibilityResponse);
             
-            if (response.message && response.message.success) {
-                window.verificationToken = verificationToken = response.message.verification_token;
+            if (eligibilityResponse.message && 
+                eligibilityResponse.message.success && 
+                eligibilityResponse.message.can_reapply) {
                 
-                // Show verification message
-                showVerificationMessage(stepData.email);
+                // This is a reapplication - use the special API
+                console.log('🔄 Reapplication detected - using start_new_application_after_rejection API');
+                
+                frappe.call({
+                    method: 'franchise_portal.www.signup.api.start_new_application_after_rejection',
+                    args: { 
+                        email: stepData.email,
+                        data: stepData 
+                    },
+                    callback: function(response) {
+                        console.log('Reapplication verification email response:', response);
+                        console.log('Direct response success:', response.message?.success);
+                        console.log('Direct response message:', response.message);
+                        
+                        // Fix: Backend returns success/token nested in response.message
+                        if (response.message && response.message.success === true) {
+                            window.verificationToken = verificationToken = response.message.verification_token;
+                            console.log('About to call showReapplicationVerificationMessage for:', stepData.email);
+                            console.log('Verification token set to:', verificationToken);
+                            
+                            // Show verification message with reapplication context
+                            showReapplicationVerificationMessage(stepData.email);
+                            console.log('showReapplicationVerificationMessage called successfully');
+                            
+                        } else {
+                            const errorMessage = response.message?.message || 'Failed to send reapplication verification email. Please try again.';
+                            console.error('Reapplication Verification Error:', response);
+                            frappe.msgprint({
+                                title: 'Reapplication Error',
+                                message: errorMessage,
+                                indicator: 'red'
+                            });
+                        }
+                    },
+                    error: function(error) {
+                        console.error('Network Error sending reapplication verification:', error);
+                        frappe.msgprint({
+                            title: 'Network Error',
+                            message: 'Failed to send reapplication verification email. Please check your connection and try again.',
+                            indicator: 'red'
+                        });
+                    }
+                });
+                
+            } else if (eligibilityResponse.message && 
+                       eligibilityResponse.message.success && 
+                       !eligibilityResponse.message.can_reapply) {
+                
+                // User cannot reapply - show appropriate message
+                console.log('❌ User cannot reapply, showing restriction message');
+                
+                const isApprovedPartner = eligibilityResponse.message.is_approved_partner;
+                const message = eligibilityResponse.message.message;
+                
+                if (isApprovedPartner) {
+                    // Show special message for approved franchise partners
+                    showApprovedPartnerMessage(stepData.email, message);
+                } else {
+                    // Show generic message for other active applications
+                    showActiveApplicationMessage(stepData.email, message);
+                }
                 
             } else {
-                const errorMessage = response.message?.message || 'Failed to send verification email. Please try again.';
-                console.error('Verification Error:', response);
-                console.error('Full verification error response:', JSON.stringify(response, null, 2));
-                frappe.msgprint({
-                    title: 'Error',
-                    message: errorMessage,
-                    indicator: 'red'
+                // Regular new application - use the normal API
+                console.log('✨ New application - using regular send_verification_email API');
+                
+                frappe.call({
+                    method: 'franchise_portal.www.signup.api.send_verification_email',
+                    args: { 
+                        email: stepData.email,
+                        data: stepData 
+                    },
+                    callback: function(response) {
+                        console.log('Verification email response:', response);
+                        console.log('Response success check:', response.message?.success);
+                        console.log('Response message:', response.message);
+                        
+                        if (response.message && response.message.success) {
+                            window.verificationToken = verificationToken = response.message.verification_token;
+                            
+                            // Show verification message
+                            showVerificationMessage(stepData.email);
+                            
+                        } else {
+                            const errorMessage = response.message?.message || 'Failed to send verification email. Please try again.';
+                            console.error('Verification Error:', response);
+                            console.error('Full verification error response:', JSON.stringify(response, null, 2));
+                            frappe.msgprint({
+                                title: 'Error',
+                                message: errorMessage,
+                                indicator: 'red'
+                            });
+                        }
+                    },
+                    error: function(error) {
+                        console.error('Network Error sending verification:', error);
+                        frappe.msgprint({
+                            title: 'Network Error',
+                            message: 'Failed to send verification email. Please check your connection and try again.',
+                            indicator: 'red'
+                        });
+                    }
                 });
             }
         },
         error: function(error) {
-            console.error('Network Error sending verification:', error);
-            frappe.msgprint({
-                title: 'Network Error',
-                message: 'Failed to send verification email. Please check your connection and try again.',
-                indicator: 'red'
+            console.error('Error checking reapplication eligibility:', error);
+            
+            // Fallback to regular verification if eligibility check fails
+            console.log('Eligibility check failed, falling back to regular verification');
+            
+            frappe.call({
+                method: 'franchise_portal.www.signup.api.send_verification_email',
+                args: { 
+                    email: stepData.email,
+                    data: stepData 
+                },
+                callback: function(response) {
+                    console.log('Fallback verification email response:', response);
+                    
+                    if (response.message && response.message.success) {
+                        window.verificationToken = verificationToken = response.message.verification_token;
+                        showVerificationMessage(stepData.email);
+                    } else {
+                        const errorMessage = response.message?.message || 'Failed to send verification email. Please try again.';
+                        frappe.msgprint({
+                            title: 'Error',
+                            message: errorMessage,
+                            indicator: 'red'
+                        });
+                    }
+                },
+                error: function(error) {
+                    console.error('Fallback verification failed:', error);
+                    frappe.msgprint({
+                        title: 'Network Error',
+                        message: 'Failed to send verification email. Please check your connection and try again.',
+                        indicator: 'red'
+                    });
+                }
             });
         }
     });
@@ -818,6 +938,143 @@ function showVerificationMessage(email) {
             <button onclick="location.reload()" class="btn btn-secondary" style="margin-top: 20px;">
                 Refresh Page
             </button>
+        </div>
+    `;
+}
+
+function showReapplicationVerificationMessage(email) {
+    // Hide all forms
+    document.querySelectorAll('.form-step').forEach(form => form.style.display = 'none');
+    
+    // Show reapplication verification message with special context
+    const formContainer = document.querySelector('.form-container');
+    formContainer.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div style="color: #28a745; margin-bottom: 20px;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V19A2 2 0 0 0 5 21H19A2 2 0 0 0 21 19V9M19 19H5V3H13V9H19Z"/>
+                </svg>
+            </div>
+            <h2 style="color: #495057; margin-bottom: 10px;">🔄 New Application - Check Your Email</h2>
+            <p style="color: #28a745; margin-bottom: 20px; font-weight: 500;">
+                Starting fresh after your previous application
+            </p>
+            <p style="color: #6c757d; margin-bottom: 30px; line-height: 1.6;">
+                We've sent a verification email to <strong>${email}</strong> for your new franchise application.<br>
+                Please click the verification link in the email to start your fresh application.
+            </p>
+            <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left; border-left: 4px solid #28a745;">
+                <h4 style="margin-top: 0; color: #155724;">✨ Fresh Start</h4>
+                <p style="color: #155724; margin-bottom: 10px;">
+                    This is a completely new application. You can:
+                </p>
+                <ul style="color: #155724; margin-bottom: 0; text-align: left;">
+                    <li>Provide updated information</li>
+                    <li>Address any previous concerns</li>
+                    <li>Submit with confidence</li>
+                </ul>
+            </div>
+            <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left;">
+                <h4 style="margin-top: 0; color: #0066cc;">What to do next:</h4>
+                <ol style="color: #495057; margin-bottom: 0;">
+                    <li>Check your email inbox (and spam folder)</li>
+                    <li>Click the "Verify Email & Start New Application" button</li>
+                    <li>You'll be brought back to start your fresh application</li>
+                </ol>
+            </div>
+            <p style="color: #dc3545; font-size: 14px;">
+                <strong>Note:</strong> The verification link will expire in 24 hours.
+            </p>
+            <button onclick="location.reload()" class="btn btn-secondary" style="margin-top: 20px;">
+                Refresh Page
+            </button>
+        </div>
+    `;
+}
+
+function showApprovedPartnerMessage(email, message) {
+    // Hide all forms
+    document.querySelectorAll('.form-step').forEach(form => form.style.display = 'none');
+    
+    // Show approved partner message
+    const formContainer = document.querySelector('.form-container');
+    formContainer.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div style="color: #28a745; margin-bottom: 20px;">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2M9 11H7v2h2v-2m4 0h-2v2h2v-2m4 0h-2v2h2v-2z"/>
+                </svg>
+            </div>
+            <h2 style="color: #155724; margin-bottom: 10px;">🎉 Welcome Back, Franchise Partner!</h2>
+            <p style="color: #155724; margin-bottom: 20px; font-weight: 500; font-size: 18px;">
+                You're already part of our franchise family!
+            </p>
+            <div style="background: #d4edda; padding: 25px; border-radius: 10px; margin: 25px 0; text-align: left; border-left: 5px solid #28a745;">
+                <p style="color: #155724; margin-bottom: 0; line-height: 1.6; font-size: 16px;">
+                    ${message}
+                </p>
+            </div>
+            <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left; border-left: 4px solid #ffc107;">
+                <h4 style="margin-top: 0; color: #856404;">📞 Need Support?</h4>
+                <p style="color: #856404; margin-bottom: 10px;">
+                    If you need assistance with your existing franchise:
+                </p>
+                <ul style="color: #856404; margin-bottom: 0; text-align: left;">
+                    <li>Contact our franchise support team</li>
+                    <li>Access your franchise partner portal</li>
+                    <li>Request operational guidance</li>
+                </ul>
+            </div>
+            <div style="margin-top: 30px;">
+                <button onclick="location.href='/'" class="btn btn-success" style="margin-right: 10px; padding: 12px 25px; font-size: 16px;">
+                    Go to Homepage
+                </button>
+                <button onclick="location.reload()" class="btn btn-secondary" style="padding: 12px 25px;">
+                    Refresh Page
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function showActiveApplicationMessage(email, message) {
+    // Hide all forms
+    document.querySelectorAll('.form-step').forEach(form => form.style.display = 'none');
+    
+    // Show active application message
+    const formContainer = document.querySelector('.form-container');
+    formContainer.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div style="color: #ffc107; margin-bottom: 20px;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2M12 15.4l3.76 2L15 14.47l3-2.93-4.21-.62L12 7.6"/>
+                </svg>
+            </div>
+            <h2 style="color: #856404; margin-bottom: 10px;">⏳ Application Already In Progress</h2>
+            <p style="color: #856404; margin-bottom: 30px; line-height: 1.6;">
+                You already have an active franchise application in our system.
+            </p>
+            <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left; border-left: 4px solid #ffc107;">
+                <p style="color: #856404; margin-bottom: 0; line-height: 1.6;">
+                    ${message}
+                </p>
+            </div>
+            <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left;">
+                <h4 style="margin-top: 0; color: #0066cc;">What you can do:</h4>
+                <ul style="color: #495057; margin-bottom: 0;">
+                    <li>Wait for your current application to be processed</li>
+                    <li>Contact support if you need to update information</li>
+                    <li>Only submit a new application if your current one is rejected</li>
+                </ul>
+            </div>
+            <div style="margin-top: 30px;">
+                <button onclick="location.href='/'" class="btn btn-primary" style="margin-right: 10px; padding: 10px 20px;">
+                    Go to Homepage
+                </button>
+                <button onclick="location.reload()" class="btn btn-secondary" style="padding: 10px 20px;">
+                    Refresh Page
+                </button>
+            </div>
         </div>
     `;
 }
@@ -958,16 +1215,17 @@ function saveStepData(step, callback) {
 }
 
 // Throttle auto-save to reduce performance impact
-let autoSaveTimeout;
+window.autoSaveTimeout = window.autoSaveTimeout || null;
+let autoSaveTimeout = window.autoSaveTimeout;
 function autoSaveStep() {
     // Auto-save disabled to prevent race conditions with manual saves
     // Clear existing timeout to avoid too frequent saves
-    if (autoSaveTimeout) {
-        clearTimeout(autoSaveTimeout);
+    if (window.autoSaveTimeout) {
+        clearTimeout(window.autoSaveTimeout);
     }
     
     // Throttle auto-save to once every 3 seconds
-    autoSaveTimeout = setTimeout(() => {
+    window.autoSaveTimeout = setTimeout(() => {
         if (currentStep <= 8) {
             const stepData = getStepData(currentStep);
             Object.assign(applicationData, stepData);

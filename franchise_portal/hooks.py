@@ -54,10 +54,16 @@ web_include_js = f"/assets/franchise_portal/js/signup.js?v=2.0.5-{mod_time}"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {"Franchise Signup Application" : "public/js/franchise_signup_application.js"}
+doctype_js = {
+    "Franchise Signup Application": "public/js/franchise_signup_application.js",
+    "User": "public/js/user_role_restrictions.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
+
+
+
 
 # Svg Icons
 # ------------------
@@ -185,6 +191,15 @@ doctype_js = {"Franchise Signup Application" : "public/js/franchise_signup_appli
 # -------
 
 # before_tests = "franchise_portal.install.before_tests"
+
+# Whitelisted Methods
+# -------------------
+# Methods that can be called from client-side
+whitelisted_methods = [
+    "franchise_portal.franchise_portal.franchise_management.get_assignable_roles",
+    "franchise_portal.franchise_portal.franchise_management.get_franchise_assignable_roles_filters",
+    "franchise_portal.franchise_portal.franchise_management.get_allowed_module_profiles"
+]
 
 # Overriding Methods
 # ------------------------------
