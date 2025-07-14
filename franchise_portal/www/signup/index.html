@@ -1253,6 +1253,97 @@ body .franchise-signup-container .form-container .form-step#step3 {
 }
 
 /* Loading and Success Messages */
+.form-group label {
+    position: relative !important;
+}
+
+/* Required field indicator */
+.form-group label[for*="company_name"]:after,
+.form-group label[for*="email"]:after,
+.form-group label[for*="primary_feedstock_category"]:after,
+.form-group label[for*="calculated_total"]:after,
+.form-group label[for*="uncertainty_range"]:after,
+.form-group label[for*="employee_first_name"]:after,
+.form-group label[for*="employee_gender"]:after,
+.form-group label[for*="employee_date_of_birth"]:after,
+.form-group label[for*="employee_date_of_joining"]:after {
+    content: " *" !important;
+    color: #dc3545 !important;
+    font-weight: bold !important;
+}
+
+/* Error state styles */
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error {
+    border-color: #dc3545 !important;
+    background-color: #fff5f5 !important;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+}
+
+/* Success state styles */
+.form-group input.success,
+.form-group select.success,
+.form-group textarea.success {
+    border-color: #28a745 !important;
+    background-color: #f8fff9 !important;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1) !important;
+}
+
+/* Field error message styles */
+.field-error-message {
+    color: #dc3545 !important;
+    font-size: 12px !important;
+    margin-top: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    animation: slideDown 0.2s ease-out !important;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced error modal styles */
+.frappe-msgprint .modal-body {
+    padding: 20px !important;
+}
+
+.frappe-msgprint .modal-body p {
+    margin-bottom: 12px !important;
+    line-height: 1.5 !important;
+}
+
+/* Focus indicators for better accessibility */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: 2px solid transparent !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 3px rgba(116, 185, 255, 0.3) !important;
+}
+
+/* Improved visual hierarchy for required vs optional fields */
+.form-group:has(input[required]),
+.form-group:has(select[required]) {
+    border-left: 3px solid #74b9ff !important;
+    padding-left: 12px !important;
+    background: rgba(116, 185, 255, 0.02) !important;
+    border-radius: 0 6px 6px 0 !important;
+}
+
+.required-asterisk {
+    color: #dc3545 !important;
+    font-weight: bold !important;
+}
 </style>
 
 <div id="signup-modal-overlay">
@@ -1315,7 +1406,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="company_name">Company Name *</label>
+                    <label for="company_name">Company Name</label>
                     <input type="text" id="company_name" name="company_name" required>
                 </div>
                 <div class="form-group">
@@ -1326,7 +1417,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="email">Email Address *</label>
+                    <label for="email">Email Address</label>
                     <input type="email" id="email" name="email" required>
                 </div>
                 <div class="form-group">
@@ -1360,11 +1451,11 @@ body .franchise-signup-container .form-container .form-step#step3 {
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="project_name">Project Name</label>
+                    <label for="project_name">Project Name <span class="required-asterisk">*</span></label>
                     <input type="text" id="project_name" name="project_name" onchange="generateProjectId()">
                 </div>
                 <div class="form-group">
-                    <label for="project_type">Project Type</label>
+                    <label for="project_type">Project Type <span class="required-asterisk">*</span></label>
                     <select id="project_type" name="project_type">
                         <option value="">Select Project Type</option>
                         <option value="Franchise">Franchise</option>
@@ -1390,7 +1481,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             </div>
             
             <div class="form-group">
-                <label for="gps_coordinates">GPS Coordinates</label>
+                <label for="gps_coordinates">GPS Coordinates <span class="required-asterisk">*</span></label>
                 <div class="gps-container">
                     <input type="text" id="gps_coordinates" name="gps_coordinates" placeholder="e.g., 28.6139, 77.2090 (type manually or use map)">
                     <button type="button" id="map_search_btn" class="btn btn-secondary" onclick="openMapModal()">📍 Map</button>
@@ -1403,7 +1494,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="project_start_date">Project Start Date</label>
+                    <label for="project_start_date">Project Start Date <span class="required-asterisk">*</span></label>
                     <input type="date" id="project_start_date" name="project_start_date">
                 </div>
                 <div class="form-group">
@@ -1433,7 +1524,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="primary_feedstock_category">Primary Feedstock Category *</label>
+                    <label for="primary_feedstock_category">Primary Feedstock Category</label>
                     <select id="primary_feedstock_category" name="primary_feedstock_category" required>
                         <option value="">Select Category</option>
                         <option value="Agricultural Residues">Agricultural Residues</option>
@@ -2325,12 +2416,12 @@ body .franchise-signup-container .form-container .form-step#step3 {
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="calculated_total">Calculated Total (kg CO₂e/tonne) <span style="color:red">*</span></label>
-                    <input type="number" id="calculated_total" name="calculated_total" step="0.01" min="0" required>
+                    <label for="calculated_total">Calculated Total (kg CO₂e/tonne)</label>
+                    <input type="number" id="calculated_total" name="calculated_total" step="0.01" min="0">
                 </div>
                 <div class="form-group">
-                    <label for="uncertainty_range">Uncertainty Range (%) <span style="color:red">*</span></label>
-                    <input type="number" id="uncertainty_range" name="uncertainty_range" step="0.01" min="0" required>
+                    <label for="uncertainty_range">Uncertainty Range (%)</label>
+                    <input type="number" id="uncertainty_range" name="uncertainty_range" step="0.01" min="0">
                 </div>
             </div>
             <div class="button-group">
@@ -2349,7 +2440,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="employee_first_name">First Name *</label>
+                    <label for="employee_first_name">First Name</label>
                     <input type="text" id="employee_first_name" name="employee_first_name" required>
                 </div>
                 <div class="form-group">
@@ -2364,7 +2455,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="employee_gender">Gender *</label>
+                    <label for="employee_gender">Gender</label>
                     <select id="employee_gender" name="employee_gender" required>
                         <option value="">Select Gender</option>
                         <option value="Male">Male</option>
@@ -2374,11 +2465,11 @@ body .franchise-signup-container .form-container .form-step#step3 {
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="employee_date_of_birth">Date of Birth *</label>
+                    <label for="employee_date_of_birth">Date of Birth</label>
                     <input type="date" id="employee_date_of_birth" name="employee_date_of_birth" required>
                 </div>
                 <div class="form-group">
-                    <label for="employee_date_of_joining">Date of Joining *</label>
+                    <label for="employee_date_of_joining">Date of Joining</label>
                     <input type="date" id="employee_date_of_joining" name="employee_date_of_joining" required>
                 </div>
             </div>

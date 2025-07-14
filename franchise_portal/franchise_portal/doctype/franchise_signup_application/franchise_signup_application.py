@@ -100,32 +100,43 @@ class FranchiseSignupApplication(Document):
 		missing_fields = []
 		
 		if not self.calculated_total:
-			missing_fields.append("Calculated Total (kg CO₂/tonne)")
+			missing_fields.append("Calculated Total (kg CO₂e/tonne)")
 		
 		if not self.uncertainty_range:
 			missing_fields.append("Uncertainty Range (%)")
 		
 		if missing_fields:
-			frappe.throw(f"The following required fields are missing: {', '.join(missing_fields)}")
+			if len(missing_fields) == 1:
+				error_msg = f"Please provide the {missing_fields[0]}. This information is required to complete your emissions accounting."
+			else:
+				error_msg = f"Please provide the following emissions data: {' and '.join(missing_fields)}. This information is required to complete your application."
+			
+			frappe.throw(error_msg, title="Emissions Data Required")
 	
 	def validate_step8_required_fields(self):
 		"""Validate required fields for Step 8 (Employee Details) only when submitting"""
 		missing_fields = []
+		field_labels = {
+			'employee_first_name': 'Employee First Name',
+			'employee_gender': 'Employee Gender', 
+			'employee_date_of_birth': 'Employee Date of Birth',
+			'employee_date_of_joining': 'Employee Date of Joining'
+		}
 		
-		if not getattr(self, 'employee_first_name', None):
-			missing_fields.append("Employee First Name")
-		
-		if not getattr(self, 'employee_gender', None):
-			missing_fields.append("Employee Gender")
-		
-		if not getattr(self, 'employee_date_of_birth', None):
-			missing_fields.append("Employee Date of Birth")
-		
-		if not getattr(self, 'employee_date_of_joining', None):
-			missing_fields.append("Employee Date of Joining")
+		for field_name, field_label in field_labels.items():
+			if not getattr(self, field_name, None):
+				missing_fields.append(field_label)
 		
 		if missing_fields:
-			frappe.throw(f"The following Step 8 (Employee Details) required fields are missing: {', '.join(missing_fields)}")
+			if len(missing_fields) == 1:
+				error_msg = f"Please provide the {missing_fields[0]}. This employee information is required to complete your application."
+			elif len(missing_fields) == 2:
+				error_msg = f"Please provide the {missing_fields[0]} and {missing_fields[1]}. This employee information is required to complete your application."
+			else:
+				last_field = missing_fields.pop()
+				error_msg = f"Please provide the following employee information: {', '.join(missing_fields)}, and {last_field}. This information is required to complete your application."
+			
+			frappe.throw(error_msg, title="Employee Information Required")
 	
 	def on_submit(self):
 		"""Actions to perform when the application is submitted"""

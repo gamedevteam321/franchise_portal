@@ -68,6 +68,18 @@ window.testNextStep = testNextStep;
 function initializeForm() {
     console.log('Initializing form...');
     
+    // Restore emailVerified and currentStep from sessionStorage if available
+    const storedEmailVerified = sessionStorage.getItem('franchise_email_verified');
+    if (storedEmailVerified !== null) {
+        window.emailVerified = emailVerified = (storedEmailVerified === 'true');
+        console.log('Restored emailVerified from sessionStorage:', emailVerified);
+    }
+    const storedCurrentStep = sessionStorage.getItem('franchise_current_step');
+    if (storedCurrentStep !== null) {
+        window.currentStep = currentStep = parseInt(storedCurrentStep, 10);
+        console.log('Restored currentStep from sessionStorage:', currentStep);
+    }
+    
     // Recover application ID from sessionStorage if available
     const storedApplicationId = sessionStorage.getItem('franchise_application_id');
     if (storedApplicationId && !window.applicationId) {
@@ -84,6 +96,15 @@ function initializeForm() {
         // Clear the flag for future use
         sessionStorage.removeItem('recovery_completed');
     }
+
+    // --- PATCH: Ensure resume always starts at step 2 if email is verified ---
+    if (window.emailVerified && (!window.currentStep || window.currentStep === 1)) {
+        setCurrentStep(2);
+        showStep(currentStep);
+        updateProgressIndicator();
+        console.log('Resume: Email verified, forcing currentStep = 2');
+    }
+    // -------------------------------------------------------------
     
     // Check for email verification in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -94,6 +115,7 @@ function initializeForm() {
         console.log('TEST MODE: Email verification bypassed');
         emailVerified = true;
         verificationToken = 'test-token';
+        sessionStorage.setItem('franchise_email_verified', 'true');
     }
     
     if (verifyToken && !testMode) {
@@ -139,10 +161,10 @@ function handleEmailVerification(token) {
             
             if (response.message && response.message.success) {
                 window.verificationToken = verificationToken = token;
-                window.emailVerified = emailVerified = true;
+                setEmailVerified(true);
                 
                 const sessionData = response.message.session_data;
-                window.currentStep = currentStep = 2; // Always show step 2 after verification
+                setCurrentStep(2); // Always show step 2 after verification
                 window.applicationData = applicationData = sessionData.data;
                 
                 // Store application ID if returned
@@ -172,6 +194,17 @@ function handleEmailVerification(token) {
                 // Clean URL
                 history.replaceState({}, '', '/signup');
                 
+                // --- PATCH: Sync backend current_step to 2 after verification ---
+                if (window.applicationId) {
+                    frappe.call({
+                        method: 'franchise_portal.www.signup.api.update_current_step',
+                        args: {
+                            application_id: window.applicationId,
+                            current_step: 2
+                        }
+                    });
+                }
+                // ... rest of the code ...
             } else {
                 frappe.msgprint({
                     title: 'Verification Failed',
@@ -180,7 +213,7 @@ function handleEmailVerification(token) {
                 });
                 
                 // Fallback to step 1
-                currentStep = 1;
+                setCurrentStep(1);
                 updateProgressIndicator();
             }
             
@@ -196,7 +229,7 @@ function handleEmailVerification(token) {
             });
             
             // Fallback to step 1
-            currentStep = 1;
+            setCurrentStep(1);
             updateProgressIndicator();
             
             // Reset flag after error
@@ -239,7 +272,7 @@ function nextStep(step) {
         
         saveStepData(step, () => {
             console.log('Step data saved successfully, moving to next step');
-            window.currentStep = currentStep = step + 1;
+            setCurrentStep(step + 1);
             
             // current_step is already updated in saveStepData, just log for verification
             console.log('Current step updated to:', currentStep);
@@ -259,7 +292,7 @@ function nextStep(step) {
 window.nextStep = nextStep;
 
 function previousStep(step) {
-    currentStep = step - 1;
+    setCurrentStep(step - 1);
     showStep(currentStep);
     updateProgressIndicator();
 }
@@ -395,12 +428,44 @@ function validateStep(step) {
         return false;
     }
     
+    // Define step-specific required fields with user-friendly names
+    const stepRequiredFields = {
+        1: [
+            { id: 'company_name', name: 'Company Name' },
+            { id: 'email', name: 'Email Address' }
+        ],
+        2: [
+            { id: 'project_name', name: 'Project Name' },
+            { id: 'project_type', name: 'Project Type' },
+            { id: 'gps_coordinates', name: 'GPS Coordinates' },
+            { id: 'project_start_date', name: 'Project Start Date' }
+        ],
+        3: [
+            { id: 'primary_feedstock_category', name: 'Primary Feedstock Category' }
+        ],
+        7: [
+            { id: 'calculated_total', name: 'Calculated Total (kg CO₂e/tonne)' },
+            { id: 'uncertainty_range', name: 'Uncertainty Range (%)' }
+        ],
+        8: [
+            { id: 'employee_first_name', name: 'Employee First Name' },
+            { id: 'employee_gender', name: 'Employee Gender' },
+            { id: 'employee_date_of_birth', name: 'Employee Date of Birth' },
+            { id: 'employee_date_of_joining', name: 'Employee Date of Joining' }
+        ]
+    };
+    
+    // Get all fields with required attribute plus step-specific fields
     const requiredFields = form.querySelectorAll('[required]');
-    console.log(`Found ${requiredFields.length} required fields`);
+    const stepSpecificFields = stepRequiredFields[step] || [];
+    
+    console.log(`Found ${requiredFields.length} fields with required attribute`);
+    console.log(`Step ${step} has ${stepSpecificFields.length} specific required fields`);
     
     let isValid = true;
     let missingFields = [];
     
+    // Validate fields with required attribute
     requiredFields.forEach((field, index) => {
         console.log(`Checking field ${index}: ${field.id} = "${field.value}"`);
         
@@ -421,18 +486,70 @@ function validateStep(step) {
         }
     });
     
+    // Validate step-specific required fields
+    stepSpecificFields.forEach(fieldConfig => {
+        const field = document.getElementById(fieldConfig.id);
+        if (field) {
+            if (!field.value || !field.value.trim()) {
+                field.style.borderColor = '#dc3545';
+                field.style.backgroundColor = '#fff5f5';
+                isValid = false;
+                
+                if (!missingFields.includes(fieldConfig.name)) {
+                    missingFields.push(fieldConfig.name);
+                }
+                console.log(`Step-specific field ${fieldConfig.id} is empty or invalid`);
+            } else {
+                field.style.borderColor = '#ced4da';
+                field.style.backgroundColor = '';
+                console.log(`Step-specific field ${fieldConfig.id} is valid`);
+            }
+        }
+    });
+    
+    // Additional email validation
+    const emailField = document.getElementById('email');
+    if (emailField && emailField.value) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailField.value)) {
+            emailField.style.borderColor = '#dc3545';
+            emailField.style.backgroundColor = '#fff5f5';
+            isValid = false;
+            if (!missingFields.includes('Valid Email Address')) {
+                missingFields.push('Valid Email Address');
+            }
+        }
+    }
+    
     if (!isValid) {
         console.log(`Validation failed. Missing fields: ${missingFields.join(', ')}`);
         
-        // Show alert instead of frappe.msgprint in case frappe is not loaded
+        // Create user-friendly error message
+        let errorMessage = '';
+        if (missingFields.length === 1) {
+            errorMessage = `Please fill in the ${missingFields[0]} field.`;
+        } else if (missingFields.length === 2) {
+            errorMessage = `Please fill in the ${missingFields[0]} and ${missingFields[1]} fields.`;
+        } else {
+            const lastField = missingFields.pop();
+            errorMessage = `Please fill in the following fields: ${missingFields.join(', ')}, and ${lastField}.`;
+        }
+        
+        // Show user-friendly error message
         if (typeof frappe !== 'undefined' && frappe.msgprint) {
             frappe.msgprint({
-                title: 'Validation Error',
-                message: `Please fill in the following required fields: ${missingFields.join(', ')}`,
+                title: 'Required Fields Missing',
+                message: `<div style="font-size: 14px; line-height: 1.5;">
+                    <p style="margin-bottom: 12px;">🚨 <strong>Oops! Some information is missing.</strong></p>
+                    <p style="margin-bottom: 8px;">${errorMessage}</p>
+                    <p style="color: #666; font-size: 12px; margin-top: 12px;">
+                        💡 <strong>Tip:</strong> Look for fields highlighted in red and fill them out to continue.
+                    </p>
+                </div>`,
                 indicator: 'red'
             });
         } else {
-            alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+            alert(`Required Information Missing!\n\n${errorMessage}\n\nPlease fill out the highlighted fields to continue.`);
         }
     } else {
         console.log('All validation checks passed');
@@ -1092,7 +1209,7 @@ function saveStepData(step, callback) {
     // If we're in resume mode, ensure current_step is correct
     if (isResumeMode && window.applicationData.current_step) {
         console.log('Resume mode detected, ensuring current_step is correct:', window.applicationData.current_step);
-        currentStep = window.applicationData.current_step;
+        setCurrentStep(window.applicationData.current_step);
     }
     
     // Log the full applicationData at the start
@@ -1123,7 +1240,7 @@ function saveStepData(step, callback) {
     applicationData.current_step = nextStepNumber;
     
     // Also update the local currentStep variable
-    window.currentStep = currentStep = nextStepNumber;
+    setCurrentStep(nextStepNumber);
     
     console.log('DEBUG: applicationData after current_step update:', JSON.stringify(window.applicationData, null, 2));
     console.log('Verification - current_step in window.applicationData:', window.applicationData.current_step);
@@ -2611,7 +2728,7 @@ window.debugStep5Data = function() {
 // Debug function to navigate directly to Step 5
 window.goToStep5 = function() {
     console.log('=== DEBUG: Forcing navigation to Step 5 ===');
-    currentStep = 5;
+    setCurrentStep(5);
     showStep(5);
     updateProgressIndicator();
     console.log('Should now be showing Step 5');
@@ -3409,7 +3526,7 @@ window.debugStep6Data = function() {
     // Force navigation to Step 6 if not already there
     if (currentStep !== 6) {
         console.log(`Currently on step ${currentStep}, moving to step 6...`);
-        currentStep = 6;
+        setCurrentStep(6);
         showStep(6);
     }
     
@@ -3626,7 +3743,7 @@ window.debugStep4Data = function() {
     // Force navigation to Step 4 if not already there
     if (currentStep !== 4) {
         console.log(`Currently on step ${currentStep}, moving to step 4...`);
-        currentStep = 4;
+        setCurrentStep(4);
         showStep(4);
     }
     
@@ -3888,3 +4005,151 @@ window.forceShowStep4MapModal = function() {
     
     console.log('=== Force Show Test Complete ===');
 };
+
+// Enhanced form field handling with real-time validation feedback
+function initializeFormFieldHandling() {
+    // Add event listeners for real-time validation feedback
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add visual indicators for required fields
+        const allSteps = document.querySelectorAll('.form-step');
+        allSteps.forEach(step => {
+            const requiredFields = step.querySelectorAll('[required]');
+            requiredFields.forEach(field => {
+                // Add real-time validation on blur
+                field.addEventListener('blur', function() {
+                    validateFieldRealTime(this);
+                });
+                
+                // Remove error styling on focus
+                field.addEventListener('focus', function() {
+                    clearFieldError(this);
+                });
+                
+                // Add input validation for specific field types
+                if (field.type === 'email') {
+                    field.addEventListener('input', function() {
+                        validateEmailRealTime(this);
+                    });
+                }
+            });
+        });
+        
+        // Add specific validation for step-specific required fields
+        const stepSpecificFields = {
+            'primary_feedstock_category': 'Please select a feedstock category',
+            'calculated_total': 'Please enter the calculated total emissions',
+            'uncertainty_range': 'Please enter the uncertainty range',
+            'employee_first_name': 'Please enter the employee first name',
+            'employee_gender': 'Please select the employee gender',
+            'employee_date_of_birth': 'Please enter the employee date of birth',
+            'employee_date_of_joining': 'Please enter the employee date of joining'
+        };
+        
+        Object.keys(stepSpecificFields).forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', function() {
+                    validateFieldRealTime(this, stepSpecificFields[fieldId]);
+                });
+                
+                field.addEventListener('focus', function() {
+                    clearFieldError(this);
+                });
+            }
+        });
+    });
+}
+
+function validateFieldRealTime(field, customMessage = null) {
+    const value = field.value ? field.value.trim() : '';
+    const fieldName = getFieldDisplayName(field);
+    
+    if (!value && (field.hasAttribute('required') || customMessage)) {
+        showFieldError(field, customMessage || `${fieldName} is required`);
+        return false;
+    } else {
+        clearFieldError(field);
+        return true;
+    }
+}
+
+function validateEmailRealTime(field) {
+    const value = field.value ? field.value.trim() : '';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (value && !emailRegex.test(value)) {
+        showFieldError(field, 'Please enter a valid email address');
+        return false;
+    } else if (value && emailRegex.test(value)) {
+        clearFieldError(field);
+        return true;
+    }
+    return true;
+}
+
+function showFieldError(field, message) {
+    // Style the field
+    field.style.borderColor = '#dc3545';
+    field.style.backgroundColor = '#fff5f5';
+    
+    // Remove existing error message
+    const existingError = field.parentNode.querySelector('.field-error-message');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Add error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'field-error-message';
+    errorDiv.style.cssText = `
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    `;
+    errorDiv.innerHTML = `<span style="font-size: 14px;">⚠️</span> ${message}`;
+    
+    field.parentNode.appendChild(errorDiv);
+}
+
+function clearFieldError(field) {
+    // Reset field styling
+    field.style.borderColor = '#ced4da';
+    field.style.backgroundColor = '';
+    
+    // Remove error message
+    const errorMessage = field.parentNode.querySelector('.field-error-message');
+    if (errorMessage) {
+        errorMessage.remove();
+    }
+}
+
+function getFieldDisplayName(field) {
+    // Try to get the label text
+    const label = document.querySelector(`label[for="${field.id}"]`);
+    if (label) {
+        return label.textContent.replace('*', '').trim();
+    }
+    
+    // Fallback to field name
+    return field.name || field.id || 'This field';
+}
+
+// Initialize the enhanced form handling
+initializeFormFieldHandling();
+
+// Patch: Persist emailVerified and currentStep whenever they are set
+function setEmailVerified(value) {
+    window.emailVerified = emailVerified = value;
+    sessionStorage.setItem('franchise_email_verified', value ? 'true' : 'false');
+}
+function setCurrentStep(value) {
+    window.currentStep = currentStep = value;
+    sessionStorage.setItem('franchise_current_step', String(value));
+}
+// Patch: Use setEmailVerified and setCurrentStep in relevant places
+// In handleEmailVerification success:
+// setEmailVerified(true); setCurrentStep(2);
+// In nextStep and other places where currentStep is updated, use setCurrentStep(newStep);
