@@ -260,8 +260,8 @@ def save_step_with_verification(token, data, step):
                 
                 frappe.db.commit()
         
-        # If this is the final step (8), finalize the application
-        if step >= 8:
+        # If this is the final step (5), finalize the application
+        if step >= 5:
             finalize_result = finalize_application(session_data, token, step)
             if finalize_result.get("success"):
                 return finalize_result
@@ -326,28 +326,13 @@ def submit_application(email, data=None):
             for key, value in data.items():
                 if key != 'generation_locations' and key in valid_fields:
                     updates[key] = value
-        # Validate Step 7 (Emissions & Energy Accounting) required fields
-        calculated_total = data.get('calculated_total') if data else None
-        uncertainty_range = data.get('uncertainty_range') if data else None
-        missing_step7_fields = []
-        if not calculated_total or str(calculated_total).strip() == '':
-            missing_step7_fields.append("Calculated Total (kg CO₂e/tonne)")
-        if not uncertainty_range or str(uncertainty_range).strip() == '':
-            missing_step7_fields.append("Uncertainty Range (%)")
-        if missing_step7_fields:
-            if len(missing_step7_fields) == 1:
-                error_msg = f"Please provide the {missing_step7_fields[0]}. This emissions data is required to complete your application."
-            else:
-                error_msg = f"Please provide the following emissions data: {' and '.join(missing_step7_fields)}. This information is required to complete your application."
-            return {"success": False, "message": error_msg}
-        
-        # Validate Step 8 (Employee Details) required fields
+        # Validate Step 5 (Employee Details) required fields
         employee_first_name = data.get('employee_first_name') if data else None
         employee_gender = data.get('employee_gender') if data else None
         employee_date_of_birth = data.get('employee_date_of_birth') if data else None
         employee_date_of_joining = data.get('employee_date_of_joining') if data else None
         
-        missing_step8_fields = []
+        missing_step5_fields = []
         field_labels = {
             'employee_first_name': 'Employee First Name',
             'employee_gender': 'Employee Gender',
@@ -356,22 +341,22 @@ def submit_application(email, data=None):
         }
         
         if not employee_first_name or str(employee_first_name).strip() == '':
-            missing_step8_fields.append(field_labels['employee_first_name'])
+            missing_step5_fields.append(field_labels['employee_first_name'])
         if not employee_gender or str(employee_gender).strip() == '':
-            missing_step8_fields.append(field_labels['employee_gender'])
+            missing_step5_fields.append(field_labels['employee_gender'])
         if not employee_date_of_birth or str(employee_date_of_birth).strip() == '':
-            missing_step8_fields.append(field_labels['employee_date_of_birth'])
+            missing_step5_fields.append(field_labels['employee_date_of_birth'])
         if not employee_date_of_joining or str(employee_date_of_joining).strip() == '':
-            missing_step8_fields.append(field_labels['employee_date_of_joining'])
+            missing_step5_fields.append(field_labels['employee_date_of_joining'])
         
-        if missing_step8_fields:
-            if len(missing_step8_fields) == 1:
-                error_msg = f"Please provide the {missing_step8_fields[0]}. This employee information is required to complete your application."
-            elif len(missing_step8_fields) == 2:
-                error_msg = f"Please provide the {missing_step8_fields[0]} and {missing_step8_fields[1]}. This employee information is required to complete your application."
+        if missing_step5_fields:
+            if len(missing_step5_fields) == 1:
+                error_msg = f"Please provide the {missing_step5_fields[0]}. This employee information is required to complete your application."
+            elif len(missing_step5_fields) == 2:
+                error_msg = f"Please provide the {missing_step5_fields[0]} and {missing_step5_fields[1]}. This employee information is required to complete your application."
             else:
-                last_field = missing_step8_fields.pop()
-                error_msg = f"Please provide the following employee information: {', '.join(missing_step8_fields)}, and {last_field}. This information is required to complete your application."
+                last_field = missing_step5_fields.pop()
+                error_msg = f"Please provide the following employee information: {', '.join(missing_step5_fields)}, and {last_field}. This information is required to complete your application."
             return {"success": False, "message": error_msg}
         
         updates['status'] = "Submitted"
@@ -915,10 +900,8 @@ def send_reapplication_verification_email(email, company_name, verification_url,
                     <li>Step 2: Project Information</li>
                     <li>Step 3: Feedstock Description</li>
                     <li>Step 4: Origin, Sourcing & Supply Chain</li>
-                    <li>Step 5: Monitoring & Measurement</li>
-                    <li>Step 6: Sustainability Assessment & Market Impact</li>
-                    <li>Step 7: Emissions & Energy Accounting</li>
-                    <li>Step 8: Employee Details</li>
+                    
+                    <li>Step 5: Employee Details</li>
                 </ul>
                 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -1055,29 +1038,14 @@ def finalize_application(session_data, token, current_step=8):
             annual_volume_float = 0
         if annual_volume_float <= 0:
             return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
-        if current_step >= 7:
-            calculated_total = application_data.get('calculated_total')
-            uncertainty_range = application_data.get('uncertainty_range')
-            missing_step7_fields = []
-            if not calculated_total or str(calculated_total).strip() == '':
-                missing_step7_fields.append("Calculated Total (kg CO₂e/tonne)")
-            if not uncertainty_range or str(uncertainty_range).strip() == '':
-                missing_step7_fields.append("Uncertainty Range (%)")
-            if missing_step7_fields:
-                if len(missing_step7_fields) == 1:
-                    error_msg = f"Please provide the {missing_step7_fields[0]}. This emissions data is required to complete your application."
-                else:
-                    error_msg = f"Please provide the following emissions data: {' and '.join(missing_step7_fields)}. This information is required to complete your application."
-                return {"success": False, "message": error_msg}
-        
-        if current_step >= 8:
-            # Validate Step 8 (Employee Details) required fields
+        if current_step >= 5:
+            # Validate Step 5 (Employee Details) required fields
             employee_first_name = application_data.get('employee_first_name')
             employee_gender = application_data.get('employee_gender')
             employee_date_of_birth = application_data.get('employee_date_of_birth')
             employee_date_of_joining = application_data.get('employee_date_of_joining')
             
-            missing_step8_fields = []
+            missing_step5_fields = []
             field_labels = {
                 'employee_first_name': 'Employee First Name',
                 'employee_gender': 'Employee Gender',
@@ -1086,22 +1054,22 @@ def finalize_application(session_data, token, current_step=8):
             }
             
             if not employee_first_name or str(employee_first_name).strip() == '':
-                missing_step8_fields.append(field_labels['employee_first_name'])
+                missing_step5_fields.append(field_labels['employee_first_name'])
             if not employee_gender or str(employee_gender).strip() == '':
-                missing_step8_fields.append(field_labels['employee_gender'])
+                missing_step5_fields.append(field_labels['employee_gender'])
             if not employee_date_of_birth or str(employee_date_of_birth).strip() == '':
-                missing_step8_fields.append(field_labels['employee_date_of_birth'])
+                missing_step5_fields.append(field_labels['employee_date_of_birth'])
             if not employee_date_of_joining or str(employee_date_of_joining).strip() == '':
-                missing_step8_fields.append(field_labels['employee_date_of_joining'])
+                missing_step5_fields.append(field_labels['employee_date_of_joining'])
             
-            if missing_step8_fields:
-                if len(missing_step8_fields) == 1:
-                    error_msg = f"Please provide the {missing_step8_fields[0]}. This employee information is required to complete your application."
-                elif len(missing_step8_fields) == 2:
-                    error_msg = f"Please provide the {missing_step8_fields[0]} and {missing_step8_fields[1]}. This employee information is required to complete your application."
+            if missing_step5_fields:
+                if len(missing_step5_fields) == 1:
+                    error_msg = f"Please provide the {missing_step5_fields[0]}. This employee information is required to complete your application."
+                elif len(missing_step5_fields) == 2:
+                    error_msg = f"Please provide the {missing_step5_fields[0]} and {missing_step5_fields[1]}. This employee information is required to complete your application."
                 else:
-                    last_field = missing_step8_fields.pop()
-                    error_msg = f"Please provide the following employee information: {', '.join(missing_step8_fields)}, and {last_field}. This information is required to complete your application."
+                    last_field = missing_step5_fields.pop()
+                    error_msg = f"Please provide the following employee information: {', '.join(missing_step5_fields)}, and {last_field}. This information is required to complete your application."
                 return {"success": False, "message": error_msg}
         existing_applications = frappe.get_all(
             "Franchise Signup Application",
@@ -1187,14 +1155,7 @@ def save_step(data):
             if 'generation_locations' in data:
                 f.write(f"generation_locations: {data.generation_locations}\n")
             
-            # Check for Step 5 fields
-            step5_fields = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 
-                           'weighbridge_id', 'testing_laboratory_name', 'automatic_data_upload']
-            step5_data = {k: v for k, v in data.items() if k in step5_fields}
-            if step5_data:
-                f.write(f"STEP 5 FIELDS FOUND: {step5_data}\n")
-            else:
-                f.write(f"NO STEP 5 FIELDS IN DATA\n")
+
         
         # Validate required fields
         if not data.get('email') or not data.get('email').strip():
@@ -1263,14 +1224,7 @@ def save_step(data):
             application.save(ignore_permissions=True, ignore_version=True)
             frappe.db.commit()
             
-            # File debug: check what was saved (Step 5 fields)
-            step5_fields = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 
-                           'weighbridge_id', 'testing_laboratory_name', 'automatic_data_upload']
-            for field in step5_fields:
-                if field in data:
-                    saved_value = frappe.db.get_value("Franchise Signup Application", application.name, field)
-                    with open(debug_file, 'a') as f:
-                        f.write(f"SAVED {field} in DB: '{saved_value}'\n")
+
             
             return {"success": True, "message": "Application updated successfully", "application_id": application.name}
         
@@ -1314,14 +1268,7 @@ def save_step(data):
             application.insert(ignore_permissions=True, ignore_version=True)
             frappe.db.commit()
             
-            # File debug: check what was saved (Step 5 fields)
-            step5_fields = ['electricity_meter_id', 'meter_type_model', 'monitoring_interval', 
-                           'weighbridge_id', 'testing_laboratory_name', 'automatic_data_upload']
-            for field in step5_fields:
-                if field in data:
-                    saved_value = frappe.db.get_value("Franchise Signup Application", application.name, field)
-                    with open(debug_file, 'a') as f:
-                        f.write(f"INSERTED {field} in DB: '{saved_value}'\n")
+
             
             return {"success": True, "message": "Application created successfully", "application_id": application.name}
             
@@ -1333,36 +1280,7 @@ def save_step(data):
         return {"success": False, "message": f"Error saving application: {error_msg}"}
 
 
-@frappe.whitelist(allow_guest=True)
-def test_step5_fields():
-    """Test if Step 5 fields exist in the doctype"""
-    try:
-        # Create a test document to check field existence
-        doc = frappe.new_doc("Franchise Signup Application")
-        
-        step5_fields = [
-            'electricity_meter_id', 'meter_type_model', 'monitoring_interval',
-            'last_calibration_date', 'next_calibration_due', 'weighbridge_id',
-            'capacity', 'accuracy_rating', 'continuous_recording', 'data_logging_system',
-            'testing_laboratory_name', 'lab_accreditation_number', 'testing_standards_used',
-            'testing_standards_other', 'analysis_frequency', 'automatic_data_upload',
-            'data_storage_method', 'backup_system', 'retention_period'
-        ]
-        
-        field_status = {}
-        for field in step5_fields:
-            field_status[field] = hasattr(doc, field)
-        
-        return {
-            "success": True,
-            "message": "Step 5 field check completed",
-            "field_status": field_status,
-            "total_fields": len(step5_fields),
-            "existing_fields": sum(field_status.values())
-        }
-        
-    except Exception as e:
-        return {"success": False, "message": f"Error testing Step 5 fields: {str(e)}"}
+
 
 
 # File Upload Functionality

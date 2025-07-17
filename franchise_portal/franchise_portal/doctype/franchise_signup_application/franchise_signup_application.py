@@ -44,10 +44,9 @@ class FranchiseSignupApplication(Document):
 		if self.email:
 			self.validate_email_uniqueness()
 		
-		# Only validate Step 7 and Step 8 fields when application is being submitted/finalized
+		# Only validate Step 5 fields when application is being submitted/finalized
 		if self.status == "Submitted":
-			self.validate_step7_required_fields()
-			self.validate_step8_required_fields()
+			self.validate_step5_required_fields()
 	
 	def validate_email_uniqueness(self):
 		"""Smart email handling for reapplications - auto-modify email for reapplications"""
@@ -95,26 +94,8 @@ class FranchiseSignupApplication(Document):
 		if self.email_verified and not self.email_verified_at:
 			self.email_verified_at = now()
 	
-	def validate_step7_required_fields(self):
-		"""Validate required fields for Step 7 (Emissions & Energy Accounting) only when submitting"""
-		missing_fields = []
-		
-		if not self.calculated_total:
-			missing_fields.append("Calculated Total (kg CO₂e/tonne)")
-		
-		if not self.uncertainty_range:
-			missing_fields.append("Uncertainty Range (%)")
-		
-		if missing_fields:
-			if len(missing_fields) == 1:
-				error_msg = f"Please provide the {missing_fields[0]}. This information is required to complete your emissions accounting."
-			else:
-				error_msg = f"Please provide the following emissions data: {' and '.join(missing_fields)}. This information is required to complete your application."
-			
-			frappe.throw(error_msg, title="Emissions Data Required")
-	
-	def validate_step8_required_fields(self):
-		"""Validate required fields for Step 8 (Employee Details) only when submitting"""
+	def validate_step5_required_fields(self):
+		"""Validate required fields for Step 5 (Employee Details) only when submitting"""
 		missing_fields = []
 		field_labels = {
 			'employee_first_name': 'Employee First Name',

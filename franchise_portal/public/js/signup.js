@@ -263,8 +263,8 @@ function nextStep(step) {
         // For verified users or steps 2+
         console.log('Validation passed, saving step data...');
         
-        // Special handling for the final step (step 8)
-        if (step === 8) {
+            // Special handling for the final step (step 5)
+    if (step === 5) {
             console.log('Final step reached, submitting application...');
             submitApplication();
             return;
@@ -386,17 +386,6 @@ function showStep(stepNumber) {
                         toggleFileUpload(fieldId, fileGroupId);
                     }
                 });
-            } else if (stepNumber === 6) {
-                // Check Step 6 attachment fields
-                const envPermits = document.getElementById('environmental_permits');
-                if (envPermits && envPermits.value === 'Attached') {
-                    toggleFileUpload('environmental_permits', 'environmental_permits_file_group');
-                }
-                
-                const marketLeakage = document.getElementById('market_leakage_study');
-                if (marketLeakage && marketLeakage.value === 'Yes (attach)') {
-                    toggleFileUpload('market_leakage_study', 'market_leakage_study_file_group');
-                }
             }
         }, 300);
     }
@@ -405,7 +394,7 @@ function showStep(stepNumber) {
 }
 
 function updateProgressIndicator() {
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= 5; i++) {
         const progressElement = document.getElementById(`progress-${i}`);
         if (progressElement) {
             if (i < currentStep) {
@@ -443,11 +432,7 @@ function validateStep(step) {
         3: [
             { id: 'primary_feedstock_category', name: 'Primary Feedstock Category' }
         ],
-        7: [
-            { id: 'calculated_total', name: 'Calculated Total (kg CO₂e/tonne)' },
-            { id: 'uncertainty_range', name: 'Uncertainty Range (%)' }
-        ],
-        8: [
+        5: [
             { id: 'employee_first_name', name: 'Employee First Name' },
             { id: 'employee_gender', name: 'Employee Gender' },
             { id: 'employee_date_of_birth', name: 'Employee Date of Birth' },
@@ -763,48 +748,11 @@ function getStepData(step) {
         console.log('Step 5 processed data:', data);
     }
     
-    // Special handling for Step 6 - Clean file upload fields and sanitize data
-    if (step === 6) {
-        console.log('Processing Step 6 sustainability assessment fields...');
+    // Special handling for Step 5 - Employee Details (basic sanitization)
+    if (step === 5) {
+        console.log('Processing Step 5 employee details fields...');
         
-        // FIRST: Extract file URLs before sanitization removes file objects
-        const step6FileFields = ['environmental_permits_file', 'market_leakage_study_file'];
-        step6FileFields.forEach(fieldName => {
-            // Check for file URL from uploaded files
-            const fileInput = form.querySelector(`input[name="${fieldName}"]`);
-            if (fileInput && fileInput.getAttribute('data-file-url')) {
-                data[fieldName] = fileInput.getAttribute('data-file-url');
-                console.log(`Found file URL for ${fieldName}: ${data[fieldName]}`);
-            } else {
-                // Remove file objects if no URL found
-                if (data[fieldName] && typeof data[fieldName] === 'object') {
-                    console.log(`Removing file object for ${fieldName} (no URL found)`);
-                    delete data[fieldName];
-                }
-            }
-        });
-        
-        // SECOND: Sanitize all other data values
-        Object.keys(data).forEach(key => {
-            if (!step6FileFields.includes(key)) { // Skip file fields that we already processed
-                if (data[key] === null || data[key] === undefined) {
-                    data[key] = '';
-                } else if (typeof data[key] === 'object') {
-                    // Remove any complex objects
-                    console.log(`Removing complex object for key: ${key}`, data[key]);
-                    delete data[key];
-                } else {
-                    data[key] = String(data[key]);
-                }
-            }
-        });
-        
-        console.log('Step 6 processed data:', data);
-    }
-    
-    // Special handling for Step 7 - use 'Other' text if selected
-    if (step === 7) {
-        // Sanitize all Step 7 data values first
+        // Sanitize all Step 5 data values
         Object.keys(data).forEach(key => {
             if (data[key] === null || data[key] === undefined) {
                 data[key] = '';
@@ -816,42 +764,7 @@ function getStepData(step) {
             }
         });
         
-        // Fuel Type
-        if (data['fuel_type'] === 'Other') {
-            const other = document.getElementById('fuel_type_other')?.value;
-            if (other) data['fuel_type'] = other;
-        }
-        // Drying Method
-        if (data['drying_method'] === 'Other') {
-            const other = document.getElementById('drying_method_other')?.value;
-            if (other) data['drying_method'] = other;
-        }
-        // Energy Source
-        if (data['energy_source'] === 'Other') {
-            const other = document.getElementById('energy_source_other')?.value;
-            if (other) data['energy_source'] = other;
-        }
-        
-        console.log('Step 7 processed data:', data);
-    }
-    
-    // Special handling for Step 8 - Employee Details (basic sanitization)
-    if (step === 8) {
-        console.log('Processing Step 8 employee details fields...');
-        
-        // Sanitize all Step 8 data values
-        Object.keys(data).forEach(key => {
-            if (data[key] === null || data[key] === undefined) {
-                data[key] = '';
-            } else if (typeof data[key] === 'object') {
-                console.log(`Removing complex object for key: ${key}`, data[key]);
-                delete data[key];
-            } else {
-                data[key] = String(data[key]);
-            }
-        });
-        
-        console.log('Step 8 processed data:', data);
+        console.log('Step 5 processed data:', data);
     }
     
     return data;
@@ -1356,29 +1269,23 @@ function autoSaveStep() {
 }
 
 function submitApplication() {
-    if (!validateStep(8)) {
+    if (!validateStep(5)) {
         return;
     }
     showLoading(true);
-    // Collect data from ALL steps (1-8) before submitting
+    // Collect data from ALL steps (1-5) before submitting
     const step1Data = getStepData(1);
     const step2Data = getStepData(2);
     const step3Data = getStepData(3);
     const step4Data = getStepData(4);
     const step5Data = getStepData(5);
-    const step6Data = getStepData(6);
-    const step7Data = getStepData(7);
-    const step8Data = getStepData(8);
     // Merge all step data into one object
     const finalData = {
         ...step1Data,
         ...step2Data,
         ...step3Data,
         ...step4Data,
-        ...step5Data,
-        ...step6Data,
-        ...step7Data,
-        ...step8Data
+        ...step5Data
     };
     // Always include email from step 1
     if (!finalData.email) {
@@ -1393,7 +1300,7 @@ function submitApplication() {
             args: { 
                 token: verificationToken,
                 data: finalData,
-                step: 8  // Changed from 7 to 8 for final submission
+                step: 5  // Final submission step
             },
             callback: function(response) {
                 showLoading(false);
@@ -1556,7 +1463,7 @@ function handleVersionConflictError() {
     const currentFormData = {};
     try {
         // Collect current step data
-        const currentStepData = getStepData(7); // Get step 7 data since we're submitting
+        const currentStepData = getStepData(5); // Get step 5 data since we're submitting
         Object.assign(currentFormData, currentStepData);
         
         // Store in sessionStorage for recovery after refresh
