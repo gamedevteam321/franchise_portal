@@ -263,8 +263,8 @@ function nextStep(step) {
         // For verified users or steps 2+
         console.log('Validation passed, saving step data...');
         
-        // Special handling for the final step (step 8)
-        if (step === 8) {
+        // Special handling for the final step (step 5)
+        if (step === 5) {
             console.log('Final step reached, submitting application...');
             submitApplication();
             return;
@@ -272,13 +272,16 @@ function nextStep(step) {
         
         saveStepData(step, () => {
             console.log('Step data saved successfully, moving to next step');
-            setCurrentStep(step + 1);
+            const nextStepNumber = step + 1;
+            console.log('About to move to step:', nextStepNumber);
+            setCurrentStep(nextStepNumber);
             
             // current_step is already updated in saveStepData, just log for verification
             console.log('Current step updated to:', currentStep);
             console.log('applicationData.current_step is:', applicationData.current_step);
             
-            showStep(currentStep);
+            console.log('About to call showStep with:', nextStepNumber);
+            showStep(nextStepNumber);
             updateProgressIndicator();
             //if (nextBtn) nextBtn.disabled = false;
         });
@@ -302,6 +305,13 @@ window.previousStep = previousStep;
 
 function showStep(stepNumber) {
     console.log('showStep called for', stepNumber, 'element:', document.getElementById(`step${stepNumber}`));
+    
+    // Debug: Log all form steps
+    console.log('All form steps found:', document.querySelectorAll('.form-step').length);
+    document.querySelectorAll('.form-step').forEach((step, index) => {
+        console.log(`Step ${index + 1}:`, step.id, 'display:', step.style.display);
+    });
+    
     // Hide all steps
     document.querySelectorAll('.form-step').forEach(step => {
         step.style.display = 'none';
@@ -311,8 +321,10 @@ function showStep(stepNumber) {
     // Show current step
     const currentStepElement = document.getElementById(`step${stepNumber}`);
     if (currentStepElement) {
+        console.log('Found step element, showing it...');
         currentStepElement.style.setProperty('display', 'block', 'important');
         currentStepElement.classList.add('active');
+        console.log('Step element display set to:', currentStepElement.style.display);
         
         // FORCE FIX for Step 3 layout issues
         if (stepNumber === 3) {
@@ -386,18 +398,8 @@ function showStep(stepNumber) {
                         toggleFileUpload(fieldId, fileGroupId);
                     }
                 });
-            } else if (stepNumber === 6) {
-                // Check Step 6 attachment fields
-                const envPermits = document.getElementById('environmental_permits');
-                if (envPermits && envPermits.value === 'Attached') {
-                    toggleFileUpload('environmental_permits', 'environmental_permits_file_group');
-                }
-                
-                const marketLeakage = document.getElementById('market_leakage_study');
-                if (marketLeakage && marketLeakage.value === 'Yes (attach)') {
-                    toggleFileUpload('market_leakage_study', 'market_leakage_study_file_group');
-                }
             }
+            // Step 6 removed - no longer exists
         }, 300);
     }
     // Update progress indicator
@@ -405,7 +407,7 @@ function showStep(stepNumber) {
 }
 
 function updateProgressIndicator() {
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= 5; i++) {
         const progressElement = document.getElementById(`progress-${i}`);
         if (progressElement) {
             if (i < currentStep) {
@@ -443,11 +445,10 @@ function validateStep(step) {
         3: [
             { id: 'primary_feedstock_category', name: 'Primary Feedstock Category' }
         ],
-        7: [
-            { id: 'calculated_total', name: 'Calculated Total (kg CO₂e/tonne)' },
-            { id: 'uncertainty_range', name: 'Uncertainty Range (%)' }
+        4: [
+            // Step 4 specific required fields if any
         ],
-        8: [
+        5: [
             { id: 'employee_first_name', name: 'Employee First Name' },
             { id: 'employee_gender', name: 'Employee Gender' },
             { id: 'employee_date_of_birth', name: 'Employee Date of Birth' },
@@ -763,48 +764,11 @@ function getStepData(step) {
         console.log('Step 5 processed data:', data);
     }
     
-    // Special handling for Step 6 - Clean file upload fields and sanitize data
-    if (step === 6) {
-        console.log('Processing Step 6 sustainability assessment fields...');
+    // Special handling for Step 5 - Employee Details (basic sanitization)
+    if (step === 5) {
+        console.log('Processing Step 5 employee details fields...');
         
-        // FIRST: Extract file URLs before sanitization removes file objects
-        const step6FileFields = ['environmental_permits_file', 'market_leakage_study_file'];
-        step6FileFields.forEach(fieldName => {
-            // Check for file URL from uploaded files
-            const fileInput = form.querySelector(`input[name="${fieldName}"]`);
-            if (fileInput && fileInput.getAttribute('data-file-url')) {
-                data[fieldName] = fileInput.getAttribute('data-file-url');
-                console.log(`Found file URL for ${fieldName}: ${data[fieldName]}`);
-            } else {
-                // Remove file objects if no URL found
-                if (data[fieldName] && typeof data[fieldName] === 'object') {
-                    console.log(`Removing file object for ${fieldName} (no URL found)`);
-                    delete data[fieldName];
-                }
-            }
-        });
-        
-        // SECOND: Sanitize all other data values
-        Object.keys(data).forEach(key => {
-            if (!step6FileFields.includes(key)) { // Skip file fields that we already processed
-                if (data[key] === null || data[key] === undefined) {
-                    data[key] = '';
-                } else if (typeof data[key] === 'object') {
-                    // Remove any complex objects
-                    console.log(`Removing complex object for key: ${key}`, data[key]);
-                    delete data[key];
-                } else {
-                    data[key] = String(data[key]);
-                }
-            }
-        });
-        
-        console.log('Step 6 processed data:', data);
-    }
-    
-    // Special handling for Step 7 - use 'Other' text if selected
-    if (step === 7) {
-        // Sanitize all Step 7 data values first
+        // Sanitize all Step 5 data values
         Object.keys(data).forEach(key => {
             if (data[key] === null || data[key] === undefined) {
                 data[key] = '';
@@ -816,42 +780,7 @@ function getStepData(step) {
             }
         });
         
-        // Fuel Type
-        if (data['fuel_type'] === 'Other') {
-            const other = document.getElementById('fuel_type_other')?.value;
-            if (other) data['fuel_type'] = other;
-        }
-        // Drying Method
-        if (data['drying_method'] === 'Other') {
-            const other = document.getElementById('drying_method_other')?.value;
-            if (other) data['drying_method'] = other;
-        }
-        // Energy Source
-        if (data['energy_source'] === 'Other') {
-            const other = document.getElementById('energy_source_other')?.value;
-            if (other) data['energy_source'] = other;
-        }
-        
-        console.log('Step 7 processed data:', data);
-    }
-    
-    // Special handling for Step 8 - Employee Details (basic sanitization)
-    if (step === 8) {
-        console.log('Processing Step 8 employee details fields...');
-        
-        // Sanitize all Step 8 data values
-        Object.keys(data).forEach(key => {
-            if (data[key] === null || data[key] === undefined) {
-                data[key] = '';
-            } else if (typeof data[key] === 'object') {
-                console.log(`Removing complex object for key: ${key}`, data[key]);
-                delete data[key];
-            } else {
-                data[key] = String(data[key]);
-            }
-        });
-        
-        console.log('Step 8 processed data:', data);
+        console.log('Step 5 processed data:', data);
     }
     
     return data;
@@ -1343,7 +1272,7 @@ function autoSaveStep() {
     
     // Throttle auto-save to once every 3 seconds
     window.autoSaveTimeout = setTimeout(() => {
-        if (currentStep <= 8) {
+        if (currentStep <= 5) {
             const stepData = getStepData(currentStep);
             Object.assign(applicationData, stepData);
             frappe.call({
@@ -1356,29 +1285,23 @@ function autoSaveStep() {
 }
 
 function submitApplication() {
-    if (!validateStep(8)) {
+    if (!validateStep(5)) {
         return;
     }
     showLoading(true);
-    // Collect data from ALL steps (1-8) before submitting
+    // Collect data from ALL steps (1-5) before submitting
     const step1Data = getStepData(1);
     const step2Data = getStepData(2);
     const step3Data = getStepData(3);
     const step4Data = getStepData(4);
     const step5Data = getStepData(5);
-    const step6Data = getStepData(6);
-    const step7Data = getStepData(7);
-    const step8Data = getStepData(8);
     // Merge all step data into one object
     const finalData = {
         ...step1Data,
         ...step2Data,
         ...step3Data,
         ...step4Data,
-        ...step5Data,
-        ...step6Data,
-        ...step7Data,
-        ...step8Data
+        ...step5Data
     };
     // Always include email from step 1
     if (!finalData.email) {
@@ -1393,7 +1316,7 @@ function submitApplication() {
             args: { 
                 token: verificationToken,
                 data: finalData,
-                step: 8  // Changed from 7 to 8 for final submission
+                step: 5  // Changed to 5 for final submission
             },
             callback: function(response) {
                 showLoading(false);
@@ -1556,7 +1479,7 @@ function handleVersionConflictError() {
     const currentFormData = {};
     try {
         // Collect current step data
-        const currentStepData = getStepData(7); // Get step 7 data since we're submitting
+        const currentStepData = getStepData(5); // Get step 5 data since we're submitting
         Object.assign(currentFormData, currentStepData);
         
         // Store in sessionStorage for recovery after refresh
@@ -3487,13 +3410,9 @@ window.debugFileUploads = function() {
         {id: 'transportation_records_file_group', trigger: 'transportation_records', field: 'transportation_records_file'}
     ];
     
-    // Check Step 6 file uploads
-    const step6FileGroups = [
-        {id: 'environmental_permits_file_group', trigger: 'environmental_permits', field: 'environmental_permits_file'},
-        {id: 'market_leakage_study_file_group', trigger: 'market_leakage_study', field: 'market_leakage_study_file'}
-    ];
+    // Step 6 removed - no longer exists
     
-    const allFileGroups = [...step3FileGroups, ...step4FileGroups, ...step6FileGroups];
+    const allFileGroups = [...step3FileGroups, ...step4FileGroups];
     
     allFileGroups.forEach(group => {
         const fileGroup = document.getElementById(group.id);
@@ -3519,59 +3438,7 @@ window.debugFileUploads = function() {
     console.log('\n=== Complete File Upload Debug Done ===');
 };
 
-// Debug function specifically for Step 6 data issues
-window.debugStep6Data = function() {
-    console.log('=== DEBUG: Step 6 Data Collection ===');
-    
-    // Force navigation to Step 6 if not already there
-    if (currentStep !== 6) {
-        console.log(`Currently on step ${currentStep}, moving to step 6...`);
-        setCurrentStep(6);
-        showStep(6);
-    }
-    
-    // Test data collection
-    console.log('Testing getStepData(6):');
-    const rawData = getStepData(6);
-    console.log('Raw collected data:', rawData);
-    
-    // Check data types
-    console.log('\n--- Data Type Analysis ---');
-    Object.keys(rawData).forEach(key => {
-        const value = rawData[key];
-        const type = typeof value;
-        const isObject = type === 'object' && value !== null;
-        console.log(`${key}: "${value}" (${type}${isObject ? ' - PROBLEM!' : ''})`);
-    });
-    
-    // Test Step 6 specific fields
-    const step6Fields = [
-        'ghg_assessment_conducted', 'environmental_permits', 'environmental_permits_file',
-        'market_leakage_study', 'market_leakage_study_file', 'social_impact_assessment',
-        'sustainability_certification', 'additionality_demonstration', 'regulatory_compliance'
-    ];
-    
-    console.log('\n--- Step 6 Field Values ---');
-    step6Fields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        const formValue = field ? field.value : 'FIELD_NOT_FOUND';
-        const dataValue = rawData[fieldId];
-        console.log(`${fieldId}: Form="${formValue}", Data="${dataValue}"`);
-    });
-    
-    // Test file upload status
-    console.log('\n--- Step 6 File Upload Status ---');
-    const envPermitsSelect = document.getElementById('environmental_permits');
-    const envPermitsGroup = document.getElementById('environmental_permits_file_group');
-    const marketLeakageSelect = document.getElementById('market_leakage_study');
-    const marketLeakageGroup = document.getElementById('market_leakage_study_file_group');
-    
-    console.log(`Environmental Permits: "${envPermitsSelect?.value}", Upload Group Visible: ${envPermitsGroup?.style.display !== 'none'}`);
-    console.log(`Market Leakage Study: "${marketLeakageSelect?.value}", Upload Group Visible: ${marketLeakageGroup?.style.display !== 'none'}`);
-    
-    console.log('\n=== Step 6 Debug Complete ===');
-    return rawData;
-};
+// Step 6 debug function removed - step no longer exists
 
 // Comprehensive debug function for file upload issues
 window.debugUploadIssues = function() {
@@ -3607,7 +3474,7 @@ window.debugUploadIssues = function() {
     
     // Test data collection for all steps
     console.log('\n3. Data Collection Test:');
-    for (let step = 1; step <= 7; step++) {
+    for (let step = 1; step <= 5; step++) {
         try {
             const stepData = getStepData(step);
             const fieldCount = Object.keys(stepData).length;
@@ -3650,9 +3517,7 @@ window.testFileURLCollection = function() {
         'chain_of_custody_file', 
         'supplier_agreements_file',
         'origin_certificates_file', 
-        'transportation_records_file',
-        'environmental_permits_file',
-        'market_leakage_study_file'
+        'transportation_records_file'
     ];
     
     fileFields.forEach(fieldName => {
@@ -4149,7 +4014,35 @@ function setCurrentStep(value) {
     window.currentStep = currentStep = value;
     sessionStorage.setItem('franchise_current_step', String(value));
 }
-// Patch: Use setEmailVerified and setCurrentStep in relevant places
-// In handleEmailVerification success:
-// setEmailVerified(true); setCurrentStep(2);
-// In nextStep and other places where currentStep is updated, use setCurrentStep(newStep);
+
+// Initialize the form when the script loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing form...');
+    initializeForm();
+    
+    // If no current step is set, default to step 1
+    if (!currentStep) {
+        console.log('No current step set, defaulting to step 1');
+        setCurrentStep(1);
+        showStep(1);
+        updateProgressIndicator();
+    }
+});
+
+// Also initialize immediately if DOM is already loaded
+if (document.readyState === 'loading') {
+    // DOM is still loading, wait for DOMContentLoaded
+    console.log('DOM still loading, waiting for DOMContentLoaded...');
+} else {
+    // DOM is already loaded, initialize immediately
+    console.log('DOM already loaded, initializing immediately...');
+    initializeForm();
+    
+    // If no current step is set, default to step 1
+    if (!currentStep) {
+        console.log('No current step set, defaulting to step 1');
+        setCurrentStep(1);
+        showStep(1);
+        updateProgressIndicator();
+    }
+}
