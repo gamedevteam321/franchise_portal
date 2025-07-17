@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:role_name",
+ "creation": "2024-01-01 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "role_name",
+  "desk_access",
+  "restrict_to_domain",
+  "two_factor_auth"
+ ],
+ "fields": [
+  {
+   "fieldname": "role_name",
+   "fieldtype": "Data",
+   "label": "Role Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": 1,
+   "fieldname": "desk_access",
+   "fieldtype": "Check",
+   "label": "Desk Access"
+  },
+  {
+   "fieldname": "restrict_to_domain",
+   "fieldtype": "Link",
+   "label": "Restrict To Domain",
+   "options": "Domain"
+  },
+  {
+   "default": 0,
+   "fieldname": "two_factor_auth",
+   "fieldtype": "Check",
+   "label": "Two Factor Auth"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "list_fields": [
+  "role_name",
+  "desk_access",
+  "restrict_to_domain",
+  "two_factor_auth"
+ ],
+ "modified": "2024-01-01 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Franchise Portal",
+ "name": "Hardware Engineer Role",
+ "owner": "Administrator",
+ "title_field": "role_name",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+} 

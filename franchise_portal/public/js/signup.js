@@ -76,7 +76,15 @@ function initializeForm() {
     }
     const storedCurrentStep = sessionStorage.getItem('franchise_current_step');
     if (storedCurrentStep !== null) {
-        window.currentStep = currentStep = parseInt(storedCurrentStep, 10);
+        const restoredStep = parseInt(storedCurrentStep, 10);
+        // Ensure step is not greater than 4 (our new maximum)
+        if (restoredStep > 4) {
+            console.log('Restored step was greater than 4, resetting to 4');
+            window.currentStep = currentStep = 4;
+            sessionStorage.setItem('franchise_current_step', '4');
+        } else {
+            window.currentStep = currentStep = restoredStep;
+        }
         console.log('Restored currentStep from sessionStorage:', currentStep);
     }
     
@@ -95,6 +103,16 @@ function initializeForm() {
         console.log('Recovery already completed, skipping...');
         // Clear the flag for future use
         sessionStorage.removeItem('recovery_completed');
+    }
+    
+    // Clear any old session storage data that might cause issues
+    const currentStepValue = sessionStorage.getItem('franchise_current_step');
+    if (currentStepValue && parseInt(currentStepValue, 10) > 4) {
+        console.log('Clearing old session storage data with invalid step number');
+        sessionStorage.removeItem('franchise_current_step');
+        sessionStorage.removeItem('franchise_form_recovery_data');
+        sessionStorage.removeItem('franchise_form_recovery_timestamp');
+        setCurrentStep(1); // Reset to step 1
     }
 
     // --- PATCH: Ensure resume always starts at step 2 if email is verified ---
@@ -263,8 +281,8 @@ function nextStep(step) {
         // For verified users or steps 2+
         console.log('Validation passed, saving step data...');
         
-        // Special handling for the final step (step 8)
-        if (step === 8) {
+        // Special handling for the final step (step 4)
+        if (step === 4) {
             console.log('Final step reached, submitting application...');
             submitApplication();
             return;
@@ -385,18 +403,7 @@ function showStep(stepNumber) {
                         console.log(`Triggering file upload for ${fieldId} -> ${fileGroupId}`);
                         toggleFileUpload(fieldId, fileGroupId);
                     }
-                });
-            } else if (stepNumber === 6) {
-                // Check Step 6 attachment fields
-                const envPermits = document.getElementById('environmental_permits');
-                if (envPermits && envPermits.value === 'Attached') {
-                    toggleFileUpload('environmental_permits', 'environmental_permits_file_group');
-                }
-                
-                const marketLeakage = document.getElementById('market_leakage_study');
-                if (marketLeakage && marketLeakage.value === 'Yes (attach)') {
-                    toggleFileUpload('market_leakage_study', 'market_leakage_study_file_group');
-                }
+                                });
             }
         }, 300);
     }
@@ -405,7 +412,7 @@ function showStep(stepNumber) {
 }
 
 function updateProgressIndicator() {
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= 4; i++) {
         const progressElement = document.getElementById(`progress-${i}`);
         if (progressElement) {
             if (i < currentStep) {
@@ -443,15 +450,11 @@ function validateStep(step) {
         3: [
             { id: 'primary_feedstock_category', name: 'Primary Feedstock Category' }
         ],
-        7: [
-            { id: 'calculated_total', name: 'Calculated Total (kg CO₂e/tonne)' },
-            { id: 'uncertainty_range', name: 'Uncertainty Range (%)' }
-        ],
-        8: [
-            { id: 'employee_first_name', name: 'Employee First Name' },
-            { id: 'employee_gender', name: 'Employee Gender' },
-            { id: 'employee_date_of_birth', name: 'Employee Date of Birth' },
-            { id: 'employee_date_of_joining', name: 'Employee Date of Joining' }
+        4: [
+            { id: 'partner_first_name', name: 'Partner First Name' },
+            { id: 'partner_gender', name: 'Partner Gender' },
+            { id: 'partner_date_of_birth', name: 'Partner Date of Birth' },
+            { id: 'partner_date_of_joining', name: 'Partner Date of Joining' }
         ]
     };
     
@@ -634,142 +637,29 @@ function getStepData(step) {
         console.log('Step 3 processed data:', data);
     }
     
-    // Special handling for Step 4 - Generation Locations
-    if (step === 4) {
-        console.log('Processing Step 4 special fields...');
+    // Special handling for Step 3 - Feedstock Description & Origin (including file uploads)
+    if (step === 3) {
+        console.log('Processing Step 3 feedstock and file upload fields...');
         
-        // Handle source_type checkboxes
-        const sourceTypeCheckboxes = document.querySelectorAll('input[name="source_type"]:checked');
-        if (sourceTypeCheckboxes.length > 0) {
-            const selectedValues = Array.from(sourceTypeCheckboxes).map(checkbox => checkbox.value);
-            data['source_type'] = selectedValues.join(', ');
-            console.log('Source type processed:', data['source_type']);
+        // Handle source_type field (it's a select, not checkboxes)
+        if (data['source_type'] && data['source_type'] !== '') {
+            console.log('Source type found:', data['source_type']);
         } else {
-            console.log('No source_type checkboxes selected');
+            console.log('No source_type selected');
             data['source_type'] = '';
         }
         
-        // Handle generation locations - transform dynamic fields to table structure
-        const generationLocations = [];
-        const container = document.getElementById('generation_locations_container');
-        
-        console.log('Generation locations container:', container);
-        
-        if (container) {
-            const locationRows = container.querySelectorAll('.generation-location-row');
-            console.log('Found location rows:', locationRows.length);
-            
-            locationRows.forEach((row, index) => {
-                console.log(`Processing location row ${index + 1}`);
-                
-                const addressInput = row.querySelector(`input[name*="generation_location_address"]`);
-                const gpsInput = row.querySelector(`input[name*="generation_location_gps"]`);
-                
-                console.log('Address input:', addressInput);
-                console.log('GPS input:', gpsInput);
-                
-                if (addressInput || gpsInput) {
-                    const locationData = {};
-                    if (addressInput && addressInput.value.trim()) {
-                        locationData.address = addressInput.value.trim();
-                        console.log('Address found:', locationData.address);
-                    }
-                    if (gpsInput && gpsInput.value.trim()) {
-                        locationData.gps_coordinates = gpsInput.value.trim();
-                        console.log('GPS found:', locationData.gps_coordinates);
-                    }
-                    
-                    // Only add if there's actual data
-                    if (locationData.address || locationData.gps_coordinates) {
-                        generationLocations.push(locationData);
-                        console.log('Added location data:', locationData);
-                    }
-                }
-            });
+        // Handle generation_locations field (it's a textarea, not dynamic fields)
+        if (data['generation_locations'] && data['generation_locations'].trim() !== '') {
+            console.log('Generation locations found:', data['generation_locations']);
         } else {
-            console.warn('generation_locations_container not found');
+            console.log('No generation locations entered');
+            data['generation_locations'] = '';
         }
-        
-        // Add the generation locations as proper table data
-        if (generationLocations.length > 0) {
-            data['generation_locations'] = generationLocations;
-            console.log('Final generation_locations data:', data['generation_locations']);
-        } else {
-            console.warn('No generation locations found to add');
-        }
-        
-        // Remove the individual dynamic field entries since they're now in the table structure
-        Object.keys(data).forEach(key => {
-            if (key.startsWith('generation_location_address_') || key.startsWith('generation_location_gps_')) {
-                console.log('Removing dynamic field:', key);
-                delete data[key];
-            }
-        });
         
         // FIRST: Extract file URLs before sanitization removes file objects
-        const step4FileFields = ['chain_of_custody_file', 'supplier_agreements_file', 'origin_certificates_file', 'transportation_records_file'];
-        step4FileFields.forEach(fieldName => {
-            // Check for file URL from uploaded files
-            const fileInput = form.querySelector(`input[name="${fieldName}"]`);
-            if (fileInput && fileInput.getAttribute('data-file-url')) {
-                data[fieldName] = fileInput.getAttribute('data-file-url');
-                console.log(`Found file URL for ${fieldName}: ${data[fieldName]}`);
-            } else {
-                // Remove file objects if no URL found
-                if (data[fieldName] && typeof data[fieldName] === 'object') {
-                    console.log(`Removing file object for ${fieldName} (no URL found)`);
-                    delete data[fieldName];
-                }
-            }
-        });
-        
-        // SECOND: Sanitize all other Step 4 data values
-        Object.keys(data).forEach(key => {
-            if (key !== 'generation_locations' && !step4FileFields.includes(key)) { // Skip generation_locations and file fields
-                if (data[key] === null || data[key] === undefined) {
-                    data[key] = '';
-                } else if (typeof data[key] === 'object') {
-                    console.log(`Removing complex object for key: ${key}`, data[key]);
-                    delete data[key];
-                } else {
-                    data[key] = String(data[key]);
-                }
-            }
-        });
-    }
-    
-    // Special handling for Step 5 - Monitoring & Measurement (for debugging and validation)
-    if (step === 5) {
-        console.log('Processing Step 5 monitoring & measurement fields...');
-        
-        // Sanitize all Step 5 data values
-        Object.keys(data).forEach(key => {
-            if (data[key] === null || data[key] === undefined) {
-                data[key] = '';
-            } else if (typeof data[key] === 'object') {
-                console.log(`Removing complex object for key: ${key}`, data[key]);
-                delete data[key];
-            } else {
-                data[key] = String(data[key]);
-            }
-        });
-        
-        // Ensure testing_standards_other is only included if testing_standards_used is "Other"
-        const testingStandards = data['testing_standards_used'];
-        if (testingStandards !== 'Other') {
-            data['testing_standards_other'] = '';
-        }
-        
-        console.log('Step 5 processed data:', data);
-    }
-    
-    // Special handling for Step 6 - Clean file upload fields and sanitize data
-    if (step === 6) {
-        console.log('Processing Step 6 sustainability assessment fields...');
-        
-        // FIRST: Extract file URLs before sanitization removes file objects
-        const step6FileFields = ['environmental_permits_file', 'market_leakage_study_file'];
-        step6FileFields.forEach(fieldName => {
+        const step3FileFields = ['feedstock_payment_file', 'chain_of_custody_file', 'supplier_agreements_file', 'origin_certificates_file', 'transportation_records_file'];
+        step3FileFields.forEach(fieldName => {
             // Check for file URL from uploaded files
             const fileInput = form.querySelector(`input[name="${fieldName}"]`);
             if (fileInput && fileInput.getAttribute('data-file-url')) {
@@ -786,25 +676,23 @@ function getStepData(step) {
         
         // SECOND: Sanitize all other data values
         Object.keys(data).forEach(key => {
-            if (!step6FileFields.includes(key)) { // Skip file fields that we already processed
+            if (!step3FileFields.includes(key)) { // Skip file fields that we already processed
                 if (data[key] === null || data[key] === undefined) {
                     data[key] = '';
-                } else if (typeof data[key] === 'object') {
-                    // Remove any complex objects
-                    console.log(`Removing complex object for key: ${key}`, data[key]);
-                    delete data[key];
                 } else {
                     data[key] = String(data[key]);
                 }
             }
         });
         
-        console.log('Step 6 processed data:', data);
+        console.log('Step 3 processed data:', data);
     }
     
-    // Special handling for Step 7 - use 'Other' text if selected
-    if (step === 7) {
-        // Sanitize all Step 7 data values first
+    // Special handling for Step 4 - Franchise Partner Details
+    if (step === 4) {
+        console.log('Processing Step 4 franchise partner details fields...');
+        
+        // Sanitize all Step 4 data values
         Object.keys(data).forEach(key => {
             if (data[key] === null || data[key] === undefined) {
                 data[key] = '';
@@ -816,42 +704,7 @@ function getStepData(step) {
             }
         });
         
-        // Fuel Type
-        if (data['fuel_type'] === 'Other') {
-            const other = document.getElementById('fuel_type_other')?.value;
-            if (other) data['fuel_type'] = other;
-        }
-        // Drying Method
-        if (data['drying_method'] === 'Other') {
-            const other = document.getElementById('drying_method_other')?.value;
-            if (other) data['drying_method'] = other;
-        }
-        // Energy Source
-        if (data['energy_source'] === 'Other') {
-            const other = document.getElementById('energy_source_other')?.value;
-            if (other) data['energy_source'] = other;
-        }
-        
-        console.log('Step 7 processed data:', data);
-    }
-    
-    // Special handling for Step 8 - Employee Details (basic sanitization)
-    if (step === 8) {
-        console.log('Processing Step 8 employee details fields...');
-        
-        // Sanitize all Step 8 data values
-        Object.keys(data).forEach(key => {
-            if (data[key] === null || data[key] === undefined) {
-                data[key] = '';
-            } else if (typeof data[key] === 'object') {
-                console.log(`Removing complex object for key: ${key}`, data[key]);
-                delete data[key];
-            } else {
-                data[key] = String(data[key]);
-            }
-        });
-        
-        console.log('Step 8 processed data:', data);
+        console.log('Step 4 processed data:', data);
     }
     
     return data;
@@ -1343,7 +1196,7 @@ function autoSaveStep() {
     
     // Throttle auto-save to once every 3 seconds
     window.autoSaveTimeout = setTimeout(() => {
-        if (currentStep <= 8) {
+        if (currentStep <= 4) {
             const stepData = getStepData(currentStep);
             Object.assign(applicationData, stepData);
             frappe.call({
@@ -1356,29 +1209,21 @@ function autoSaveStep() {
 }
 
 function submitApplication() {
-    if (!validateStep(8)) {
+    if (!validateStep(4)) {
         return;
     }
     showLoading(true);
-    // Collect data from ALL steps (1-8) before submitting
+    // Collect data from ALL steps (1-4) before submitting
     const step1Data = getStepData(1);
     const step2Data = getStepData(2);
     const step3Data = getStepData(3);
     const step4Data = getStepData(4);
-    const step5Data = getStepData(5);
-    const step6Data = getStepData(6);
-    const step7Data = getStepData(7);
-    const step8Data = getStepData(8);
     // Merge all step data into one object
     const finalData = {
         ...step1Data,
         ...step2Data,
         ...step3Data,
-        ...step4Data,
-        ...step5Data,
-        ...step6Data,
-        ...step7Data,
-        ...step8Data
+        ...step4Data
     };
     // Always include email from step 1
     if (!finalData.email) {
@@ -1393,7 +1238,7 @@ function submitApplication() {
             args: { 
                 token: verificationToken,
                 data: finalData,
-                step: 8  // Changed from 7 to 8 for final submission
+                step: 4  // Final step is now 4
             },
             callback: function(response) {
                 showLoading(false);
@@ -1556,7 +1401,7 @@ function handleVersionConflictError() {
     const currentFormData = {};
     try {
         // Collect current step data
-        const currentStepData = getStepData(7); // Get step 7 data since we're submitting
+        const currentStepData = getStepData(4); // Get step 4 data since we're submitting
         Object.assign(currentFormData, currentStepData);
         
         // Store in sessionStorage for recovery after refresh
@@ -1770,6 +1615,7 @@ function populateFormData(data) {
     Object.keys(data).forEach(key => {
         const field = document.getElementById(key);
         if (field && typeof data[key] !== 'object') {
+            console.log(`Setting field ${key} to value: ${data[key]}`);
             if (field.type === 'checkbox') {
                 field.checked = !!data[key];
             } else if (field.type === 'radio') {
@@ -1785,37 +1631,65 @@ function populateFormData(data) {
             if (field.type === 'select-one' || field.type === 'checkbox' || typeof field.onchange === 'function') {
                 if (typeof field.onchange === 'function') field.onchange();
             }
+        } else if (field) {
+            console.log(`Field ${key} found but data is object or null:`, data[key]);
+        } else {
+            console.log(`Field ${key} not found in DOM`);
         }
     });
 
-    // 2. Step 4: Generation Locations (dynamic rows)
-    if (data.generation_locations && Array.isArray(data.generation_locations)) {
-        const container = document.getElementById('generation_locations_container');
-        if (container) {
-            container.innerHTML = ''; // Clear existing
-            data.generation_locations.forEach((loc, idx) => {
-                window.addGenerationLocation(); // Add a new row
-                const addressInput = document.getElementById(`generation_location_address_${idx+1}`);
-                const gpsInput = document.getElementById(`generation_location_gps_${idx+1}`);
-                if (addressInput) addressInput.value = loc.address || '';
-                if (gpsInput) gpsInput.value = loc.gps_coordinates || '';
-            });
-        }
-    }
-
-    // 3. Step 4: Source Type (checkboxes, possibly multi-select)
+    // 2. Step 3: Source Type (select field, not checkboxes)
     if (data.source_type) {
-        const values = typeof data.source_type === 'string' ? data.source_type.split(',').map(v => v.trim()) : data.source_type;
-        document.querySelectorAll('input[name="source_type"]').forEach(checkbox => {
-            checkbox.checked = values.includes(checkbox.value);
-        });
-        // Show/hide "Other" field if needed
-        if (values.includes('Other') && typeof window.toggleSourceTypeOther === 'function') {
-            window.toggleSourceTypeOther();
+        const sourceTypeField = document.getElementById('source_type');
+        if (sourceTypeField) {
+            sourceTypeField.value = data.source_type;
+            // Trigger change event to show/hide "Other" field if needed
+            if (typeof window.toggleSourceTypeOther === 'function') {
+                window.toggleSourceTypeOther();
+            }
         }
     }
 
-    // 4. Step 7: "Other" fields (fuel_type, drying_method, energy_source)
+    // 3. Step 3: Generation Locations (textarea field, not dynamic rows)
+    if (data.generation_locations) {
+        console.log('Processing generation_locations:', data.generation_locations);
+        const generationLocationsField = document.getElementById('generation_locations');
+        if (generationLocationsField) {
+            // Handle both string and array formats
+            if (Array.isArray(data.generation_locations)) {
+                // If it's an array, convert to string format
+                const locationsText = data.generation_locations.map(loc => 
+                    loc.address || loc.gps_coordinates || ''
+                ).filter(text => text.trim() !== '').join(', ');
+                generationLocationsField.value = locationsText;
+                console.log('Set generation_locations (array) to:', locationsText);
+            } else {
+                // If it's already a string, use it directly
+                generationLocationsField.value = data.generation_locations;
+                console.log('Set generation_locations (string) to:', data.generation_locations);
+            }
+        } else {
+            console.log('generation_locations field not found in DOM');
+        }
+    } else {
+        console.log('No generation_locations data found');
+    }
+
+    // 4. Step 3: Current Use/Disposal Method (specific debugging)
+    if (data.current_use_disposal_method) {
+        console.log('Processing current_use_disposal_method:', data.current_use_disposal_method);
+        const currentUseField = document.getElementById('current_use_disposal_method');
+        if (currentUseField) {
+            currentUseField.value = data.current_use_disposal_method;
+            console.log('Set current_use_disposal_method to:', data.current_use_disposal_method);
+        } else {
+            console.log('current_use_disposal_method field not found in DOM');
+        }
+    } else {
+        console.log('No current_use_disposal_method data found');
+    }
+
+    // 5. Step 7: "Other" fields (fuel_type, drying_method, energy_source)
     ['fuel_type', 'drying_method', 'energy_source'].forEach(fieldKey => {
         if (data[fieldKey]) {
             const field = document.getElementById(fieldKey);
@@ -1834,9 +1708,60 @@ function populateFormData(data) {
         }
     });
 
-    // 5. Any additional custom logic for other dynamic/multi fields can be added here
+    // 6. Any additional custom logic for other dynamic/multi fields can be added here
 
-    // 6. Trigger any UI updates or calculations needed after populating
+    // 7. File upload fields - restore uploaded files
+    const fileFields = ['feedstock_payment_file', 'chain_of_custody_file', 'supplier_agreements_file', 'origin_certificates_file', 'transportation_records_file'];
+    fileFields.forEach(fieldName => {
+        const fileInput = document.getElementById(fieldName);
+        if (fileInput && data[fieldName]) {
+            // Set the file URL attribute
+            fileInput.setAttribute('data-file-url', data[fieldName]);
+            
+            // Extract filename from URL for display
+            const fileName = data[fieldName].split('/').pop().split('?')[0];
+            
+            // Update the file preview to show the uploaded file
+            const uploadArea = fileInput.closest('.file-upload-area');
+            if (uploadArea) {
+                const placeholder = uploadArea.querySelector('.upload-placeholder');
+                const preview = uploadArea.querySelector('.file-preview');
+                
+                if (placeholder && preview) {
+                    placeholder.style.display = 'none';
+                    preview.style.display = 'block';
+                    
+                    preview.innerHTML = `
+                        <div class="file-item">
+                            <div class="file-item-info">
+                                <div class="file-item-icon">📄</div>
+                                <div class="file-item-details">
+                                    <div class="file-item-name" id="filename-${fieldName}" style="cursor: pointer; color: #667eea; text-decoration: underline;" title="Click to download file">${fileName}</div>
+                                    <div class="file-item-size">File uploaded</div>
+                                    <div class="file-item-status" style="color: #28a745;">✓ Uploaded successfully</div>
+                                </div>
+                            </div>
+                            <div class="file-item-actions">
+                                <button type="button" class="file-action-btn remove" onclick="removeFile('${fieldName}')">Remove</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Add click handler for download
+                    const fileNameElement = preview.querySelector(`#filename-${fieldName}`);
+                    if (fileNameElement) {
+                        fileNameElement.onclick = function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            downloadFileDirectly(data[fieldName], fileName);
+                        };
+                    }
+                }
+            }
+        }
+    });
+
+    // 8. Trigger any UI updates or calculations needed after populating
     if (typeof updateProgressIndicator === 'function') updateProgressIndicator();
 }
 
@@ -2741,7 +2666,7 @@ window.testComplete5StepFlow = function() {
     // Collect data from all steps
     const allData = {};
     
-    for (let step = 1; step <= 5; step++) {
+    for (let step = 1; step <= 4; step++) {
         console.log(`Collecting data from step ${step}:`);
         const stepData = getStepData(step);
         console.log(`Step ${step} data:`, stepData);
@@ -2755,15 +2680,13 @@ window.testComplete5StepFlow = function() {
     const step1Fields = ['company_name', 'contact_person', 'email', 'phone_number'];
     const step2Fields = ['project_name', 'project_city', 'project_state', 'gps_coordinates'];
     const step3Fields = ['primary_feedstock_category', 'annual_volume_available', 'heating_value'];
-    const step4Fields = ['source_type', 'generation_locations', 'collection_method'];
-    const step5Fields = ['electricity_meter_id', 'weighbridge_id', 'testing_laboratory_name', 'automatic_data_upload'];
+    const step4Fields = ['partner_first_name', 'partner_gender', 'partner_date_of_birth', 'partner_date_of_joining'];
     
     console.log('=== FIELD COUNT SUMMARY ===');
     console.log('Step 1 fields found:', step1Fields.filter(f => allData[f]).length, '/', step1Fields.length);
     console.log('Step 2 fields found:', step2Fields.filter(f => allData[f]).length, '/', step2Fields.length);
     console.log('Step 3 fields found:', step3Fields.filter(f => allData[f]).length, '/', step3Fields.length);
     console.log('Step 4 fields found:', step4Fields.filter(f => allData[f]).length, '/', step4Fields.length);
-    console.log('Step 5 fields found:', step5Fields.filter(f => allData[f]).length, '/', step5Fields.length);
     
     return allData;
 };
@@ -3487,13 +3410,7 @@ window.debugFileUploads = function() {
         {id: 'transportation_records_file_group', trigger: 'transportation_records', field: 'transportation_records_file'}
     ];
     
-    // Check Step 6 file uploads
-    const step6FileGroups = [
-        {id: 'environmental_permits_file_group', trigger: 'environmental_permits', field: 'environmental_permits_file'},
-        {id: 'market_leakage_study_file_group', trigger: 'market_leakage_study', field: 'market_leakage_study_file'}
-    ];
-    
-    const allFileGroups = [...step3FileGroups, ...step4FileGroups, ...step6FileGroups];
+    const allFileGroups = [...step3FileGroups, ...step4FileGroups];
     
     allFileGroups.forEach(group => {
         const fileGroup = document.getElementById(group.id);
@@ -3519,59 +3436,7 @@ window.debugFileUploads = function() {
     console.log('\n=== Complete File Upload Debug Done ===');
 };
 
-// Debug function specifically for Step 6 data issues
-window.debugStep6Data = function() {
-    console.log('=== DEBUG: Step 6 Data Collection ===');
-    
-    // Force navigation to Step 6 if not already there
-    if (currentStep !== 6) {
-        console.log(`Currently on step ${currentStep}, moving to step 6...`);
-        setCurrentStep(6);
-        showStep(6);
-    }
-    
-    // Test data collection
-    console.log('Testing getStepData(6):');
-    const rawData = getStepData(6);
-    console.log('Raw collected data:', rawData);
-    
-    // Check data types
-    console.log('\n--- Data Type Analysis ---');
-    Object.keys(rawData).forEach(key => {
-        const value = rawData[key];
-        const type = typeof value;
-        const isObject = type === 'object' && value !== null;
-        console.log(`${key}: "${value}" (${type}${isObject ? ' - PROBLEM!' : ''})`);
-    });
-    
-    // Test Step 6 specific fields
-    const step6Fields = [
-        'ghg_assessment_conducted', 'environmental_permits', 'environmental_permits_file',
-        'market_leakage_study', 'market_leakage_study_file', 'social_impact_assessment',
-        'sustainability_certification', 'additionality_demonstration', 'regulatory_compliance'
-    ];
-    
-    console.log('\n--- Step 6 Field Values ---');
-    step6Fields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        const formValue = field ? field.value : 'FIELD_NOT_FOUND';
-        const dataValue = rawData[fieldId];
-        console.log(`${fieldId}: Form="${formValue}", Data="${dataValue}"`);
-    });
-    
-    // Test file upload status
-    console.log('\n--- Step 6 File Upload Status ---');
-    const envPermitsSelect = document.getElementById('environmental_permits');
-    const envPermitsGroup = document.getElementById('environmental_permits_file_group');
-    const marketLeakageSelect = document.getElementById('market_leakage_study');
-    const marketLeakageGroup = document.getElementById('market_leakage_study_file_group');
-    
-    console.log(`Environmental Permits: "${envPermitsSelect?.value}", Upload Group Visible: ${envPermitsGroup?.style.display !== 'none'}`);
-    console.log(`Market Leakage Study: "${marketLeakageSelect?.value}", Upload Group Visible: ${marketLeakageGroup?.style.display !== 'none'}`);
-    
-    console.log('\n=== Step 6 Debug Complete ===');
-    return rawData;
-};
+
 
 // Comprehensive debug function for file upload issues
 window.debugUploadIssues = function() {
@@ -3607,7 +3472,7 @@ window.debugUploadIssues = function() {
     
     // Test data collection for all steps
     console.log('\n3. Data Collection Test:');
-    for (let step = 1; step <= 7; step++) {
+    for (let step = 1; step <= 4; step++) {
         try {
             const stepData = getStepData(step);
             const fieldCount = Object.keys(stepData).length;
@@ -3650,9 +3515,7 @@ window.testFileURLCollection = function() {
         'chain_of_custody_file', 
         'supplier_agreements_file',
         'origin_certificates_file', 
-        'transportation_records_file',
-        'environmental_permits_file',
-        'market_leakage_study_file'
+        'transportation_records_file'
     ];
     
     fileFields.forEach(fieldName => {
@@ -4146,6 +4009,11 @@ function setEmailVerified(value) {
     sessionStorage.setItem('franchise_email_verified', value ? 'true' : 'false');
 }
 function setCurrentStep(value) {
+    // Ensure step is not greater than 4 (our new maximum)
+    if (value > 4) {
+        console.log('Attempted to set step to', value, 'but maximum is 4, setting to 4');
+        value = 4;
+    }
     window.currentStep = currentStep = value;
     sessionStorage.setItem('franchise_current_step', String(value));
 }

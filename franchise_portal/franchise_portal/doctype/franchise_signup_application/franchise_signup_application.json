@@ -11,7 +11,7 @@
   "status",
   "current_step",
   "section_break_4",
-  "supplier_info_tab",
+  "company_info_tab",
   "company_name",
   "contact_person",
   "email",
@@ -31,7 +31,7 @@
   "gps_coordinates",
   "project_start_date",
   "reporting_period",
-  "feedstock_tab",
+  "feedstock_origin_tab",
   "primary_feedstock_category",
   "specific_feedstock_type",
   "classification",
@@ -70,7 +70,6 @@
   "section_break_current_use",
   "current_use_disposal_method",
   "section_break_21",
-  "tab_break_origin",
   "source_type",
   "source_type_other",
   "generation_locations",
@@ -90,86 +89,29 @@
   "origin_certificates_file",
   "transportation_records",
   "transportation_records_file",
-  "monitoring_measurement_tab",
-  "section_break_monitoring",
-  "electricity_meter_id",
-  "meter_type_model",
-  "monitoring_interval",
-  "last_calibration_date",
-  "next_calibration_due",
-  "section_break_weighbridge",
-  "weighbridge_id",
-  "capacity",
-  "accuracy_rating",
-  "continuous_recording",
-  "data_logging_system",
-  "section_break_laboratory",
-  "testing_laboratory_name",
-  "lab_accreditation_number",
-  "testing_standards_used",
-  "testing_standards_other",
-  "analysis_frequency",
-  "section_break_data_management",
-  "automatic_data_upload",
-  "data_storage_method",
-  "backup_system",
-  "retention_period",
   "created_at",
   "modified_at",
-  "sustainability_assessment_tab",
-  "section_break_sustainability",
-  "environmental_permits",
-  "environmental_permits_file",
-  "impact_assessment_performed",
-  "regulatory_compliance",
-  "certified_sustainable_source",
-  "certification_type",
-  "dedicated_energy_crop",
-  "feedback_study_competitive",
-  "demand_increased_due_project",
-  "could_displace_current_use",
-  "market_leakage_study",
-  "market_leakage_study_file",
-  "counterfactual_scenario",
-  "additionality_demonstration",
-  "water_resource_plan",
-  "community_health_consider",
-  "soil_impact_assessment",
-  "emissions_energy_tab",
-  "section_break_emissions",
-  "equipment_used",
-  "fuel_type",
-  "emissions_factor",
-  "vehicle_type",
-  "fuel_efficiency",
-  "emissions_per_tonne_km",
-  "drying_required",
-  "drying_method",
-  "energy_used",
-  "energy_source",
-  "calculated_total",
-  "uncertainty_range",
-  "employee_details_tab",
-  "section_break_employee",
-  "employee_first_name",
-  "employee_middle_name",
-  "employee_last_name",
-  "column_break_employee_1",
-  "employee_gender",
-  "employee_date_of_birth",
-  "employee_date_of_joining",
-  "section_break_employee_2",
-  "employee_status",
-  "employee_salutation",
-  "employee_designation",
-  "column_break_employee_3",
-  "employee_department",
-  "employee_branch",
-  "employee_reports_to",
-  "section_break_employee_3",
-  "employee_grade",
-  "employee_personal_email",
-  "employee_phone"
+  "franchise_partner_details_tab",
+  "section_break_partner",
+  "partner_first_name",
+  "partner_middle_name",
+  "partner_last_name",
+  "column_break_partner_1",
+  "partner_gender",
+  "partner_date_of_birth",
+  "partner_date_of_joining",
+  "section_break_partner_2",
+  "partner_status",
+  "partner_salutation",
+  "partner_designation",
+  "column_break_partner_3",
+  "partner_department",
+  "partner_branch",
+  "partner_reports_to",
+  "section_break_partner_3",
+  "partner_grade",
+  "partner_personal_email",
+  "partner_phone"
  ],
  "fields": [
   {
@@ -198,9 +140,9 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "supplier_info_tab",
+   "fieldname": "company_info_tab",
    "fieldtype": "Tab Break",
-   "label": "Supplier Information"
+   "label": "Company Information"
   },
   {
    "fieldname": "company_name",
@@ -316,9 +258,9 @@
    "options": "Monthly\nQuarterly\nAnnually"
   },
   {
-   "fieldname": "feedstock_tab",
+   "fieldname": "feedstock_origin_tab",
    "fieldtype": "Tab Break",
-   "label": "Feedstock Description"
+   "label": "Feedstock Description & Origin"
   },
   {
    "fieldname": "primary_feedstock_category",
@@ -431,13 +373,14 @@
   },
   {
    "fieldname": "section_break_ratio",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "C/H Ratio"
   },
   {
    "fieldname": "ch_ratio",
-   "fieldtype": "Data",
-   "label": "C:H Ratio",
-   "read_only": 1
+   "fieldtype": "Float",
+   "label": "C/H Ratio",
+   "precision": 2
   },
   {
    "fieldname": "section_break_physical",
@@ -463,7 +406,7 @@
   {
    "fieldname": "r0_measurement",
    "fieldtype": "Float",
-   "label": "R0 Measurement (if >1000yr storage)",
+   "label": "R₀ Measurement",
    "precision": 2
   },
   {
@@ -475,28 +418,29 @@
    "fieldname": "contaminants_present",
    "fieldtype": "Select",
    "label": "Contaminants Present",
-   "options": "None\nPlastics\nMetals\nSoil\nOther"
+   "options": "Yes\nNo"
   },
   {
    "fieldname": "other_contaminants",
-   "fieldtype": "Data",
-   "label": "Other Contaminants (specify)"
+   "fieldtype": "Small Text",
+   "label": "Other Contaminants"
   },
   {
    "fieldname": "section_break_volume",
    "fieldtype": "Section Break",
-   "label": "Volume & Operations"
+   "label": "Volume & Availability"
   },
   {
    "fieldname": "annual_volume_available",
    "fieldtype": "Float",
-   "label": "Annual Volume Available (MT)"
+   "label": "Annual Volume Available (tonnes)",
+   "precision": 2
   },
   {
    "fieldname": "plant_operation_schedule",
    "fieldtype": "Select",
    "label": "Plant Operation Schedule",
-   "options": "Year-round\nSeasonal"
+   "options": "24/7\n16 hours/day\n8 hours/day\nSeasonal"
   },
   {
    "fieldname": "column_break_vol_1",
@@ -504,54 +448,51 @@
   },
   {
    "fieldname": "seasonal_months",
-   "fieldtype": "Data",
-   "label": "Seasonal Months (specify)"
+   "fieldtype": "Small Text",
+   "label": "Seasonal Months (if applicable)"
   },
   {
    "fieldname": "section_break_current_use",
    "fieldtype": "Section Break",
-   "label": "Current Usage"
+   "label": "Current Use"
   },
   {
    "fieldname": "current_use_disposal_method",
-   "fieldtype": "Small Text",
-   "label": "Current Use/Disposal Method"
+   "fieldtype": "Select",
+   "label": "Current Use/Disposal Method",
+   "options": "Landfill\nIncineration\nComposting\nAnimal Feed\nOther"
   },
   {
    "fieldname": "section_break_21",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "tab_break_origin",
-   "fieldtype": "Tab Break",
-   "label": "Origin, Sourcing & Supply Chain"
+   "fieldtype": "Section Break",
+   "label": "Origin Information"
   },
   {
    "fieldname": "source_type",
-   "fieldtype": "Data",
-   "label": "Source Type"
+   "fieldtype": "Select",
+   "label": "Source Type",
+   "options": "Agricultural\nForestry\nIndustrial\nUrban\nOther"
   },
   {
    "fieldname": "source_type_other",
    "fieldtype": "Data",
-   "label": "Source Type (Other)",
-   "depends_on": "eval:doc.source_type && doc.source_type.indexOf('Other') !== -1"
+   "label": "Other Source Type"
   },
   {
    "fieldname": "generation_locations",
-   "fieldtype": "Table",
-   "label": "Location(s) of Generation",
-   "options": "Generation Location"
+   "fieldtype": "Small Text",
+   "label": "Generation Locations"
   },
   {
    "fieldname": "generation_datetime",
    "fieldtype": "Datetime",
-   "label": "Date/Time of Generation"
+   "label": "Generation Date/Time"
   },
   {
    "fieldname": "collection_method",
-   "fieldtype": "Data",
-   "label": "Collection/Harvest Method"
+   "fieldtype": "Select",
+   "label": "Collection Method",
+   "options": "Manual\nMechanical\nCombined"
   },
   {
    "fieldname": "number_of_suppliers",
@@ -561,28 +502,31 @@
   {
    "fieldname": "max_sourcing_radius",
    "fieldtype": "Float",
-   "label": "Maximum Sourcing Radius (km)"
+   "label": "Maximum Sourcing Radius (km)",
+   "precision": 2
   },
   {
    "fieldname": "avg_transport_distance",
    "fieldtype": "Float",
-   "label": "Average Transport Distance (km)"
+   "label": "Average Transport Distance (km)",
+   "precision": 2
   },
   {
    "fieldname": "primary_transport_method",
    "fieldtype": "Select",
    "label": "Primary Transport Method",
-   "options": "Truck\nRail\nShip\nMixed"
+   "options": "Truck\nRail\nBarge\nPipeline"
   },
   {
    "fieldname": "handling_steps",
-   "fieldtype": "Int",
-   "label": "Number of Handling Steps"
+   "fieldtype": "Small Text",
+   "label": "Handling Steps"
   },
   {
    "fieldname": "storage_duration",
-   "fieldtype": "Int",
-   "label": "Storage Duration Before Use (days)"
+   "fieldtype": "Select",
+   "label": "Storage Duration",
+   "options": "Less than 1 week\n1-4 weeks\n1-3 months\nMore than 3 months"
   },
   {
    "fieldname": "chain_of_custody_protocol",
@@ -594,7 +538,7 @@
    "depends_on": "eval:doc.chain_of_custody_protocol=='Attached'",
    "fieldname": "chain_of_custody_file",
    "fieldtype": "Attach",
-   "label": "Chain of Custody File"
+   "label": "Chain of Custody Protocol File"
   },
   {
    "fieldname": "supplier_agreements",
@@ -633,135 +577,6 @@
    "label": "Transportation Records File"
   },
   {
-   "fieldname": "monitoring_measurement_tab",
-   "fieldtype": "Tab Break",
-   "label": "Monitoring & Measurement"
-  },
-  {
-   "fieldname": "section_break_monitoring",
-   "fieldtype": "Section Break",
-   "label": "Continuous Monitoring Equipment"
-  },
-  {
-   "fieldname": "electricity_meter_id",
-   "fieldtype": "Data",
-   "label": "Electricity Meter ID"
-  },
-  {
-   "fieldname": "meter_type_model",
-   "fieldtype": "Data",
-   "label": "Meter Type/Model"
-  },
-  {
-   "fieldname": "monitoring_interval",
-   "fieldtype": "Select",
-   "label": "Monitoring Interval",
-   "options": "Minute-by-minute\nHourly\nDaily"
-  },
-  {
-   "fieldname": "last_calibration_date",
-   "fieldtype": "Date",
-   "label": "Last Calibration Date"
-  },
-  {
-   "fieldname": "next_calibration_due",
-   "fieldtype": "Date",
-   "label": "Next Calibration Due"
-  },
-  {
-   "fieldname": "section_break_weighbridge",
-   "fieldtype": "Section Break",
-   "label": "Weighbridge System"
-  },
-  {
-   "fieldname": "weighbridge_id",
-   "fieldtype": "Data",
-   "label": "Weighbridge ID"
-  },
-  {
-   "fieldname": "capacity",
-   "fieldtype": "Float",
-   "label": "Capacity (tons)",
-   "precision": 2
-  },
-  {
-   "fieldname": "accuracy_rating",
-   "fieldtype": "Float",
-   "label": "Accuracy Rating (%)",
-   "precision": 2
-  },
-  {
-   "fieldname": "continuous_recording",
-   "fieldtype": "Select",
-   "label": "Continuous Recording",
-   "options": "Yes\nNo"
-  },
-  {
-   "fieldname": "data_logging_system",
-   "fieldtype": "Data",
-   "label": "Data Logging System"
-  },
-  {
-   "fieldname": "section_break_laboratory",
-   "fieldtype": "Section Break",
-   "label": "Laboratory Analysis"
-  },
-  {
-   "fieldname": "testing_laboratory_name",
-   "fieldtype": "Data",
-   "label": "Testing Laboratory Name"
-  },
-  {
-   "fieldname": "lab_accreditation_number",
-   "fieldtype": "Data",
-   "label": "Lab Accreditation Number"
-  },
-  {
-   "fieldname": "testing_standards_used",
-   "fieldtype": "Select",
-   "label": "Testing Standards Used",
-   "options": "ASTM\nISO\nOther"
-  },
-  {
-   "fieldname": "testing_standards_other",
-   "fieldtype": "Data",
-   "label": "Testing Standards (Other)",
-   "depends_on": "eval:doc.testing_standards_used=='Other'"
-  },
-  {
-   "fieldname": "analysis_frequency",
-   "fieldtype": "Select",
-   "label": "Analysis Frequency",
-   "options": "Per batch\nDaily\nWeekly\nMonthly"
-  },
-  {
-   "fieldname": "section_break_data_management",
-   "fieldtype": "Section Break",
-   "label": "Data Management"
-  },
-  {
-   "fieldname": "automatic_data_upload",
-   "fieldtype": "Select",
-   "label": "Automatic Data Upload",
-   "options": "Yes\nNo"
-  },
-  {
-   "fieldname": "data_storage_method",
-   "fieldtype": "Select",
-   "label": "Data Storage Method",
-   "options": "Cloud\nLocal Server\nPhysical Records"
-  },
-  {
-   "fieldname": "backup_system",
-   "fieldtype": "Data",
-   "label": "Backup System"
-  },
-  {
-   "fieldname": "retention_period",
-   "fieldtype": "Int",
-   "label": "Retention Period (years)"
-  },
-  {
    "fieldname": "created_at",
    "fieldtype": "Datetime",
    "label": "Created At",
@@ -774,293 +589,112 @@
    "read_only": 1
   },
   {
-   "fieldname": "sustainability_assessment_tab",
+   "fieldname": "franchise_partner_details_tab",
    "fieldtype": "Tab Break",
-   "label": "Sustainability Assessment & Market Impact"
+   "label": "Franchise Partner Details"
   },
   {
-   "fieldname": "section_break_sustainability",
+   "fieldname": "section_break_partner",
    "fieldtype": "Section Break",
-   "label": "Sustainability Assessment & Market Impact"
+   "label": "Partner Information"
   },
   {
-   "fieldname": "environmental_permits",
-   "fieldtype": "Select",
-   "label": "Environmental Permits",
-   "options": "Attached\nNot Required\nIn Process"
-  },
-  {
-   "depends_on": "eval:doc.environmental_permits=='Attached'",
-   "fieldname": "environmental_permits_file",
-   "fieldtype": "Attach",
-   "label": "Environmental Permits File"
-  },
-  {
-   "fieldname": "impact_assessment_performed",
-   "fieldtype": "Select",
-   "label": "Impact Assessment Performed",
-   "options": "Yes\nNo"
-  },
-  {
-   "fieldname": "regulatory_compliance",
-   "fieldtype": "Select",
-   "label": "Regulatory Compliance",
-   "options": "Confirmed\nPending"
-  },
-  {
-   "fieldname": "certified_sustainable_source",
-   "fieldtype": "Select",
-   "label": "Certified Sustainable Source",
-   "options": "Yes\nNo"
-  },
-  {
-   "fieldname": "certification_type",
-   "fieldtype": "Data",
-   "label": "Certification Type",
-   "options": "FSC\nPEFC\nISCC\nOther"
-  },
-  {
-   "fieldname": "dedicated_energy_crop",
-   "fieldtype": "Select",
-   "label": "Dedicated Energy Crop",
-   "options": "Yes (NOT ELIGIBLE)\nNo"
-  },
-  {
-   "fieldname": "feedback_study_competitive",
-   "fieldtype": "Select",
-   "label": "Feedback Study in Competitive Market",
-   "options": "Yes\nNo"
-  },
-  {
-   "fieldname": "demand_increased_due_project",
-   "fieldtype": "Select",
-   "label": "Demand Increased Due to Project",
-   "options": "Yes\nNo\nUnknown"
-  },
-  {
-   "fieldname": "could_displace_current_use",
-   "fieldtype": "Select",
-   "label": "Could Displace Current Use",
-   "options": "Yes\nNo\nUncertain"
-  },
-  {
-   "fieldname": "market_leakage_study",
-   "fieldtype": "Select",
-   "label": "Market Leakage Study Performed",
-   "options": "Yes (attach)\nNo"
-  },
-  {
-   "depends_on": "eval:doc.market_leakage_study=='Yes (attach)'",
-   "fieldname": "market_leakage_study_file",
-   "fieldtype": "Attach",
-   "label": "Market Leakage Study File"
-  },
-  {
-   "fieldname": "counterfactual_scenario",
-   "fieldtype": "Small Text",
-   "label": "What Would Happen Without Project"
-  },
-  {
-   "fieldname": "additionality_demonstration",
-   "fieldtype": "Small Text",
-   "label": "How Project Exceeds Business-as-Usual"
-  },
-  {
-   "fieldname": "water_resource_plan",
-   "fieldtype": "Select",
-   "label": "Water Resource Management Plan",
-   "options": "Yes\nNo\nN/A"
-  },
-  {
-   "fieldname": "community_health_consider",
-   "fieldtype": "Select",
-   "label": "Community Health Considerations",
-   "options": "Addressed\nNot Required"
-  },
-  {
-   "fieldname": "soil_impact_assessment",
-   "fieldtype": "Select",
-   "label": "Soil Impact Assessment (if applicable)",
-   "options": "Completed\nN/A"
-  },
-  {
-   "fieldname": "emissions_energy_tab",
-   "fieldtype": "Tab Break",
-   "label": "Emissions & Energy Accounting"
-  },
-  {
-   "fieldname": "section_break_emissions",
-   "fieldtype": "Section Break",
-   "label": "Emissions & Energy Accounting"
-  },
-  {
-   "fieldname": "equipment_used",
-   "fieldtype": "Data",
-   "label": "Equipment Used"
-  },
-  {
-   "fieldname": "fuel_type",
-   "fieldtype": "Data",
-   "label": "Fuel Type"
-  },
-  {
-   "fieldname": "emissions_factor",
-   "fieldtype": "Float",
-   "label": "Emissions Factor (kg CO₂/tonne)"
-  },
-  {
-   "fieldname": "vehicle_type",
-   "fieldtype": "Data",
-   "label": "Vehicle Type"
-  },
-  {
-   "fieldname": "fuel_efficiency",
-   "fieldtype": "Float",
-   "label": "Fuel Efficiency (L/km or kWh/km)"
-  },
-  {
-   "fieldname": "emissions_per_tonne_km",
-   "fieldtype": "Float",
-   "label": "Emissions per tonne-km (kg CO₂/tonne-km)"
-  },
-  {
-   "fieldname": "drying_required",
-   "fieldtype": "Select",
-   "label": "Drying Required",
-   "options": "Yes\nNo"
-  },
-  {
-   "fieldname": "drying_method",
-   "fieldtype": "Data",
-   "label": "Drying Method"
-  },
-  {
-   "fieldname": "energy_used",
-   "fieldtype": "Float",
-   "label": "Energy Used (MJ/tonne)"
-  },
-  {
-   "fieldname": "energy_source",
-   "fieldtype": "Data",
-   "label": "Energy Source"
-  },
-  {
-   "fieldname": "calculated_total",
-   "fieldtype": "Float",
-   "label": "Calculated Total (kg CO₂/tonne)"
-  },
-  {
-   "fieldname": "uncertainty_range",
-   "fieldtype": "Float",
-   "label": "Uncertainty Range (%)"
-  },
-  {
-   "fieldname": "employee_details_tab",
-   "fieldtype": "Tab Break",
-   "label": "Employee Details"
-  },
-  {
-   "fieldname": "section_break_employee",
-   "fieldtype": "Section Break",
-   "label": "Employee Information"
-  },
-  {
-   "fieldname": "employee_first_name",
+   "fieldname": "partner_first_name",
    "fieldtype": "Data",
    "label": "First Name"
   },
   {
-   "fieldname": "employee_middle_name",
+   "fieldname": "partner_middle_name",
    "fieldtype": "Data",
    "label": "Middle Name"
   },
   {
-   "fieldname": "employee_last_name",
+   "fieldname": "partner_last_name",
    "fieldtype": "Data",
    "label": "Last Name"
   },
   {
-   "fieldname": "column_break_employee_1",
+   "fieldname": "column_break_partner_1",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "employee_gender",
+   "fieldname": "partner_gender",
    "fieldtype": "Select",
    "label": "Gender",
    "options": "Male\nFemale\nOther\nPrefer not to say"
   },
   {
-   "fieldname": "employee_date_of_birth",
+   "fieldname": "partner_date_of_birth",
    "fieldtype": "Date",
    "label": "Date of Birth"
   },
   {
-   "fieldname": "employee_date_of_joining",
+   "fieldname": "partner_date_of_joining",
    "fieldtype": "Date",
    "label": "Date of Joining"
   },
   {
-   "fieldname": "section_break_employee_2",
+   "fieldname": "section_break_partner_2",
    "fieldtype": "Section Break",
-   "label": "Employment Details"
+   "label": "Partnership Details"
   },
   {
-   "fieldname": "employee_status",
+   "fieldname": "partner_status",
    "fieldtype": "Select",
    "label": "Status",
    "options": "Active\nInactive\nLeft",
    "default": "Active"
   },
   {
-   "fieldname": "employee_salutation",
+   "fieldname": "partner_salutation",
    "fieldtype": "Select",
    "label": "Salutation",
    "options": "Mr\nMs\nMrs\nDr\nProf"
   },
   {
-   "fieldname": "employee_designation",
+   "fieldname": "partner_designation",
    "fieldtype": "Data",
    "label": "Designation",
    "default": "Franchise Partner"
   },
   {
-   "fieldname": "column_break_employee_3",
+   "fieldname": "column_break_partner_3",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "employee_department",
+   "fieldname": "partner_department",
    "fieldtype": "Data",
    "label": "Department",
    "default": "Management"
   },
   {
-   "fieldname": "employee_branch",
+   "fieldname": "partner_branch",
    "fieldtype": "Data",
    "label": "Branch"
   },
   {
-   "fieldname": "employee_reports_to",
+   "fieldname": "partner_reports_to",
    "fieldtype": "Data",
    "label": "Reports to"
   },
   {
-   "fieldname": "section_break_employee_3",
+   "fieldname": "section_break_partner_3",
    "fieldtype": "Section Break",
    "label": "Additional Information"
   },
   {
-   "fieldname": "employee_grade",
+   "fieldname": "partner_grade",
    "fieldtype": "Data",
    "label": "Grade"
   },
   {
-   "fieldname": "employee_personal_email",
+   "fieldname": "partner_personal_email",
    "fieldtype": "Data",
    "label": "Personal Email",
    "options": "Email"
   },
   {
-   "fieldname": "employee_phone",
+   "fieldname": "partner_phone",
    "fieldtype": "Data",
    "label": "Phone Number"
   }

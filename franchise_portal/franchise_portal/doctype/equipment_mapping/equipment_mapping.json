@@ -1,0 +1,249 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-01-01 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "company",
+  "equipment_name",
+  "equipment_type",
+  "section_break_monitoring",
+  "electricity_meter_id",
+  "meter_type_model",
+  "monitoring_interval",
+  "last_calibration_date",
+  "next_calibration_due",
+  "section_break_weighbridge",
+  "weighbridge_id",
+  "capacity",
+  "accuracy_rating",
+  "continuous_recording",
+  "data_logging_system",
+  "section_break_laboratory",
+  "testing_laboratory_name",
+  "lab_accreditation_number",
+  "testing_standards_used",
+  "testing_standards_other",
+  "analysis_frequency",
+  "section_break_data_management",
+  "automatic_data_upload",
+  "data_storage_method",
+  "backup_system",
+  "retention_period",
+  "created_at",
+  "modified_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "EM-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "equipment_name",
+   "fieldtype": "Data",
+   "label": "Equipment Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "equipment_type",
+   "fieldtype": "Select",
+   "label": "Equipment Type",
+   "options": "Electricity Meter\nWeighbridge\nLaboratory Equipment\nData Logging System\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_monitoring",
+   "fieldtype": "Section Break",
+   "label": "Monitoring Equipment Details"
+  },
+  {
+   "fieldname": "electricity_meter_id",
+   "fieldtype": "Data",
+   "label": "Electricity Meter ID"
+  },
+  {
+   "fieldname": "meter_type_model",
+   "fieldtype": "Data",
+   "label": "Meter Type/Model"
+  },
+  {
+   "fieldname": "monitoring_interval",
+   "fieldtype": "Select",
+   "label": "Monitoring Interval",
+   "options": "Real-time\nEvery 5 minutes\nEvery 15 minutes\nEvery 30 minutes\nEvery hour\nDaily\nWeekly"
+  },
+  {
+   "fieldname": "last_calibration_date",
+   "fieldtype": "Date",
+   "label": "Last Calibration Date"
+  },
+  {
+   "fieldname": "next_calibration_due",
+   "fieldtype": "Date",
+   "label": "Next Calibration Due"
+  },
+  {
+   "fieldname": "section_break_weighbridge",
+   "fieldtype": "Section Break",
+   "label": "Weighbridge Details"
+  },
+  {
+   "fieldname": "weighbridge_id",
+   "fieldtype": "Data",
+   "label": "Weighbridge ID"
+  },
+  {
+   "fieldname": "capacity",
+   "fieldtype": "Float",
+   "label": "Capacity (tonnes)",
+   "precision": 2
+  },
+  {
+   "fieldname": "accuracy_rating",
+   "fieldtype": "Float",
+   "label": "Accuracy Rating (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "continuous_recording",
+   "fieldtype": "Select",
+   "label": "Continuous Recording",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "data_logging_system",
+   "fieldtype": "Data",
+   "label": "Data Logging System"
+  },
+  {
+   "fieldname": "section_break_laboratory",
+   "fieldtype": "Section Break",
+   "label": "Laboratory Details"
+  },
+  {
+   "fieldname": "testing_laboratory_name",
+   "fieldtype": "Data",
+   "label": "Testing Laboratory Name"
+  },
+  {
+   "fieldname": "lab_accreditation_number",
+   "fieldtype": "Data",
+   "label": "Lab Accreditation Number"
+  },
+  {
+   "fieldname": "testing_standards_used",
+   "fieldtype": "Select",
+   "label": "Testing Standards Used",
+   "options": "ISO 17025\nASTM\nOther"
+  },
+  {
+   "fieldname": "testing_standards_other",
+   "fieldtype": "Data",
+   "label": "Other Testing Standards"
+  },
+  {
+   "fieldname": "analysis_frequency",
+   "fieldtype": "Select",
+   "label": "Analysis Frequency",
+   "options": "Daily\nWeekly\nMonthly\nQuarterly\nAs needed"
+  },
+  {
+   "fieldname": "section_break_data_management",
+   "fieldtype": "Section Break",
+   "label": "Data Management"
+  },
+  {
+   "fieldname": "automatic_data_upload",
+   "fieldtype": "Select",
+   "label": "Automatic Data Upload",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "data_storage_method",
+   "fieldtype": "Select",
+   "label": "Data Storage Method",
+   "options": "Local Database\nCloud Storage\nHybrid\nOther"
+  },
+  {
+   "fieldname": "backup_system",
+   "fieldtype": "Data",
+   "label": "Backup System"
+  },
+  {
+   "fieldname": "retention_period",
+   "fieldtype": "Int",
+   "label": "Retention Period (years)"
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "modified_at",
+   "fieldtype": "Datetime",
+   "label": "Modified At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "list_fields": [
+  "name",
+  "company",
+  "equipment_name",
+  "equipment_type",
+  "modified"
+ ],
+ "modified": "2024-01-01 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Franchise Portal",
+ "name": "Equipment Mapping",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "title_field": "equipment_name",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hardware Engineer",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+} 

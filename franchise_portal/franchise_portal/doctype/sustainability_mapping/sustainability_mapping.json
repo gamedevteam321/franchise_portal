@@ -1,0 +1,244 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-01-01 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "company",
+  "sustainability_assessment_name",
+  "assessment_date",
+  "section_break_sustainability",
+  "environmental_permits",
+  "environmental_permits_file",
+  "regulatory_compliance_status",
+  "market_impact_assessment",
+  "section_break_emissions",
+  "equipment_used",
+  "fuel_type",
+  "fuel_type_other",
+  "emissions_factor",
+  "vehicle_type",
+  "fuel_efficiency",
+  "emissions_per_tonne_km",
+  "drying_required",
+  "drying_method",
+  "drying_method_other",
+  "energy_used",
+  "energy_source",
+  "energy_source_other",
+  "calculated_total",
+  "uncertainty_range",
+  "created_at",
+  "modified_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "SM-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sustainability_assessment_name",
+   "fieldtype": "Data",
+   "label": "Sustainability Assessment Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "assessment_date",
+   "fieldtype": "Date",
+   "label": "Assessment Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_sustainability",
+   "fieldtype": "Section Break",
+   "label": "Sustainability Assessment & Market Impact"
+  },
+  {
+   "fieldname": "environmental_permits",
+   "fieldtype": "Select",
+   "label": "Environmental Permits",
+   "options": "Attached\nNot Required\nIn Process"
+  },
+  {
+   "depends_on": "eval:doc.environmental_permits=='Attached'",
+   "fieldname": "environmental_permits_file",
+   "fieldtype": "Attach",
+   "label": "Environmental Permits File"
+  },
+  {
+   "fieldname": "regulatory_compliance_status",
+   "fieldtype": "Select",
+   "label": "Regulatory Compliance Status",
+   "options": "Confirmed\nPending\nNon-compliant"
+  },
+  {
+   "fieldname": "market_impact_assessment",
+   "fieldtype": "Small Text",
+   "label": "Market Impact Assessment"
+  },
+  {
+   "fieldname": "section_break_emissions",
+   "fieldtype": "Section Break",
+   "label": "Emissions & Energy Accounting"
+  },
+  {
+   "fieldname": "equipment_used",
+   "fieldtype": "Data",
+   "label": "Equipment Used"
+  },
+  {
+   "fieldname": "fuel_type",
+   "fieldtype": "Select",
+   "label": "Fuel Type",
+   "options": "Diesel\nPetrol\nElectric\nNatural Gas\nBiomass\nOther"
+  },
+  {
+   "depends_on": "eval:doc.fuel_type=='Other'",
+   "fieldname": "fuel_type_other",
+   "fieldtype": "Data",
+   "label": "Other Fuel Type"
+  },
+  {
+   "fieldname": "emissions_factor",
+   "fieldtype": "Float",
+   "label": "Emissions Factor (kg CO₂/L or kg CO₂/kWh)",
+   "precision": 2
+  },
+  {
+   "fieldname": "vehicle_type",
+   "fieldtype": "Data",
+   "label": "Vehicle Type"
+  },
+  {
+   "fieldname": "fuel_efficiency",
+   "fieldtype": "Float",
+   "label": "Fuel Efficiency (L/km or kWh/km)",
+   "precision": 2
+  },
+  {
+   "fieldname": "emissions_per_tonne_km",
+   "fieldtype": "Float",
+   "label": "Emissions per tonne-km (kg CO₂/tonne-km)",
+   "precision": 2
+  },
+  {
+   "fieldname": "drying_required",
+   "fieldtype": "Select",
+   "label": "Drying Required",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "drying_method",
+   "fieldtype": "Select",
+   "label": "Drying Method",
+   "options": "Solar\nMechanical\nThermal\nOther"
+  },
+  {
+   "depends_on": "eval:doc.drying_method=='Other'",
+   "fieldname": "drying_method_other",
+   "fieldtype": "Data",
+   "label": "Other Drying Method"
+  },
+  {
+   "fieldname": "energy_used",
+   "fieldtype": "Float",
+   "label": "Energy Used (MJ/tonne)",
+   "precision": 2
+  },
+  {
+   "fieldname": "energy_source",
+   "fieldtype": "Select",
+   "label": "Energy Source",
+   "options": "Grid Electricity\nSolar\nWind\nBiomass\nFossil Fuel\nOther"
+  },
+  {
+   "depends_on": "eval:doc.energy_source=='Other'",
+   "fieldname": "energy_source_other",
+   "fieldtype": "Data",
+   "label": "Other Energy Source"
+  },
+  {
+   "fieldname": "calculated_total",
+   "fieldtype": "Float",
+   "label": "Calculated Total (kg CO₂/tonne)",
+   "precision": 2
+  },
+  {
+   "fieldname": "uncertainty_range",
+   "fieldtype": "Float",
+   "label": "Uncertainty Range (%)",
+   "precision": 2
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "modified_at",
+   "fieldtype": "Datetime",
+   "label": "Modified At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "list_fields": [
+  "name",
+  "company",
+  "sustainability_assessment_name",
+  "assessment_date",
+  "modified"
+ ],
+ "modified": "2024-01-01 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Franchise Portal",
+ "name": "Sustainability Mapping",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "title_field": "sustainability_assessment_name",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sustainability Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+} 

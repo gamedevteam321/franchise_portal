@@ -157,7 +157,7 @@ def save_step_with_verification(token, data, step):
         # Convert step to integer (it comes as string from frontend)
         try:
             step = int(step)
-            if step < 1 or step > 8:
+            if step < 1 or step > 4:
                 step = 1
         except (ValueError, TypeError):
             step = 1
@@ -218,8 +218,8 @@ def save_step_with_verification(token, data, step):
                     if not updates.get('email_verified_at'):
                         updates['email_verified_at'] = now()
                 
-                # Handle generation_locations on step 4 and final step to avoid version conflicts
-                if (step == 4 or step == 5 or step == 7) and 'generation_locations' in session_data['data'] and isinstance(session_data['data']['generation_locations'], list):
+                # Handle generation_locations on step 3 to avoid version conflicts
+                if step == 3 and 'generation_locations' in session_data['data'] and isinstance(session_data['data']['generation_locations'], list):
                     # Add debug logging
                     debug_file = os.path.join(frappe.get_site_path(), 'debug_save.txt')
                     with open(debug_file, 'a') as f:
@@ -260,8 +260,10 @@ def save_step_with_verification(token, data, step):
                 
                 frappe.db.commit()
         
-        # If this is the final step (8), finalize the application
-        if step >= 8:
+        # If this is the final step (4), finalize the application
+        if step >= 4:
+            # Fix file URLs before finalizing
+            fix_file_urls_in_application(doc_name)
             finalize_result = finalize_application(session_data, token, step)
             if finalize_result.get("success"):
                 return finalize_result
@@ -326,52 +328,37 @@ def submit_application(email, data=None):
             for key, value in data.items():
                 if key != 'generation_locations' and key in valid_fields:
                     updates[key] = value
-        # Validate Step 7 (Emissions & Energy Accounting) required fields
-        calculated_total = data.get('calculated_total') if data else None
-        uncertainty_range = data.get('uncertainty_range') if data else None
-        missing_step7_fields = []
-        if not calculated_total or str(calculated_total).strip() == '':
-            missing_step7_fields.append("Calculated Total (kg CO₂e/tonne)")
-        if not uncertainty_range or str(uncertainty_range).strip() == '':
-            missing_step7_fields.append("Uncertainty Range (%)")
-        if missing_step7_fields:
-            if len(missing_step7_fields) == 1:
-                error_msg = f"Please provide the {missing_step7_fields[0]}. This emissions data is required to complete your application."
-            else:
-                error_msg = f"Please provide the following emissions data: {' and '.join(missing_step7_fields)}. This information is required to complete your application."
-            return {"success": False, "message": error_msg}
+        # Validate Step 4 (Franchise Partner Details) required fields
+        partner_first_name = data.get('partner_first_name') if data else None
+        partner_gender = data.get('partner_gender') if data else None
+        partner_date_of_birth = data.get('partner_date_of_birth') if data else None
+        partner_date_of_joining = data.get('partner_date_of_joining') if data else None
         
-        # Validate Step 8 (Employee Details) required fields
-        employee_first_name = data.get('employee_first_name') if data else None
-        employee_gender = data.get('employee_gender') if data else None
-        employee_date_of_birth = data.get('employee_date_of_birth') if data else None
-        employee_date_of_joining = data.get('employee_date_of_joining') if data else None
-        
-        missing_step8_fields = []
+        missing_step4_fields = []
         field_labels = {
-            'employee_first_name': 'Employee First Name',
-            'employee_gender': 'Employee Gender',
-            'employee_date_of_birth': 'Employee Date of Birth',
-            'employee_date_of_joining': 'Employee Date of Joining'
+            'partner_first_name': 'Partner First Name',
+            'partner_gender': 'Partner Gender',
+            'partner_date_of_birth': 'Partner Date of Birth',
+            'partner_date_of_joining': 'Partner Date of Joining'
         }
         
-        if not employee_first_name or str(employee_first_name).strip() == '':
-            missing_step8_fields.append(field_labels['employee_first_name'])
-        if not employee_gender or str(employee_gender).strip() == '':
-            missing_step8_fields.append(field_labels['employee_gender'])
-        if not employee_date_of_birth or str(employee_date_of_birth).strip() == '':
-            missing_step8_fields.append(field_labels['employee_date_of_birth'])
-        if not employee_date_of_joining or str(employee_date_of_joining).strip() == '':
-            missing_step8_fields.append(field_labels['employee_date_of_joining'])
+        if not partner_first_name or str(partner_first_name).strip() == '':
+            missing_step4_fields.append(field_labels['partner_first_name'])
+        if not partner_gender or str(partner_gender).strip() == '':
+            missing_step4_fields.append(field_labels['partner_gender'])
+        if not partner_date_of_birth or str(partner_date_of_birth).strip() == '':
+            missing_step4_fields.append(field_labels['partner_date_of_birth'])
+        if not partner_date_of_joining or str(partner_date_of_joining).strip() == '':
+            missing_step4_fields.append(field_labels['partner_date_of_joining'])
         
-        if missing_step8_fields:
-            if len(missing_step8_fields) == 1:
-                error_msg = f"Please provide the {missing_step8_fields[0]}. This employee information is required to complete your application."
-            elif len(missing_step8_fields) == 2:
-                error_msg = f"Please provide the {missing_step8_fields[0]} and {missing_step8_fields[1]}. This employee information is required to complete your application."
+        if missing_step4_fields:
+            if len(missing_step4_fields) == 1:
+                error_msg = f"Please provide the {missing_step4_fields[0]}. This partner information is required to complete your application."
+            elif len(missing_step4_fields) == 2:
+                error_msg = f"Please provide the {missing_step4_fields[0]} and {missing_step4_fields[1]}. This partner information is required to complete your application."
             else:
-                last_field = missing_step8_fields.pop()
-                error_msg = f"Please provide the following employee information: {', '.join(missing_step8_fields)}, and {last_field}. This information is required to complete your application."
+                last_field = missing_step4_fields.pop()
+                error_msg = f"Please provide the following partner information: {', '.join(missing_step4_fields)}, and {last_field}. This information is required to complete your application."
             return {"success": False, "message": error_msg}
         
         updates['status'] = "Submitted"
@@ -1044,7 +1031,7 @@ def get_google_maps_api_key():
         }
 
 
-def finalize_application(session_data, token, current_step=8):
+def finalize_application(session_data, token, current_step=4):
     try:
         application_data = session_data["data"]
         email = session_data["email"]
@@ -1055,53 +1042,39 @@ def finalize_application(session_data, token, current_step=8):
             annual_volume_float = 0
         if annual_volume_float <= 0:
             return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
-        if current_step >= 7:
-            calculated_total = application_data.get('calculated_total')
-            uncertainty_range = application_data.get('uncertainty_range')
-            missing_step7_fields = []
-            if not calculated_total or str(calculated_total).strip() == '':
-                missing_step7_fields.append("Calculated Total (kg CO₂e/tonne)")
-            if not uncertainty_range or str(uncertainty_range).strip() == '':
-                missing_step7_fields.append("Uncertainty Range (%)")
-            if missing_step7_fields:
-                if len(missing_step7_fields) == 1:
-                    error_msg = f"Please provide the {missing_step7_fields[0]}. This emissions data is required to complete your application."
-                else:
-                    error_msg = f"Please provide the following emissions data: {' and '.join(missing_step7_fields)}. This information is required to complete your application."
-                return {"success": False, "message": error_msg}
         
-        if current_step >= 8:
-            # Validate Step 8 (Employee Details) required fields
-            employee_first_name = application_data.get('employee_first_name')
-            employee_gender = application_data.get('employee_gender')
-            employee_date_of_birth = application_data.get('employee_date_of_birth')
-            employee_date_of_joining = application_data.get('employee_date_of_joining')
+        # Validate Step 4 (Franchise Partner Details) required fields
+        if current_step >= 4:
+            partner_first_name = application_data.get('partner_first_name')
+            partner_gender = application_data.get('partner_gender')
+            partner_date_of_birth = application_data.get('partner_date_of_birth')
+            partner_date_of_joining = application_data.get('partner_date_of_joining')
             
-            missing_step8_fields = []
+            missing_step4_fields = []
             field_labels = {
-                'employee_first_name': 'Employee First Name',
-                'employee_gender': 'Employee Gender',
-                'employee_date_of_birth': 'Employee Date of Birth',
-                'employee_date_of_joining': 'Employee Date of Joining'
+                'partner_first_name': 'Partner First Name',
+                'partner_gender': 'Partner Gender',
+                'partner_date_of_birth': 'Partner Date of Birth',
+                'partner_date_of_joining': 'Partner Date of Joining'
             }
             
-            if not employee_first_name or str(employee_first_name).strip() == '':
-                missing_step8_fields.append(field_labels['employee_first_name'])
-            if not employee_gender or str(employee_gender).strip() == '':
-                missing_step8_fields.append(field_labels['employee_gender'])
-            if not employee_date_of_birth or str(employee_date_of_birth).strip() == '':
-                missing_step8_fields.append(field_labels['employee_date_of_birth'])
-            if not employee_date_of_joining or str(employee_date_of_joining).strip() == '':
-                missing_step8_fields.append(field_labels['employee_date_of_joining'])
+            if not partner_first_name or str(partner_first_name).strip() == '':
+                missing_step4_fields.append(field_labels['partner_first_name'])
+            if not partner_gender or str(partner_gender).strip() == '':
+                missing_step4_fields.append(field_labels['partner_gender'])
+            if not partner_date_of_birth or str(partner_date_of_birth).strip() == '':
+                missing_step4_fields.append(field_labels['partner_date_of_birth'])
+            if not partner_date_of_joining or str(partner_date_of_joining).strip() == '':
+                missing_step4_fields.append(field_labels['partner_date_of_joining'])
             
-            if missing_step8_fields:
-                if len(missing_step8_fields) == 1:
-                    error_msg = f"Please provide the {missing_step8_fields[0]}. This employee information is required to complete your application."
-                elif len(missing_step8_fields) == 2:
-                    error_msg = f"Please provide the {missing_step8_fields[0]} and {missing_step8_fields[1]}. This employee information is required to complete your application."
+            if missing_step4_fields:
+                if len(missing_step4_fields) == 1:
+                    error_msg = f"Please provide the {missing_step4_fields[0]}. This partner information is required to complete your application."
+                elif len(missing_step4_fields) == 2:
+                    error_msg = f"Please provide the {missing_step4_fields[0]} and {missing_step4_fields[1]}. This partner information is required to complete your application."
                 else:
-                    last_field = missing_step8_fields.pop()
-                    error_msg = f"Please provide the following employee information: {', '.join(missing_step8_fields)}, and {last_field}. This information is required to complete your application."
+                    last_field = missing_step4_fields.pop()
+                    error_msg = f"Please provide the following partner information: {', '.join(missing_step4_fields)}, and {last_field}. This information is required to complete your application."
                 return {"success": False, "message": error_msg}
         existing_applications = frappe.get_all(
             "Franchise Signup Application",
@@ -2227,6 +2200,48 @@ def refresh_doc_modified(doc):
     if current_modified:
         doc._original_modified = current_modified
         doc.modified = current_modified
+
+def fix_file_urls_in_application(doc_name):
+    """Fix file URLs in the application to ensure they're properly accessible"""
+    try:
+        doc = frappe.get_doc("Franchise Signup Application", doc_name)
+        file_fields = [
+            'feedstock_payment_file',
+            'chain_of_custody_file',
+            'supplier_agreements_file',
+            'origin_certificates_file',
+            'transportation_records_file'
+        ]
+        
+        needs_save = False
+        for field in file_fields:
+            file_url = getattr(doc, field, None)
+            if file_url and isinstance(file_url, str):
+                # Check if URL needs fixing
+                if not file_url.startswith('http'):
+                    # Try to find the file by name
+                    file_name = file_url.split('/')[-1] if '/' in file_url else file_url
+                    file_docs = frappe.get_all(
+                        "File",
+                        filters={"file_name": file_name},
+                        fields=["name"]
+                    )
+                    
+                    if file_docs:
+                        file_doc = frappe.get_doc("File", file_docs[0].name)
+                        # Update with proper unique URL
+                        site_url = frappe.utils.get_url()
+                        new_url = f"{site_url}{file_doc.unique_url}"
+                        setattr(doc, field, new_url)
+                        needs_save = True
+                        frappe.log_error(f"Fixed file URL for {field}: {new_url}", "File URL Fix")
+        
+        if needs_save:
+            doc.save(ignore_permissions=True, ignore_version=True)
+            frappe.db.commit()
+            
+    except Exception as e:
+        frappe.log_error(f"Error fixing file URLs in application {doc_name}: {str(e)}", "File URL Fix Error")
 
 
 @frappe.whitelist(allow_guest=True)

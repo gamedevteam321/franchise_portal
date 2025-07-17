@@ -44,9 +44,8 @@ class FranchiseSignupApplication(Document):
 		if self.email:
 			self.validate_email_uniqueness()
 		
-		# Only validate Step 7 and Step 8 fields when application is being submitted/finalized
+		# Only validate Step 8 fields when application is being submitted/finalized
 		if self.status == "Submitted":
-			self.validate_step7_required_fields()
 			self.validate_step8_required_fields()
 	
 	def validate_email_uniqueness(self):
@@ -95,32 +94,15 @@ class FranchiseSignupApplication(Document):
 		if self.email_verified and not self.email_verified_at:
 			self.email_verified_at = now()
 	
-	def validate_step7_required_fields(self):
-		"""Validate required fields for Step 7 (Emissions & Energy Accounting) only when submitting"""
-		missing_fields = []
-		
-		if not self.calculated_total:
-			missing_fields.append("Calculated Total (kg CO₂e/tonne)")
-		
-		if not self.uncertainty_range:
-			missing_fields.append("Uncertainty Range (%)")
-		
-		if missing_fields:
-			if len(missing_fields) == 1:
-				error_msg = f"Please provide the {missing_fields[0]}. This information is required to complete your emissions accounting."
-			else:
-				error_msg = f"Please provide the following emissions data: {' and '.join(missing_fields)}. This information is required to complete your application."
-			
-			frappe.throw(error_msg, title="Emissions Data Required")
-	
+
 	def validate_step8_required_fields(self):
-		"""Validate required fields for Step 8 (Employee Details) only when submitting"""
+		"""Validate required fields for Step 8 (Franchise Partner Details) only when submitting"""
 		missing_fields = []
 		field_labels = {
-			'employee_first_name': 'Employee First Name',
-			'employee_gender': 'Employee Gender', 
-			'employee_date_of_birth': 'Employee Date of Birth',
-			'employee_date_of_joining': 'Employee Date of Joining'
+			'partner_first_name': 'Partner First Name',
+			'partner_gender': 'Partner Gender', 
+			'partner_date_of_birth': 'Partner Date of Birth',
+			'partner_date_of_joining': 'Partner Date of Joining'
 		}
 		
 		for field_name, field_label in field_labels.items():
@@ -129,14 +111,14 @@ class FranchiseSignupApplication(Document):
 		
 		if missing_fields:
 			if len(missing_fields) == 1:
-				error_msg = f"Please provide the {missing_fields[0]}. This employee information is required to complete your application."
+				error_msg = f"Please provide the {missing_fields[0]}. This partner information is required to complete your application."
 			elif len(missing_fields) == 2:
-				error_msg = f"Please provide the {missing_fields[0]} and {missing_fields[1]}. This employee information is required to complete your application."
+				error_msg = f"Please provide the {missing_fields[0]} and {missing_fields[1]}. This partner information is required to complete your application."
 			else:
 				last_field = missing_fields.pop()
-				error_msg = f"Please provide the following employee information: {', '.join(missing_fields)}, and {last_field}. This information is required to complete your application."
+				error_msg = f"Please provide the following partner information: {', '.join(missing_fields)}, and {last_field}. This information is required to complete your application."
 			
-			frappe.throw(error_msg, title="Employee Information Required")
+			frappe.throw(error_msg, title="Partner Information Required")
 	
 	def on_submit(self):
 		"""Actions to perform when the application is submitted"""
@@ -431,9 +413,9 @@ class FranchiseSignupApplication(Document):
 			self._ensure_employee_master_data(company_name)
 			
 			# Get employee data from Step 8 fields
-			first_name = getattr(self, 'employee_first_name', None) or getattr(self, 'contact_person', email.split('@')[0])
-			middle_name = getattr(self, 'employee_middle_name', '')
-			last_name = getattr(self, 'employee_last_name', '')
+			first_name = getattr(self, 'partner_first_name', None) or getattr(self, 'contact_person', email.split('@')[0])
+			middle_name = getattr(self, 'partner_middle_name', '')
+			last_name = getattr(self, 'partner_last_name', '')
 			
 			# Build full employee name
 			employee_name_parts = [first_name]
@@ -450,21 +432,21 @@ class FranchiseSignupApplication(Document):
 				"middle_name": middle_name,
 				"last_name": last_name,
 				"employee_name": employee_name,
-				"gender": getattr(self, 'employee_gender', 'Prefer not to say'),
-				"date_of_birth": getattr(self, 'employee_date_of_birth', None),
-				"date_of_joining": getattr(self, 'employee_date_of_joining', frappe.utils.today()),
+				"gender": getattr(self, 'partner_gender', 'Prefer not to say'),
+				"date_of_birth": getattr(self, 'partner_date_of_birth', None),
+				"date_of_joining": getattr(self, 'partner_date_of_joining', frappe.utils.today()),
 				"company": company_name,
 				"status": 'Active',  # Default to Active since status field is removed from form
-				"salutation": getattr(self, 'employee_salutation', ''),
+				"salutation": getattr(self, 'partner_salutation', ''),
 				"user_id": email,
-				"personal_email": getattr(self, 'employee_personal_email', email),
+				"personal_email": getattr(self, 'partner_personal_email', email),
 				"company_email": email,
-				"cell_number": getattr(self, 'employee_phone', getattr(self, 'phone_number', '')),
-				"designation": getattr(self, 'employee_designation', 'Franchise Partner'),
-				"department": getattr(self, 'employee_department', 'Management'),
-				"branch": getattr(self, 'employee_branch', ''),
-				"reports_to": getattr(self, 'employee_reports_to', ''),
-				"grade": getattr(self, 'employee_grade', ''),
+				"cell_number": getattr(self, 'partner_phone', getattr(self, 'phone_number', '')),
+				"designation": getattr(self, 'partner_designation', 'Franchise Partner'),
+				"department": getattr(self, 'partner_department', 'Management'),
+				"branch": getattr(self, 'partner_branch', ''),
+				"reports_to": getattr(self, 'partner_reports_to', ''),
+				"grade": getattr(self, 'partner_grade', ''),
 				"employee_number": frappe.generate_hash()[:8].upper(),  # Generate unique employee number
 			})
 			
@@ -487,7 +469,7 @@ class FranchiseSignupApplication(Document):
 		"""Ensure required master data exists for Employee creation"""
 		try:
 			# Ensure Department exists
-			department_name = getattr(self, 'employee_department', 'Management')
+			department_name = getattr(self, 'partner_department', 'Management')
 			if not frappe.db.exists("Department", department_name):
 				dept_doc = frappe.get_doc({
 					"doctype": "Department",
@@ -499,7 +481,7 @@ class FranchiseSignupApplication(Document):
 				frappe.logger().info(f"Created Department: {department_name} for {company_name}")
 			
 			# Ensure Designation exists
-			designation_name = getattr(self, 'employee_designation', 'Franchise Partner')
+			designation_name = getattr(self, 'partner_designation', 'Franchise Partner')
 			if not frappe.db.exists("Designation", designation_name):
 				desig_doc = frappe.get_doc({
 					"doctype": "Designation",
@@ -564,8 +546,8 @@ class FranchiseSignupApplication(Document):
 								<td style="padding: 8px 0;">{user_email}</td>
 							</tr>
 							<tr>
-								<td style="padding: 8px 0; font-weight: bold;">Employee Name:</td>
-								<td style="padding: 8px 0;">{getattr(self, 'employee_first_name', 'N/A')} {getattr(self, 'employee_last_name', '')}</td>
+								<td style="padding: 8px 0; font-weight: bold;">Partner Name:</td>
+								<td style="padding: 8px 0;">{getattr(self, 'partner_first_name', 'N/A')} {getattr(self, 'partner_last_name', '')}</td>
 							</tr>
 							<tr>
 								<td style="padding: 8px 0; font-weight: bold;">Roles Assigned:</td>
@@ -605,9 +587,9 @@ class FranchiseSignupApplication(Document):
 				<p><strong>Company Created:</strong> {company_name}</p>
 				<p><strong>Company Hierarchy:</strong> Nexchar Ventures → {getattr(self, 'project_type', 'Unknown')} → {company_name}</p>
 				<p><strong>User Created:</strong> {user_email}</p>
-				<p><strong>Employee Name:</strong> {getattr(self, 'employee_first_name', 'N/A')} {getattr(self, 'employee_last_name', '')}</p>
-				<p><strong>Employee Designation:</strong> {getattr(self, 'employee_designation', 'Franchise Partner')}</p>
-				<p><strong>Employee Department:</strong> {getattr(self, 'employee_department', 'Management')}</p>
+				<p><strong>Partner Name:</strong> {getattr(self, 'partner_first_name', 'N/A')} {getattr(self, 'partner_last_name', '')}</p>
+				<p><strong>Partner Designation:</strong> {getattr(self, 'partner_designation', 'Franchise Partner')}</p>
+				<p><strong>Partner Department:</strong> {getattr(self, 'partner_department', 'Management')}</p>
 				<p><strong>Roles Assigned:</strong> Franchise Partner, Employee, System Manager</p>
 				<p><strong>Approved By:</strong> {frappe.get_value('User', self.approved_by, 'full_name') or self.approved_by}</p>
 				<p><strong>Contact Email:</strong> {self.email}</p>
