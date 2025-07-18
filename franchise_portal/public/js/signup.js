@@ -194,8 +194,10 @@ function handleEmailVerification(token) {
                     sessionStorage.setItem('franchise_application_id', applicationId);
                 }
                 
-                // Populate form with saved data
-                populateFormData(applicationData);
+                // Populate form with saved data after a short delay to ensure DOM is ready
+                setTimeout(() => {
+                    populateFormData(applicationData);
+                }, 500);
                 
                 // Show current step
                 showStep(currentStep);
@@ -1439,8 +1441,10 @@ function recoverFormDataAfterRefresh() {
                 // Merge recovered data into applicationData
                 Object.assign(window.applicationData, formData);
                 
-                // Populate form fields with recovered data
-                populateFormData(formData);
+                // Populate form fields with recovered data after a short delay to ensure DOM is ready
+                setTimeout(() => {
+                    populateFormData(formData);
+                }, 500);
                 
                 // Show recovery success message
                 frappe.show_alert({
@@ -1689,7 +1693,25 @@ function populateFormData(data) {
         console.log('No current_use_disposal_method data found');
     }
 
-    // 5. Step 7: "Other" fields (fuel_type, drying_method, energy_source)
+    // 5. Step 3: Contaminants Present (specific debugging)
+    if (data.contaminants_present) {
+        console.log('Processing contaminants_present:', data.contaminants_present);
+        const contaminantsField = document.getElementById('contaminants_present');
+        if (contaminantsField) {
+            contaminantsField.value = data.contaminants_present;
+            console.log('Set contaminants_present to:', data.contaminants_present);
+            // Trigger change event to show/hide "Other" field if needed
+            if (typeof window.toggleOtherContaminants === 'function') {
+                window.toggleOtherContaminants();
+            }
+        } else {
+            console.log('contaminants_present field not found in DOM');
+        }
+    } else {
+        console.log('No contaminants_present data found');
+    }
+
+    // 6. Step 7: "Other" fields (fuel_type, drying_method, energy_source)
     ['fuel_type', 'drying_method', 'energy_source'].forEach(fieldKey => {
         if (data[fieldKey]) {
             const field = document.getElementById(fieldKey);
@@ -1708,9 +1730,9 @@ function populateFormData(data) {
         }
     });
 
-    // 6. Any additional custom logic for other dynamic/multi fields can be added here
+    // 7. Any additional custom logic for other dynamic/multi fields can be added here
 
-    // 7. File upload fields - restore uploaded files
+    // 8. File upload fields - restore uploaded files
     const fileFields = ['feedstock_payment_file', 'chain_of_custody_file', 'supplier_agreements_file', 'origin_certificates_file', 'transportation_records_file'];
     fileFields.forEach(fieldName => {
         const fileInput = document.getElementById(fieldName);
@@ -1761,7 +1783,7 @@ function populateFormData(data) {
         }
     });
 
-    // 8. Trigger any UI updates or calculations needed after populating
+    // 9. Trigger any UI updates or calculations needed after populating
     if (typeof updateProgressIndicator === 'function') updateProgressIndicator();
 }
 

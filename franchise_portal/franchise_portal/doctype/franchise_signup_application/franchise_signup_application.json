@@ -418,7 +418,7 @@
    "fieldname": "contaminants_present",
    "fieldtype": "Select",
    "label": "Contaminants Present",
-   "options": "Yes\nNo"
+   "options": "None\nPlastics\nMetals\nSoil\nOther"
   },
   {
    "fieldname": "other_contaminants",
@@ -440,7 +440,7 @@
    "fieldname": "plant_operation_schedule",
    "fieldtype": "Select",
    "label": "Plant Operation Schedule",
-   "options": "24/7\n16 hours/day\n8 hours/day\nSeasonal"
+   "options": "Year-round\nSeasonal"
   },
   {
    "fieldname": "column_break_vol_1",
@@ -458,9 +458,8 @@
   },
   {
    "fieldname": "current_use_disposal_method",
-   "fieldtype": "Select",
-   "label": "Current Use/Disposal Method",
-   "options": "Landfill\nIncineration\nComposting\nAnimal Feed\nOther"
+   "fieldtype": "Small Text",
+   "label": "Current Use/Disposal Method"
   },
   {
    "fieldname": "section_break_21",
