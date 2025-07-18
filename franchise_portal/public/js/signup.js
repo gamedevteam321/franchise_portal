@@ -263,8 +263,8 @@ function nextStep(step) {
         // For verified users or steps 2+
         console.log('Validation passed, saving step data...');
         
-            // Special handling for the final step (step 5)
-    if (step === 5) {
+            // Special handling for the final step (step 4)
+    if (step === 4) {
             console.log('Final step reached, submitting application...');
             submitApplication();
             return;
@@ -272,7 +272,12 @@ function nextStep(step) {
         
         saveStepData(step, () => {
             console.log('Step data saved successfully, moving to next step');
-            setCurrentStep(step + 1);
+            // Special handling for step 3 to go to step 4 (employee details)
+            if (step === 3) {
+                setCurrentStep(4);
+            } else {
+                setCurrentStep(step + 1);
+            }
             
             // current_step is already updated in saveStepData, just log for verification
             console.log('Current step updated to:', currentStep);
@@ -368,19 +373,19 @@ function showStep(stepNumber) {
                 if (paymentField && paymentField.value && paymentField.value !== 'No Feedstock Payment') {
                     toggleFileUpload('feedstock_payment', 'feedstock_payment_file_group');
                 }
-            } else if (stepNumber === 4) {
-                // Check Step 4 attachment fields
-                // Use correct field to file group mappings instead of automatic generation
-                const step4FileMapping = {
+            } else if (stepNumber === 3) {
+                // Check Step 3 attachment fields (merged from step 4)
+                const step3FileMapping = {
+                    'feedstock_payment_type': 'payment_file_section',
                     'chain_of_custody_protocol': 'chain_of_custody_file_group',
                     'supplier_agreements': 'supplier_agreements_file_group', 
                     'origin_certificates': 'origin_certificates_file_group',
                     'transportation_records': 'transportation_records_file_group'
                 };
                 
-                Object.keys(step4FileMapping).forEach(fieldId => {
+                Object.keys(step3FileMapping).forEach(fieldId => {
                     const field = document.getElementById(fieldId);
-                    const fileGroupId = step4FileMapping[fieldId];
+                    const fileGroupId = step3FileMapping[fieldId];
                     if (field && field.value === 'Attached') {
                         console.log(`Triggering file upload for ${fieldId} -> ${fileGroupId}`);
                         toggleFileUpload(fieldId, fileGroupId);
@@ -394,7 +399,7 @@ function showStep(stepNumber) {
 }
 
 function updateProgressIndicator() {
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 4; i++) {
         const progressElement = document.getElementById(`progress-${i}`);
         if (progressElement) {
             if (i < currentStep) {
@@ -432,7 +437,7 @@ function validateStep(step) {
         3: [
             { id: 'primary_feedstock_category', name: 'Primary Feedstock Category' }
         ],
-        5: [
+        4: [
             { id: 'employee_first_name', name: 'Employee First Name' },
             { id: 'employee_gender', name: 'Employee Gender' },
             { id: 'employee_date_of_birth', name: 'Employee Date of Birth' },
@@ -584,44 +589,9 @@ function getStepData(step) {
         });
     }
     
-    // Special handling for Step 3 - Feedstock Description & File Uploads
+    // Special handling for Step 3 - Feedstock & Supply Chain (merged from steps 3 & 4)
     if (step === 3) {
-        console.log('Processing Step 3 feedstock and file upload fields...');
-        
-        // FIRST: Extract file URLs before sanitization removes file objects
-        const step3FileFields = ['feedstock_payment_file'];
-        step3FileFields.forEach(fieldName => {
-            // Check for file URL from uploaded files
-            const fileInput = form.querySelector(`input[name="${fieldName}"]`);
-            if (fileInput && fileInput.getAttribute('data-file-url')) {
-                data[fieldName] = fileInput.getAttribute('data-file-url');
-                console.log(`Found file URL for ${fieldName}: ${data[fieldName]}`);
-            } else {
-                // Remove file objects if no URL found
-                if (data[fieldName] && typeof data[fieldName] === 'object') {
-                    console.log(`Removing file object for ${fieldName} (no URL found)`);
-                    delete data[fieldName];
-                }
-            }
-        });
-        
-        // SECOND: Sanitize all other data values
-        Object.keys(data).forEach(key => {
-            if (!step3FileFields.includes(key)) { // Skip file fields that we already processed
-                if (data[key] === null || data[key] === undefined) {
-                    data[key] = '';
-                } else {
-                    data[key] = String(data[key]);
-                }
-            }
-        });
-        
-        console.log('Step 3 processed data:', data);
-    }
-    
-    // Special handling for Step 4 - Generation Locations
-    if (step === 4) {
-        console.log('Processing Step 4 special fields...');
+        console.log('Processing Step 3 feedstock and supply chain fields...');
         
         // Handle source_type checkboxes
         const sourceTypeCheckboxes = document.querySelectorAll('input[name="source_type"]:checked');
@@ -692,8 +662,8 @@ function getStepData(step) {
         });
         
         // FIRST: Extract file URLs before sanitization removes file objects
-        const step4FileFields = ['chain_of_custody_file', 'supplier_agreements_file', 'origin_certificates_file', 'transportation_records_file'];
-        step4FileFields.forEach(fieldName => {
+        const step3FileFields = ['feedstock_payment_file', 'chain_of_custody_file', 'supplier_agreements_file', 'origin_certificates_file', 'transportation_records_file'];
+        step3FileFields.forEach(fieldName => {
             // Check for file URL from uploaded files
             const fileInput = form.querySelector(`input[name="${fieldName}"]`);
             if (fileInput && fileInput.getAttribute('data-file-url')) {
@@ -708,9 +678,9 @@ function getStepData(step) {
             }
         });
         
-        // SECOND: Sanitize all other Step 4 data values
+        // SECOND: Sanitize all other Step 3 data values
         Object.keys(data).forEach(key => {
-            if (key !== 'generation_locations' && !step4FileFields.includes(key)) { // Skip generation_locations and file fields
+            if (key !== 'generation_locations' && !step3FileFields.includes(key)) { // Skip generation_locations and file fields
                 if (data[key] === null || data[key] === undefined) {
                     data[key] = '';
                 } else if (typeof data[key] === 'object') {
@@ -721,13 +691,17 @@ function getStepData(step) {
                 }
             }
         });
+        
+        console.log('Step 3 processed data:', data);
     }
     
-    // Special handling for Step 5 - Monitoring & Measurement (for debugging and validation)
-    if (step === 5) {
-        console.log('Processing Step 5 monitoring & measurement fields...');
+
+    
+    // Special handling for Step 4 - Employee Details (for debugging and validation)
+    if (step === 4) {
+        console.log('Processing Step 4 employee details fields...');
         
-        // Sanitize all Step 5 data values
+        // Sanitize all Step 4 data values
         Object.keys(data).forEach(key => {
             if (data[key] === null || data[key] === undefined) {
                 data[key] = '';
@@ -739,20 +713,14 @@ function getStepData(step) {
             }
         });
         
-        // Ensure testing_standards_other is only included if testing_standards_used is "Other"
-        const testingStandards = data['testing_standards_used'];
-        if (testingStandards !== 'Other') {
-            data['testing_standards_other'] = '';
-        }
-        
-        console.log('Step 5 processed data:', data);
+        console.log('Step 3 processed data:', data);
     }
     
-    // Special handling for Step 5 - Employee Details (basic sanitization)
-    if (step === 5) {
-        console.log('Processing Step 5 employee details fields...');
+    // Special handling for Step 4 - Employee Details (basic sanitization)
+    if (step === 4) {
+        console.log('Processing Step 4 employee details fields...');
         
-        // Sanitize all Step 5 data values
+        // Sanitize all Step 4 data values
         Object.keys(data).forEach(key => {
             if (data[key] === null || data[key] === undefined) {
                 data[key] = '';
@@ -764,7 +732,7 @@ function getStepData(step) {
             }
         });
         
-        console.log('Step 5 processed data:', data);
+        console.log('Step 4 processed data:', data);
     }
     
     return data;
@@ -1269,23 +1237,21 @@ function autoSaveStep() {
 }
 
 function submitApplication() {
-    if (!validateStep(5)) {
+    if (!validateStep(4)) {
         return;
     }
     showLoading(true);
-    // Collect data from ALL steps (1-5) before submitting
+    // Collect data from ALL steps (1-4) before submitting
     const step1Data = getStepData(1);
     const step2Data = getStepData(2);
     const step3Data = getStepData(3);
     const step4Data = getStepData(4);
-    const step5Data = getStepData(5);
     // Merge all step data into one object
     const finalData = {
         ...step1Data,
         ...step2Data,
         ...step3Data,
-        ...step4Data,
-        ...step5Data
+        ...step4Data
     };
     // Always include email from step 1
     if (!finalData.email) {
@@ -1300,7 +1266,7 @@ function submitApplication() {
             args: { 
                 token: verificationToken,
                 data: finalData,
-                step: 5  // Final submission step
+                step: 4  // Final submission step
             },
             callback: function(response) {
                 showLoading(false);
@@ -1463,7 +1429,7 @@ function handleVersionConflictError() {
     const currentFormData = {};
     try {
         // Collect current step data
-        const currentStepData = getStepData(5); // Get step 5 data since we're submitting
+        const currentStepData = getStepData(4); // Get step 4 data since we're submitting
         Object.assign(currentFormData, currentStepData);
         
         // Store in sessionStorage for recovery after refresh
@@ -2181,7 +2147,7 @@ function calculateCHRatio() {
     }
 }
 
-// Step 5: Toggle testing standards other field
+// Toggle testing standards other field (legacy function)
 function toggleTestingStandardsOther() {
     const testingStandards = document.getElementById('testing_standards_used').value;
     const otherGroup = document.getElementById('testing_standards_other_group');
@@ -2580,75 +2546,61 @@ window.debugAddTestLocation = function() {
     }
 }; 
 
-// Add debug function to test Step 5 data collection
-window.debugStep5Data = function() {
-    console.log('=== DEBUG: Step 5 Data Collection ===');
+// Add debug function to test Step 4 data collection (Employee Details)
+window.debugStep4Data = function() {
+    console.log('=== DEBUG: Step 4 Data Collection ===');
     
-    // Fill Step 5 with test data
-    const step5Fields = {
-        'electricity_meter_id': 'METER-001',
-        'meter_type_model': 'Smart Meter Pro 2024',
-        'monitoring_interval': 'Hourly',
-        'last_calibration_date': '2024-01-15',
-        'next_calibration_due': '2025-01-15',
-        'weighbridge_id': 'WB-001',
-        'capacity': '50.00',
-        'accuracy_rating': '99.95',
-        'continuous_recording': 'Yes',
-        'data_logging_system': 'Cloud Logger v2.0',
-        'testing_laboratory_name': 'Test Lab Inc.',
-        'lab_accreditation_number': 'ACC-12345',
-        'testing_standards_used': 'ISO',
-        'analysis_frequency': 'Daily',
-        'automatic_data_upload': 'Yes',
-        'data_storage_method': 'Cloud',
-        'backup_system': 'Daily Cloud Backup',
-        'retention_period': '7'
+    // Fill Step 4 with test data
+    const step4Fields = {
+        'employee_first_name': 'John',
+        'employee_gender': 'Male',
+        'employee_date_of_birth': '1990-01-01',
+        'employee_date_of_joining': '2024-01-01'
     };
     
     // Fill the form
-    Object.keys(step5Fields).forEach(fieldId => {
+    Object.keys(step4Fields).forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
-            field.value = step5Fields[fieldId];
-            console.log(`Set ${fieldId} = ${step5Fields[fieldId]}`);
+            field.value = step4Fields[fieldId];
+            console.log(`Set ${fieldId} = ${step4Fields[fieldId]}`);
         } else {
             console.warn(`Field ${fieldId} not found`);
         }
     });
     
     // Test data collection
-    console.log('Testing getStepData(5):');
-    const collectedData = getStepData(5);
+    console.log('Testing getStepData(4):');
+    const collectedData = getStepData(4);
     console.log('Collected data:', collectedData);
     
     // Show summary
-    console.log('=== Step 5 Data Summary ===');
-    Object.keys(step5Fields).forEach(fieldId => {
-        const expectedValue = step5Fields[fieldId];
+    console.log('=== Step 4 Data Summary ===');
+    Object.keys(step4Fields).forEach(fieldId => {
+        const expectedValue = step4Fields[fieldId];
         const actualValue = collectedData[fieldId];
         const match = expectedValue === actualValue;
         console.log(`${fieldId}: Expected="${expectedValue}", Actual="${actualValue}", Match=${match}`);
     });
 };
 
-// Debug function to navigate directly to Step 5
-window.goToStep5 = function() {
-    console.log('=== DEBUG: Forcing navigation to Step 5 ===');
-    setCurrentStep(5);
-    showStep(5);
+// Debug function to navigate directly to Step 4
+window.goToStep4 = function() {
+    console.log('=== DEBUG: Forcing navigation to Step 4 ===');
+    setCurrentStep(4);
+    showStep(4);
     updateProgressIndicator();
-    console.log('Should now be showing Step 5');
+    console.log('Should now be showing Step 4');
 };
 
-// Debug function to test complete 5-step flow
-window.testComplete5StepFlow = function() {
-    console.log('=== DEBUG: Testing Complete 5-Step Data Collection ===');
+// Debug function to test complete 4-step flow
+window.testComplete4StepFlow = function() {
+    console.log('=== DEBUG: Testing Complete 4-Step Data Collection ===');
     
     // Collect data from all steps
     const allData = {};
     
-    for (let step = 1; step <= 5; step++) {
+    for (let step = 1; step <= 4; step++) {
         console.log(`Collecting data from step ${step}:`);
         const stepData = getStepData(step);
         console.log(`Step ${step} data:`, stepData);
@@ -2661,16 +2613,14 @@ window.testComplete5StepFlow = function() {
     // Count fields from each step
     const step1Fields = ['company_name', 'contact_person', 'email', 'phone_number'];
     const step2Fields = ['project_name', 'project_city', 'project_state', 'gps_coordinates'];
-    const step3Fields = ['primary_feedstock_category', 'annual_volume_available', 'heating_value'];
-    const step4Fields = ['source_type', 'generation_locations', 'collection_method'];
-    const step5Fields = ['electricity_meter_id', 'weighbridge_id', 'testing_laboratory_name', 'automatic_data_upload'];
+    const step3Fields = ['primary_feedstock_category', 'annual_volume_available', 'heating_value', 'source_type', 'generation_locations', 'collection_method'];
+    const step4Fields = ['employee_first_name', 'employee_gender', 'employee_date_of_birth', 'employee_date_of_joining'];
     
     console.log('=== FIELD COUNT SUMMARY ===');
     console.log('Step 1 fields found:', step1Fields.filter(f => allData[f]).length, '/', step1Fields.length);
     console.log('Step 2 fields found:', step2Fields.filter(f => allData[f]).length, '/', step2Fields.length);
     console.log('Step 3 fields found:', step3Fields.filter(f => allData[f]).length, '/', step3Fields.length);
     console.log('Step 4 fields found:', step4Fields.filter(f => allData[f]).length, '/', step4Fields.length);
-    console.log('Step 5 fields found:', step5Fields.filter(f => allData[f]).length, '/', step5Fields.length);
     
     return allData;
 };

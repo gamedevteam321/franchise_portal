@@ -157,7 +157,7 @@ def save_step_with_verification(token, data, step):
         # Convert step to integer (it comes as string from frontend)
         try:
             step = int(step)
-            if step < 1 or step > 8:
+            if step < 1 or step > 4:
                 step = 1
         except (ValueError, TypeError):
             step = 1
@@ -218,8 +218,8 @@ def save_step_with_verification(token, data, step):
                     if not updates.get('email_verified_at'):
                         updates['email_verified_at'] = now()
                 
-                # Handle generation_locations on step 4 and final step to avoid version conflicts
-                if (step == 4 or step == 5 or step == 7) and 'generation_locations' in session_data['data'] and isinstance(session_data['data']['generation_locations'], list):
+                # Handle generation_locations on step 3 and final step to avoid version conflicts
+                if (step == 3 or step == 4) and 'generation_locations' in session_data['data'] and isinstance(session_data['data']['generation_locations'], list):
                     # Add debug logging
                     debug_file = os.path.join(frappe.get_site_path(), 'debug_save.txt')
                     with open(debug_file, 'a') as f:
@@ -260,8 +260,8 @@ def save_step_with_verification(token, data, step):
                 
                 frappe.db.commit()
         
-        # If this is the final step (5), finalize the application
-        if step >= 5:
+        # If this is the final step (4), finalize the application
+        if step >= 4:
             finalize_result = finalize_application(session_data, token, step)
             if finalize_result.get("success"):
                 return finalize_result
@@ -326,13 +326,13 @@ def submit_application(email, data=None):
             for key, value in data.items():
                 if key != 'generation_locations' and key in valid_fields:
                     updates[key] = value
-        # Validate Step 5 (Employee Details) required fields
+        # Validate Step 4 (Employee Details) required fields
         employee_first_name = data.get('employee_first_name') if data else None
         employee_gender = data.get('employee_gender') if data else None
         employee_date_of_birth = data.get('employee_date_of_birth') if data else None
         employee_date_of_joining = data.get('employee_date_of_joining') if data else None
         
-        missing_step5_fields = []
+        missing_step4_fields = []
         field_labels = {
             'employee_first_name': 'Employee First Name',
             'employee_gender': 'Employee Gender',
@@ -341,22 +341,22 @@ def submit_application(email, data=None):
         }
         
         if not employee_first_name or str(employee_first_name).strip() == '':
-            missing_step5_fields.append(field_labels['employee_first_name'])
+            missing_step4_fields.append(field_labels['employee_first_name'])
         if not employee_gender or str(employee_gender).strip() == '':
-            missing_step5_fields.append(field_labels['employee_gender'])
+            missing_step4_fields.append(field_labels['employee_gender'])
         if not employee_date_of_birth or str(employee_date_of_birth).strip() == '':
-            missing_step5_fields.append(field_labels['employee_date_of_birth'])
+            missing_step4_fields.append(field_labels['employee_date_of_birth'])
         if not employee_date_of_joining or str(employee_date_of_joining).strip() == '':
-            missing_step5_fields.append(field_labels['employee_date_of_joining'])
+            missing_step4_fields.append(field_labels['employee_date_of_joining'])
         
-        if missing_step5_fields:
-            if len(missing_step5_fields) == 1:
-                error_msg = f"Please provide the {missing_step5_fields[0]}. This employee information is required to complete your application."
-            elif len(missing_step5_fields) == 2:
-                error_msg = f"Please provide the {missing_step5_fields[0]} and {missing_step5_fields[1]}. This employee information is required to complete your application."
+        if missing_step4_fields:
+            if len(missing_step4_fields) == 1:
+                error_msg = f"Please provide the {missing_step4_fields[0]}. This employee information is required to complete your application."
+            elif len(missing_step4_fields) == 2:
+                error_msg = f"Please provide the {missing_step4_fields[0]} and {missing_step4_fields[1]}. This employee information is required to complete your application."
             else:
-                last_field = missing_step5_fields.pop()
-                error_msg = f"Please provide the following employee information: {', '.join(missing_step5_fields)}, and {last_field}. This information is required to complete your application."
+                last_field = missing_step4_fields.pop()
+                error_msg = f"Please provide the following employee information: {', '.join(missing_step4_fields)}, and {last_field}. This information is required to complete your application."
             return {"success": False, "message": error_msg}
         
         updates['status'] = "Submitted"
@@ -898,10 +898,9 @@ def send_reapplication_verification_email(email, company_name, verification_url,
                 <ul>
                     <li>Step 1: Supplier Information</li>
                     <li>Step 2: Project Information</li>
-                    <li>Step 3: Feedstock Description</li>
-                    <li>Step 4: Origin, Sourcing & Supply Chain</li>
+                                    <li>Step 3: Feedstock & Supply Chain</li>
                     
-                    <li>Step 5: Employee Details</li>
+                    <li>Step 4: Employee Details</li>
                 </ul>
                 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -1038,14 +1037,14 @@ def finalize_application(session_data, token, current_step=8):
             annual_volume_float = 0
         if annual_volume_float <= 0:
             return {"success": False, "message": "Annual Volume Available is required and must be greater than 0"}
-        if current_step >= 5:
-            # Validate Step 5 (Employee Details) required fields
+        if current_step >= 4:
+            # Validate Step 4 (Employee Details) required fields
             employee_first_name = application_data.get('employee_first_name')
             employee_gender = application_data.get('employee_gender')
             employee_date_of_birth = application_data.get('employee_date_of_birth')
             employee_date_of_joining = application_data.get('employee_date_of_joining')
             
-            missing_step5_fields = []
+            missing_step4_fields = []
             field_labels = {
                 'employee_first_name': 'Employee First Name',
                 'employee_gender': 'Employee Gender',
@@ -1054,22 +1053,22 @@ def finalize_application(session_data, token, current_step=8):
             }
             
             if not employee_first_name or str(employee_first_name).strip() == '':
-                missing_step5_fields.append(field_labels['employee_first_name'])
+                missing_step4_fields.append(field_labels['employee_first_name'])
             if not employee_gender or str(employee_gender).strip() == '':
-                missing_step5_fields.append(field_labels['employee_gender'])
+                missing_step4_fields.append(field_labels['employee_gender'])
             if not employee_date_of_birth or str(employee_date_of_birth).strip() == '':
-                missing_step5_fields.append(field_labels['employee_date_of_birth'])
+                missing_step4_fields.append(field_labels['employee_date_of_birth'])
             if not employee_date_of_joining or str(employee_date_of_joining).strip() == '':
-                missing_step5_fields.append(field_labels['employee_date_of_joining'])
+                missing_step4_fields.append(field_labels['employee_date_of_joining'])
             
-            if missing_step5_fields:
-                if len(missing_step5_fields) == 1:
-                    error_msg = f"Please provide the {missing_step5_fields[0]}. This employee information is required to complete your application."
-                elif len(missing_step5_fields) == 2:
-                    error_msg = f"Please provide the {missing_step5_fields[0]} and {missing_step5_fields[1]}. This employee information is required to complete your application."
+            if missing_step4_fields:
+                if len(missing_step4_fields) == 1:
+                    error_msg = f"Please provide the {missing_step4_fields[0]}. This employee information is required to complete your application."
+                elif len(missing_step4_fields) == 2:
+                    error_msg = f"Please provide the {missing_step4_fields[0]} and {missing_step4_fields[1]}. This employee information is required to complete your application."
                 else:
-                    last_field = missing_step5_fields.pop()
-                    error_msg = f"Please provide the following employee information: {', '.join(missing_step5_fields)}, and {last_field}. This information is required to complete your application."
+                    last_field = missing_step4_fields.pop()
+                    error_msg = f"Please provide the following employee information: {', '.join(missing_step4_fields)}, and {last_field}. This information is required to complete your application."
                 return {"success": False, "message": error_msg}
         existing_applications = frappe.get_all(
             "Franchise Signup Application",

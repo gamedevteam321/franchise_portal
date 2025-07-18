@@ -629,76 +629,6 @@ div[id^="mapModal_location_"] {
     margin-top: 24px !important;
 }
 
-/* Enhanced form styling for complex Step 3 - AGGRESSIVE FIX */
-body .franchise-signup-container .form-container .form-step#step3 {
-    max-height: none !important;
-    overflow-y: visible !important;
-    overflow-x: visible !important;
-    padding: 30px !important;
-    padding-left: 50px !important;
-    padding-right: 50px !important;
-    margin: 0 !important;
-    margin-left: 0 !important;
-    box-sizing: border-box !important;
-    width: calc(100% - 20px) !important;
-    min-width: 100% !important;
-    position: relative !important;
-    left: 0 !important;
-    transform: none !important;
-}
-
-/* Force proper display for Step 3 elements */
-
-
-/* Ensure form-container works properly with Step 3 */
-body .franchise-signup-container .form-container:has(#step3.active),
-body .franchise-signup-container .form-container:has(.form-step#step3:not([style*="display: none"])) {
-    overflow: visible !important;
-    max-height: none !important;
-    padding-left: 50px !important;
-}
-
-/* Ensure Step 3 sections have proper spacing */
-body .franchise-signup-container .form-container .form-step#step3 .section-header {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: 0 !important;
-    position: relative !important;
-    left: 0 !important;
-}
-
-body .franchise-signup-container .form-container .form-step#step3 .form-row,
-body .franchise-signup-container .form-container .form-step#step3 .form-group {
-    margin-left: 0 !important;
-    padding-left: 0 !important;
-    position: relative !important;
-    left: 0 !important;
-}
-
-/* Debug - Add visible border to Step 3 to see the boundaries */
-body .franchise-signup-container .form-container .form-step#step3 {
-    border: none !important;
-    background-color: transparent !important;
-}
-
-.form-step#step3::-webkit-scrollbar {
-    width: 6px;
-}
-
-.form-step#step3::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-}
-
-.form-step#step3::-webkit-scrollbar-thumb {
-    background: #667eea;
-    border-radius: 3px;
-}
-
-.form-step#step3::-webkit-scrollbar-thumb:hover {
-    background: #5a6fd8;
-}
-
 .generation-location-row {
     display: flex !important;
     align-items: center !important;
@@ -1371,7 +1301,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
 <div class="franchise-signup-container">
     <div class="step-header">
         <h2>Franchise Application Portal</h2>
-        <p style="color: #636e72; margin: 8px 0 0 0; font-size: 16px;">Complete your franchise application in 8 easy steps</p>
+        <p style="color: #636e72; margin: 8px 0 0 0; font-size: 16px;">Complete your franchise application in 4 easy steps</p>
     </div>
     <div class="step-progress" id="step-progress">
         <div class="progress-step active" id="progress-1">
@@ -1381,13 +1311,10 @@ body .franchise-signup-container .form-container .form-step#step3 {
             <strong>Step 2</strong><br>Project Information
         </div>
         <div class="progress-step inactive" id="progress-3">
-            <strong>Step 3</strong><br>Feedstock Description
+            <strong>Step 3</strong><br>Feedstock & Supply Chain
         </div>
         <div class="progress-step inactive" id="progress-4">
-            <strong>Step 4</strong><br>Origin, Sourcing & Supply Chain
-        </div>
-        <div class="progress-step inactive" id="progress-5">
-            <strong>Step 5</strong><br>Employee Details
+            <strong>Step 4</strong><br>Employee Details
         </div>
     </div>
     <div class="form-container" id="form-container">
@@ -1504,9 +1431,9 @@ body .franchise-signup-container .form-container .form-step#step3 {
             </div>
         </form>
 
-        <!-- Step 3: Feedstock Description & Classification -->
+        <!-- Step 3: Feedstock & Supply Chain -->
         <form id="step3" class="form-step" >
-            <h3>Step 3: Feedstock Description & Classification</h3>
+            <h3>Step 3: Feedstock & Supply Chain</h3>
             
             <!-- Basic Information Section -->
             <div class="section-header">
@@ -1721,19 +1648,11 @@ body .franchise-signup-container .form-container .form-step#step3 {
                 <textarea id="current_use_disposal_method" name="current_use_disposal_method" rows="3" placeholder="Describe how the feedstock is currently being used or disposed of"></textarea>
             </div>
             
-            <div class="button-group">
-                <button type="button" class="btn btn-secondary" onclick="previousStep(3)">Previous</button>
-                <button type="button" class="btn btn-primary" onclick="nextStep(3)">Next Step</button>
+            <!-- Origin, Sourcing & Supply Chain Section -->
+            <div class="section-header">
+                <h4>🌍 Origin, Sourcing & Supply Chain</h4>
             </div>
             
-        </form>
-
-        <!-- Step 4: Origin, Sourcing & Supply Chain -->
-        <form id="step4" class="form-step" >
-            <h3>Step 4: Origin, Sourcing & Supply Chain</h3>
-            <div class="section-header">
-                <h4>Feedstock Origin</h4>
-            </div>
             <div class="form-group">
                 <label>Source Type</label>
                 <div id="source_type_checkboxes" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 8px;">
@@ -1812,8 +1731,10 @@ body .franchise-signup-container .form-container .form-step#step3 {
                     <input type="number" id="storage_duration" name="storage_duration" min="0">
                 </div>
             </div>
+            
+            <!-- Documentation Section -->
             <div class="section-header">
-                <h4>Documentation</h4>
+                <h4>📄 Documentation</h4>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -1923,17 +1844,21 @@ body .franchise-signup-container .form-container .form-step#step3 {
                     </div>
                 </div>
             </div>
+            
             <div class="button-group">
-                <button type="button" class="btn btn-secondary" onclick="previousStep(4)">Previous</button>
-                <button type="button" class="btn btn-primary" onclick="nextStep(4)">Next Step</button>
+                <button type="button" class="btn btn-secondary" onclick="previousStep(3)">Previous</button>
+                <button type="button" class="btn btn-primary" onclick="nextStep(3)">Next Step</button>
             </div>
+            
         </form>
 
 
 
-        <!-- Step 5: Employee Details -->
-        <form id="step5" class="form-step">
-            <h3>Step 5: Employee Details</h3>
+
+
+        <!-- Step 4: Employee Details -->
+        <form id="step4" class="form-step">
+            <h3>Step 4: Employee Details</h3>
             
             <div class="section-header">
                 <h4>👤 Employee Information</h4>
@@ -2032,7 +1957,7 @@ body .franchise-signup-container .form-container .form-step#step3 {
             </div>
             
             <div class="button-group">
-                <button type="button" class="btn btn-secondary" onclick="previousStep(5)">Previous</button>
+                <button type="button" class="btn btn-secondary" onclick="previousStep(4)">Previous</button>
                 <button type="button" class="btn btn-primary" onclick="submitApplication()">Submit Application</button>
             </div>
         </form>

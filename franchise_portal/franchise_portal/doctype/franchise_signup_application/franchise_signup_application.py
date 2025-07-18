@@ -44,9 +44,9 @@ class FranchiseSignupApplication(Document):
 		if self.email:
 			self.validate_email_uniqueness()
 		
-		# Only validate Step 5 fields when application is being submitted/finalized
+		# Only validate Step 4 fields when application is being submitted/finalized
 		if self.status == "Submitted":
-			self.validate_step5_required_fields()
+			self.validate_step4_required_fields()
 	
 	def validate_email_uniqueness(self):
 		"""Smart email handling for reapplications - auto-modify email for reapplications"""
@@ -94,8 +94,8 @@ class FranchiseSignupApplication(Document):
 		if self.email_verified and not self.email_verified_at:
 			self.email_verified_at = now()
 	
-	def validate_step5_required_fields(self):
-		"""Validate required fields for Step 5 (Employee Details) only when submitting"""
+	def validate_step4_required_fields(self):
+		"""Validate required fields for Step 4 (Employee Details) only when submitting"""
 		missing_fields = []
 		field_labels = {
 			'employee_first_name': 'Employee First Name',

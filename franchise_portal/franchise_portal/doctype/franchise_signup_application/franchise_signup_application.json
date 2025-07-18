@@ -70,7 +70,6 @@
   "section_break_current_use",
   "current_use_disposal_method",
   "section_break_21",
-  "tab_break_origin",
   "source_type",
   "source_type_other",
   "generation_locations",
@@ -261,7 +260,7 @@
   {
    "fieldname": "feedstock_tab",
    "fieldtype": "Tab Break",
-   "label": "Feedstock Description"
+   "label": "Feedstock & Supply Chain"
   },
   {
    "fieldname": "primary_feedstock_category",
@@ -463,11 +462,6 @@
   {
    "fieldname": "section_break_21",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "tab_break_origin",
-   "fieldtype": "Tab Break",
-   "label": "Origin, Sourcing & Supply Chain"
   },
   {
    "fieldname": "source_type",
