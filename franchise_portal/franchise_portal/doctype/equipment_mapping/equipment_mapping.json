@@ -50,7 +50,8 @@
    "fieldtype": "Link",
    "label": "Company",
    "options": "Company",
-   "reqd": 1
+   "reqd": 1,
+   "get_query": "franchise_portal.franchise_portal.doctype.equipment_mapping.equipment_mapping.get_company_options"
   },
   {
    "fieldname": "equipment_name",

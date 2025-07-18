@@ -48,7 +48,8 @@
    "fieldtype": "Link",
    "label": "Company",
    "options": "Company",
-   "reqd": 1
+   "reqd": 1,
+   "get_query": "franchise_portal.franchise_portal.doctype.sustainability_mapping.sustainability_mapping.get_company_options"
   },
   {
    "fieldname": "sustainability_assessment_name",

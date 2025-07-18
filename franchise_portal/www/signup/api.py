@@ -20,6 +20,23 @@ def send_verification_email(email, data):
         # Handle JSON string data from frontend (same fix as other APIs)
         if isinstance(data, str):
             data = json.loads(data)
+        
+        # Check if user already has an approved application
+        applications = frappe.get_all(
+            "Franchise Signup Application",
+            filters={"email": email, "status": "Approved"},
+            fields=["name", "company_name", "modified"],
+            limit=1
+        )
+        
+        if applications:
+            approved_app = applications[0]
+            return {
+                "success": False,
+                "message": "🎉 You are already an approved franchise partner! You cannot submit another application as you are already part of our franchise network. If you need assistance with your existing franchise, please contact our support team.",
+                "is_approved_partner": True,
+                "approved_application": approved_app
+            }
             
         # Generate verification token
         verification_token = str(uuid.uuid4())
@@ -77,6 +94,23 @@ def verify_email(token):
         
         if not email:
             return {"success": False, "message": "Email not found in session data"}
+        
+        # Check if user already has an approved application
+        applications = frappe.get_all(
+            "Franchise Signup Application",
+            filters={"email": email, "status": "Approved"},
+            fields=["name", "company_name", "modified"],
+            limit=1
+        )
+        
+        if applications:
+            approved_app = applications[0]
+            return {
+                "success": False,
+                "message": "🎉 You are already an approved franchise partner! You cannot submit another application as you are already part of our franchise network. If you need assistance with your existing franchise, please contact our support team.",
+                "is_approved_partner": True,
+                "approved_application": approved_app
+            }
         
         # Mark as verified in session
         session_data["verified"] = True

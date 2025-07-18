@@ -206,15 +206,20 @@ function handleEmailVerification(token) {
                 }
                 // ... rest of the code ...
             } else {
-                frappe.msgprint({
-                    title: 'Verification Failed',
-                    message: response.message?.message || 'Invalid or expired verification link.',
-                    indicator: 'red'
-                });
-                
-                // Fallback to step 1
-                setCurrentStep(1);
-                updateProgressIndicator();
+                // Check if this is an approved partner response
+                if (response.message && response.message.is_approved_partner) {
+                    showApprovedPartnerMessage(response.message.session_data?.email || '', response.message.message);
+                } else {
+                    frappe.msgprint({
+                        title: 'Verification Failed',
+                        message: response.message?.message || 'Invalid or expired verification link.',
+                        indicator: 'red'
+                    });
+                    
+                    // Fallback to step 1
+                    setCurrentStep(1);
+                    updateProgressIndicator();
+                }
             }
             
             // Reset flag after completion
@@ -843,14 +848,19 @@ function sendVerificationEmail(step) {
                             showVerificationMessage(stepData.email);
                             
                         } else {
-                            const errorMessage = response.message?.message || 'Failed to send verification email. Please try again.';
-                            console.error('Verification Error:', response);
-                            console.error('Full verification error response:', JSON.stringify(response, null, 2));
-                            frappe.msgprint({
-                                title: 'Error',
-                                message: errorMessage,
-                                indicator: 'red'
-                            });
+                            // Check if this is an approved partner response
+                            if (response.message && response.message.is_approved_partner) {
+                                showApprovedPartnerMessage(stepData.email, response.message.message);
+                            } else {
+                                const errorMessage = response.message?.message || 'Failed to send verification email. Please try again.';
+                                console.error('Verification Error:', response);
+                                console.error('Full verification error response:', JSON.stringify(response, null, 2));
+                                frappe.msgprint({
+                                    title: 'Error',
+                                    message: errorMessage,
+                                    indicator: 'red'
+                                });
+                            }
                         }
                     },
                     error: function(error) {
@@ -883,12 +893,17 @@ function sendVerificationEmail(step) {
                         window.verificationToken = verificationToken = response.message.verification_token;
                         showVerificationMessage(stepData.email);
                     } else {
-                        const errorMessage = response.message?.message || 'Failed to send verification email. Please try again.';
-                        frappe.msgprint({
-                            title: 'Error',
-                            message: errorMessage,
-                            indicator: 'red'
-                        });
+                        // Check if this is an approved partner response
+                        if (response.message && response.message.is_approved_partner) {
+                            showApprovedPartnerMessage(stepData.email, response.message.message);
+                        } else {
+                            const errorMessage = response.message?.message || 'Failed to send verification email. Please try again.';
+                            frappe.msgprint({
+                                title: 'Error',
+                                message: errorMessage,
+                                indicator: 'red'
+                            });
+                        }
                     }
                 },
                 error: function(error) {

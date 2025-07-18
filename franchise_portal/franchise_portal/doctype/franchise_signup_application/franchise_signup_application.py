@@ -280,10 +280,10 @@ class FranchiseSignupApplication(Document):
 		project_type = getattr(self, 'project_type', '')
 		
 		# Map project type to parent company groups under Nexchar Ventures
-		if project_type == "Franchise":
-			parent_company = "Franchise"  # This should be the group company under Nexchar Ventures
-		elif project_type == "Internal Company":
-			parent_company = "Internal Company"  # This should be the group company under Nexchar Ventures
+		if project_type == "Franchises":
+			parent_company = "Franchises"  # This should be the group company under Nexchar Ventures
+		elif project_type == "Internal":
+			parent_company = "Internal"  # This should be the group company under Nexchar Ventures
 		
 		# Ensure parent company structure exists
 		if parent_company:
@@ -332,7 +332,7 @@ class FranchiseSignupApplication(Document):
 				group_company_doc = frappe.get_doc({
 					"doctype": "Company",
 					"company_name": target_parent,
-					"abbr": "FRA" if target_parent == "Franchise" else "INT",
+					"abbr": "FRA" if target_parent == "Franchises" else "INT",
 					"default_currency": "INR",
 					"country": "India",
 					"parent_company": nexchar_ventures,
