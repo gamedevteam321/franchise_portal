@@ -479,8 +479,9 @@
   },
   {
    "fieldname": "generation_locations",
-   "fieldtype": "Small Text",
-   "label": "Generation Locations"
+   "fieldtype": "Table",
+   "label": "Generation Locations",
+   "options": "Generation Location"
   },
   {
    "fieldname": "generation_datetime",

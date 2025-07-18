@@ -374,6 +374,11 @@ function showStep(stepNumber) {
             });
             
             console.log('Step 3 styling fixes applied via JavaScript');
+            
+            // Initialize generation locations for step 3
+            setTimeout(() => {
+                initializeGenerationLocationsForStep3();
+            }, 500);
         }
         
         // Initialize file uploads for the current step
@@ -651,13 +656,74 @@ function getStepData(step) {
             data['source_type'] = '';
         }
         
-        // Handle generation_locations field (it's a textarea, not dynamic fields)
-        if (data['generation_locations'] && data['generation_locations'].trim() !== '') {
-            console.log('Generation locations found:', data['generation_locations']);
+        // Handle generation_locations field (child table structure)
+        const generationLocations = [];
+        const locationRows = document.querySelectorAll('.generation-location-row');
+        console.log(`Found ${locationRows.length} generation location rows`);
+        
+        locationRows.forEach((row, index) => {
+            // Try multiple selectors to find the address input
+            const addressInput = row.querySelector('textarea') || 
+                                row.querySelector('input[name*="address"]') ||
+                                row.querySelector(`#generation_location_address_${index + 1}`);
+            
+            const gpsInput = row.querySelector('input[readonly]') || 
+                            row.querySelector('input[name*="gps"]') ||
+                            row.querySelector(`#generation_location_gps_${index + 1}`);
+            
+            console.log(`Processing location row ${index + 1}:`);
+            console.log(`  Address input found:`, !!addressInput);
+            console.log(`  GPS input found:`, !!gpsInput);
+            console.log(`  Row HTML:`, row.innerHTML.substring(0, 200) + '...');
+            
+            if (addressInput) {
+                console.log(`  Address value: "${addressInput.value}"`);
+                console.log(`  Address value trimmed: "${addressInput.value.trim()}"`);
+            }
+            if (gpsInput) {
+                console.log(`  GPS value: "${gpsInput.value}"`);
+            }
+            
+            // Check if either address or GPS has a value
+            const hasAddress = addressInput && addressInput.value.trim();
+            const hasGPS = gpsInput && gpsInput.value.trim();
+            
+            if (hasAddress || hasGPS) {
+                const locationData = {
+                    address: hasAddress ? addressInput.value.trim() : '',
+                    gps_coordinates: hasGPS ? gpsInput.value.trim() : ''
+                };
+                generationLocations.push(locationData);
+                console.log(`Added generation location ${index + 1}:`, locationData);
+            } else {
+                console.log(`Skipping location ${index + 1} - no address or GPS data`);
+            }
+        });
+        
+        if (generationLocations.length > 0) {
+            // Ensure it's a proper array, not a string representation
+            data['generation_locations'] = generationLocations;
+            console.log('Generation locations processed:', generationLocations);
+            console.log('Generation locations data type:', typeof data['generation_locations']);
+            console.log('Generation locations is array:', Array.isArray(data['generation_locations']));
+            console.log('Generation locations JSON:', JSON.stringify(data['generation_locations']));
         } else {
-            console.log('No generation locations entered');
-            data['generation_locations'] = '';
+            console.log('No generation locations found');
+            data['generation_locations'] = [];
         }
+        
+        // Also collect individual generation location fields for backward compatibility
+        locationRows.forEach((row, index) => {
+            const addressInput = row.querySelector('textarea');
+            const gpsInput = row.querySelector('input[readonly]');
+            
+            if (addressInput) {
+                data[`generation_location_address_${index + 1}`] = addressInput.value.trim();
+            }
+            if (gpsInput) {
+                data[`generation_location_gps_${index + 1}`] = gpsInput.value.trim();
+            }
+        });
         
         // FIRST: Extract file URLs before sanitization removes file objects
         const step3FileFields = ['feedstock_payment_file', 'chain_of_custody_file', 'supplier_agreements_file', 'origin_certificates_file', 'transportation_records_file'];
@@ -678,7 +744,7 @@ function getStepData(step) {
         
         // SECOND: Sanitize all other data values
         Object.keys(data).forEach(key => {
-            if (!step3FileFields.includes(key)) { // Skip file fields that we already processed
+            if (!step3FileFields.includes(key) && key !== 'generation_locations') { // Skip file fields and generation_locations
                 if (data[key] === null || data[key] === undefined) {
                     data[key] = '';
                 } else {
@@ -1072,8 +1138,22 @@ function saveStepData(step, callback) {
     console.log('DEBUG: stepData:', JSON.stringify(stepData, null, 2));
 
     // First, update with step data
+    console.log('Before Object.assign - window.applicationData.generation_locations:', window.applicationData.generation_locations);
+    console.log('Before Object.assign - stepData.generation_locations:', stepData.generation_locations);
+    
+    // Ensure generation_locations is properly handled as an array
+    if (stepData.generation_locations && Array.isArray(stepData.generation_locations)) {
+        console.log('✅ Step data has valid generation_locations array');
+        // Force update generation_locations as an array
+        window.applicationData.generation_locations = [...stepData.generation_locations];
+        applicationData.generation_locations = [...stepData.generation_locations];
+    }
+    
     Object.assign(window.applicationData, stepData);
     Object.assign(applicationData, stepData); // Also update local variable
+    
+    console.log('After Object.assign - window.applicationData.generation_locations:', window.applicationData.generation_locations);
+    console.log('After Object.assign - applicationData.generation_locations:', applicationData.generation_locations);
     
     // Handle email if missing
     if (!window.applicationData.email) {
@@ -1110,6 +1190,38 @@ function saveStepData(step, callback) {
 
     // Log the full data being sent
     console.log('Saving step data with current_step:', nextStepNumber, 'Data:', JSON.stringify(allData, null, 2));
+    
+    // Special debugging for generation_locations
+    if (allData.generation_locations) {
+        console.log('=== GENERATION_LOCATIONS DEBUG ===');
+        console.log('Type:', typeof allData.generation_locations);
+        console.log('Is Array:', Array.isArray(allData.generation_locations));
+        console.log('Length:', allData.generation_locations.length);
+        console.log('Content:', allData.generation_locations);
+        console.log('JSON Stringified:', JSON.stringify(allData.generation_locations));
+        console.log('=== END GENERATION_LOCATIONS DEBUG ===');
+        
+        // Ensure generation_locations is always an array
+        if (!Array.isArray(allData.generation_locations)) {
+            console.log('⚠️ WARNING: generation_locations is not an array, converting...');
+            if (typeof allData.generation_locations === 'string') {
+                try {
+                    // Try to parse if it's a JSON string
+                    allData.generation_locations = JSON.parse(allData.generation_locations);
+                    console.log('✅ Successfully parsed generation_locations from string');
+                } catch (e) {
+                    console.log('❌ Failed to parse generation_locations, setting to empty array');
+                    allData.generation_locations = [];
+                }
+            } else {
+                console.log('❌ Unknown type for generation_locations, setting to empty array');
+                allData.generation_locations = [];
+            }
+        }
+        
+        console.log('Final generation_locations type:', typeof allData.generation_locations);
+        console.log('Final generation_locations is array:', Array.isArray(allData.generation_locations));
+    }
 
     if (emailVerified && verificationToken && verificationToken !== 'test-token') {
         frappe.call({
@@ -1654,29 +1766,85 @@ function populateFormData(data) {
         }
     }
 
-    // 3. Step 3: Generation Locations (textarea field, not dynamic rows)
+    // 3. Step 3: Generation Locations (child table structure)
     if (data.generation_locations) {
         console.log('Processing generation_locations:', data.generation_locations);
-        const generationLocationsField = document.getElementById('generation_locations');
-        if (generationLocationsField) {
-            // Handle both string and array formats
+        const container = document.getElementById('generation_locations_container');
+        if (container) {
+            // Clear existing locations
+            container.innerHTML = '';
+            generationLocationCounter = 0;
+            
+            // Handle both array and object formats
+            let locations = [];
             if (Array.isArray(data.generation_locations)) {
-                // If it's an array, convert to string format
-                const locationsText = data.generation_locations.map(loc => 
-                    loc.address || loc.gps_coordinates || ''
-                ).filter(text => text.trim() !== '').join(', ');
-                generationLocationsField.value = locationsText;
-                console.log('Set generation_locations (array) to:', locationsText);
-            } else {
-                // If it's already a string, use it directly
-                generationLocationsField.value = data.generation_locations;
-                console.log('Set generation_locations (string) to:', data.generation_locations);
+                locations = data.generation_locations;
+            } else if (typeof data.generation_locations === 'object') {
+                // Convert object to array if needed
+                locations = Object.values(data.generation_locations);
             }
+            
+            // Add each location
+            locations.forEach((location, index) => {
+                if (location && (location.address || location.gps_coordinates)) {
+                    addGenerationLocation();
+                    
+                    // Set the values
+                    const addressInput = document.getElementById(`generation_location_address_${index + 1}`);
+                    const gpsInput = document.getElementById(`generation_location_gps_${index + 1}`);
+                    
+                    if (addressInput && location.address) {
+                        addressInput.value = location.address;
+                    }
+                    if (gpsInput && location.gps_coordinates) {
+                        gpsInput.value = location.gps_coordinates;
+                    }
+                }
+            });
+            
+            console.log(`Added ${locations.length} generation locations`);
         } else {
-            console.log('generation_locations field not found in DOM');
+            console.log('generation_locations_container not found in DOM');
         }
     } else {
         console.log('No generation_locations data found');
+    }
+    
+    // Also handle individual generation location fields for backward compatibility
+    console.log('Processing individual generation location fields...');
+    let locationIndex = 1;
+    while (data[`generation_location_address_${locationIndex}`] || data[`generation_location_gps_${locationIndex}`]) {
+        console.log(`Found individual location ${locationIndex}:`, {
+            address: data[`generation_location_address_${locationIndex}`],
+            gps: data[`generation_location_gps_${locationIndex}`]
+        });
+        
+        // Add the location if it doesn't already exist
+        const container = document.getElementById('generation_locations_container');
+        if (container) {
+            // Check if we already have this location from the array
+            const existingLocation = container.querySelector(`#generation_location_${locationIndex}`);
+            if (!existingLocation) {
+                addGenerationLocation();
+                
+                // Set the values
+                const addressInput = document.getElementById(`generation_location_address_${locationIndex}`);
+                const gpsInput = document.getElementById(`generation_location_gps_${locationIndex}`);
+                
+                if (addressInput && data[`generation_location_address_${locationIndex}`]) {
+                    addressInput.value = data[`generation_location_address_${locationIndex}`];
+                }
+                if (gpsInput && data[`generation_location_gps_${locationIndex}`]) {
+                    gpsInput.value = data[`generation_location_gps_${locationIndex}`];
+                }
+            }
+        }
+        
+        locationIndex++;
+    }
+    
+    if (locationIndex > 1) {
+        console.log(`Processed ${locationIndex - 1} individual generation location fields`);
     }
 
     // 4. Step 3: Current Use/Disposal Method (specific debugging)
@@ -4025,6 +4193,84 @@ function getFieldDisplayName(field) {
 // Initialize the enhanced form handling
 initializeFormFieldHandling();
 
+// Initialize generation locations on form load
+function initializeGenerationLocations() {
+    console.log('Initializing generation locations...');
+    const container = document.getElementById('generation_locations_container');
+    if (container) {
+        // Check if there are any existing generation location fields in the data
+        if (window.applicationData) {
+            let locationIndex = 1;
+            while (window.applicationData[`generation_location_address_${locationIndex}`] || 
+                   window.applicationData[`generation_location_gps_${locationIndex}`]) {
+                console.log(`Found existing location ${locationIndex} in applicationData`);
+                addGenerationLocation();
+                
+                // Set the values
+                const addressInput = document.getElementById(`generation_location_address_${locationIndex}`);
+                const gpsInput = document.getElementById(`generation_location_gps_${locationIndex}`);
+                
+                if (addressInput && window.applicationData[`generation_location_address_${locationIndex}`]) {
+                    addressInput.value = window.applicationData[`generation_location_address_${locationIndex}`];
+                }
+                if (gpsInput && window.applicationData[`generation_location_gps_${locationIndex}`]) {
+                    gpsInput.value = window.applicationData[`generation_location_gps_${locationIndex}`];
+                }
+                
+                locationIndex++;
+            }
+            
+            if (locationIndex > 1) {
+                console.log(`Initialized ${locationIndex - 1} generation locations from applicationData`);
+            }
+        }
+    }
+}
+
+// Call initialization after form is ready
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initializeGenerationLocations, 1000); // Small delay to ensure form is fully loaded
+});
+
+// Also initialize when step 3 is shown
+function initializeGenerationLocationsForStep3() {
+    console.log('Initializing generation locations for step 3...');
+    const container = document.getElementById('generation_locations_container');
+    if (container) {
+        // Check if there are any existing generation location fields in the data
+        if (window.applicationData) {
+            let locationIndex = 1;
+            while (window.applicationData[`generation_location_address_${locationIndex}`] || 
+                   window.applicationData[`generation_location_gps_${locationIndex}`]) {
+                console.log(`Found existing location ${locationIndex} in applicationData for step 3`);
+                
+                // Check if this location already exists
+                const existingLocation = document.getElementById(`generation_location_${locationIndex}`);
+                if (!existingLocation) {
+                    addGenerationLocation();
+                    
+                    // Set the values
+                    const addressInput = document.getElementById(`generation_location_address_${locationIndex}`);
+                    const gpsInput = document.getElementById(`generation_location_gps_${locationIndex}`);
+                    
+                    if (addressInput && window.applicationData[`generation_location_address_${locationIndex}`]) {
+                        addressInput.value = window.applicationData[`generation_location_address_${locationIndex}`];
+                    }
+                    if (gpsInput && window.applicationData[`generation_location_gps_${locationIndex}`]) {
+                        gpsInput.value = window.applicationData[`generation_location_gps_${locationIndex}`];
+                    }
+                }
+                
+                locationIndex++;
+            }
+            
+            if (locationIndex > 1) {
+                console.log(`Initialized ${locationIndex - 1} generation locations from applicationData for step 3`);
+            }
+        }
+    }
+}
+
 // Patch: Persist emailVerified and currentStep whenever they are set
 function setEmailVerified(value) {
     window.emailVerified = emailVerified = value;
@@ -4043,3 +4289,260 @@ function setCurrentStep(value) {
 // In handleEmailVerification success:
 // setEmailVerified(true); setCurrentStep(2);
 // In nextStep and other places where currentStep is updated, use setCurrentStep(newStep);
+
+// Generation Locations Management
+let generationLocationCounter = 0;
+
+function addGenerationLocation() {
+    generationLocationCounter++;
+    const container = document.getElementById('generation_locations_container');
+    
+    const locationRow = document.createElement('div');
+    locationRow.className = 'generation-location-row';
+    locationRow.id = `generation_location_${generationLocationCounter}`;
+    
+    locationRow.innerHTML = `
+        <div class="location-header">
+            <div class="location-title">Generation Location ${generationLocationCounter}</div>
+            <button type="button" class="remove-location" onclick="removeGenerationLocation(${generationLocationCounter})" title="Remove Location">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="form-group">
+            <label for="generation_location_address_${generationLocationCounter}">Address</label>
+            <textarea id="generation_location_address_${generationLocationCounter}" 
+                      name="generation_location_address_${generationLocationCounter}" 
+                      rows="2" 
+                      placeholder="Enter the address of this generation location"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="coordinates-group">
+                <div class="form-group">
+                    <label for="generation_location_gps_${generationLocationCounter}">GPS Coordinates</label>
+                    <input type="text" id="generation_location_gps_${generationLocationCounter}" 
+                           name="generation_location_gps_${generationLocationCounter}" 
+                           placeholder="e.g., 20.5937, 78.9629" 
+                           readonly>
+                </div>
+                <button type="button" class="map-button" onclick="openLocationMapModal(${generationLocationCounter})">
+                    <i class="fa fa-map-marker"></i> Select on Map
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(locationRow);
+}
+
+function removeGenerationLocation(locationId) {
+    const locationRow = document.getElementById(`generation_location_${locationId}`);
+    if (locationRow) {
+        locationRow.remove();
+        // Renumber remaining locations
+        renumberGenerationLocations();
+    }
+}
+
+function renumberGenerationLocations() {
+    const locationRows = document.querySelectorAll('.generation-location-row');
+    locationRows.forEach((row, index) => {
+        const locationNumber = index + 1;
+        const titleElement = row.querySelector('.location-title');
+        if (titleElement) {
+            titleElement.textContent = `Generation Location ${locationNumber}`;
+        }
+        
+        // Update IDs and names
+        row.id = `generation_location_${locationNumber}`;
+        
+        const addressInput = row.querySelector('textarea');
+        if (addressInput) {
+            addressInput.id = `generation_location_address_${locationNumber}`;
+            addressInput.name = `generation_location_address_${locationNumber}`;
+        }
+        
+        const gpsInput = row.querySelector('input[readonly]');
+        if (gpsInput) {
+            gpsInput.id = `generation_location_gps_${locationNumber}`;
+            gpsInput.name = `generation_location_gps_${locationNumber}`;
+        }
+        
+        const mapButton = row.querySelector('.map-button');
+        if (mapButton) {
+            mapButton.onclick = () => openLocationMapModal(locationNumber);
+        }
+        
+        const removeButton = row.querySelector('.remove-location');
+        if (removeButton) {
+            removeButton.onclick = () => removeGenerationLocation(locationNumber);
+        }
+    });
+    
+    generationLocationCounter = locationRows.length;
+}
+
+function openLocationMapModal(locationId) {
+    // Create a modal for location selection
+    const modalId = `location_map_modal_${locationId}`;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById(modalId);
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = modalId;
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Location for Generation Location ${locationId}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="location_search_${locationId}">Search Location</label>
+                        <input type="text" id="location_search_${locationId}" 
+                               placeholder="Search for a location..." 
+                               class="form-control">
+                    </div>
+                    <div id="location_map_${locationId}" style="height: 400px; width: 100%; border: 1px solid #ddd; border-radius: 6px;"></div>
+                    <div class="mt-3">
+                        <p><strong>Instructions:</strong> Click on the map to select a location, or use the search box above.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmLocationSelection(${locationId})">Confirm Location</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Show the modal
+    $(modal).modal('show');
+    
+    // Initialize map after modal is shown
+    setTimeout(() => {
+        initLocationMap(locationId);
+    }, 500);
+}
+
+function initLocationMap(locationId) {
+    const mapElement = document.getElementById(`location_map_${locationId}`);
+    const searchInput = document.getElementById(`location_search_${locationId}`);
+    
+    if (!mapElement || !window.google || !window.google.maps) {
+        console.error('Map elements or Google Maps not available');
+        return;
+    }
+    
+    // Initialize map
+    const map = new google.maps.Map(mapElement, {
+        center: { lat: 20.5937, lng: 78.9629 }, // India center
+        zoom: 5,
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: true
+    });
+    
+    let selectedMarker = null;
+    let selectedCoordinates = null;
+    
+    // Initialize search box
+    if (searchInput && google.maps.places) {
+        const searchBox = new google.maps.places.SearchBox(searchInput);
+        
+        // Bias search results to current map viewport
+        map.addListener('bounds_changed', () => {
+            searchBox.setBounds(map.getBounds());
+        });
+        
+        // Listen for place search results
+        searchBox.addListener('places_changed', () => {
+            const places = searchBox.getPlaces();
+            if (places.length === 0) return;
+            
+            const place = places[0];
+            if (!place.geometry || !place.geometry.location) return;
+            
+            // Center map on selected place
+            map.setCenter(place.geometry.location);
+            map.setZoom(15);
+            
+            // Add marker at selected place
+            addMarkerAtLocation(place.geometry.location);
+        });
+    }
+    
+    // Add click listener to map
+    map.addListener('click', (event) => {
+        addMarkerAtLocation(event.latLng);
+    });
+    
+    function addMarkerAtLocation(location) {
+        // Remove existing marker
+        if (selectedMarker) {
+            selectedMarker.setMap(null);
+        }
+        
+        // Add new marker
+        selectedMarker = new google.maps.Marker({
+            position: location,
+            map: map,
+            title: 'Selected Location'
+        });
+        
+        // Store coordinates
+        selectedCoordinates = {
+            lat: location.lat(),
+            lng: location.lng()
+        };
+    }
+    
+    // Store map and coordinates for later use
+    window[`locationMap_${locationId}`] = {
+        map: map,
+        selectedCoordinates: selectedCoordinates,
+        updateCoordinates: function() {
+            if (this.selectedCoordinates) {
+                const gpsInput = document.getElementById(`generation_location_gps_${locationId}`);
+                if (gpsInput) {
+                    gpsInput.value = `${this.selectedCoordinates.lat.toFixed(6)}, ${this.selectedCoordinates.lng.toFixed(6)}`;
+                }
+            }
+        }
+    };
+}
+
+function confirmLocationSelection(locationId) {
+    const mapData = window[`locationMap_${locationId}`];
+    if (mapData && mapData.selectedCoordinates) {
+        mapData.updateCoordinates();
+        
+        // Close the modal
+        $(`#location_map_modal_${locationId}`).modal('hide');
+        
+        // Show success message
+        frappe.show_alert({
+            message: 'Location selected successfully!',
+            indicator: 'green'
+        }, 3);
+    } else {
+        frappe.show_alert({
+            message: 'Please select a location on the map first.',
+            indicator: 'red'
+        }, 3);
+    }
+}
+
+// Make functions globally available
+window.addGenerationLocation = addGenerationLocation;
+window.removeGenerationLocation = removeGenerationLocation;
+window.openLocationMapModal = openLocationMapModal;

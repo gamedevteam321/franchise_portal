@@ -1,31 +1,43 @@
 {
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-01 12:00:00.000000",
  "doctype": "DocType",
- "name": "Generation Location",
- "module": "Franchise Portal",
- "istable": 1,
- "title_field": "address",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "address",
+  "gps_coordinates",
+  "map_button"
+ ],
  "fields": [
   {
    "fieldname": "address",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Address",
-   "in_list_view": 1,
    "reqd": 1
   },
   {
    "fieldname": "gps_coordinates",
    "fieldtype": "Data",
    "label": "GPS Coordinates",
-   "in_list_view": 1
+   "read_only": 1
+  },
+  {
+   "fieldname": "map_button",
+   "fieldtype": "Button",
+   "label": "Select on Map",
+   "onclick": "franchise_portal.franchise_portal.doctype.generation_location.generation_location.select_location"
   }
  ],
- "permissions": [
-  {
-   "role": "System Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 1
-  }
- ]
+ "istable": 1,
+ "modified": "2024-01-01 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Franchise Portal",
+ "name": "Generation Location",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
 } 

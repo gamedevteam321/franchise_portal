@@ -178,6 +178,89 @@ window.GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
     box-sizing: border-box !important;
 }
 
+/* Generation Locations Styles */
+.generation-location-row {
+    background: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 8px !important;
+    padding: 20px !important;
+    margin-bottom: 15px !important;
+    position: relative !important;
+}
+
+.generation-location-row .form-row {
+    display: flex !important;
+    gap: 15px !important;
+    margin-bottom: 15px !important;
+}
+
+.generation-location-row .form-group {
+    flex: 1 !important;
+    margin-bottom: 0 !important;
+}
+
+.generation-location-row .coordinates-group {
+    display: flex !important;
+    gap: 10px !important;
+    align-items: flex-end !important;
+}
+
+.generation-location-row .coordinates-group .form-group {
+    flex: 1 !important;
+}
+
+.generation-location-row .map-button {
+    background: #74b9ff !important;
+    color: white !important;
+    border: none !important;
+    padding: 12px 16px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    transition: background 0.15s ease !important;
+}
+
+.generation-location-row .map-button:hover {
+    background: #5a9bd8 !important;
+}
+
+.generation-location-row .remove-location {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    background: #dc3545 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 30px !important;
+    height: 30px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.15s ease !important;
+}
+
+.generation-location-row .remove-location:hover {
+    background: #c82333 !important;
+}
+
+.generation-location-row .location-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 15px !important;
+    padding-bottom: 10px !important;
+    border-bottom: 1px solid #e9ecef !important;
+}
+
+.generation-location-row .location-title {
+    font-weight: 600 !important;
+    color: #2d3436 !important;
+    font-size: 16px !important;
+}
+
 .page-content .form-group input:focus,
 .page-content .form-group select:focus,
 .page-content .form-group textarea:focus,
@@ -1742,7 +1825,12 @@ body .franchise-signup-container .form-container .form-step#step3 {
             
             <div class="form-group">
                 <label for="generation_locations">Generation Locations</label>
-                <textarea id="generation_locations" name="generation_locations" rows="2" placeholder="e.g., Local farms, Processing mills, Industrial facilities"></textarea>
+                <div id="generation_locations_container">
+                    <!-- Generation locations will be added here dynamically -->
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="addGenerationLocation()" style="margin-top: 10px;">
+                    <i class="fa fa-plus"></i> Add Location
+                </button>
             </div>
             
             <div class="form-row">
