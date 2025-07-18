@@ -260,7 +260,7 @@
   {
    "fieldname": "feedstock_tab",
    "fieldtype": "Tab Break",
-   "label": "Feedstock & Supply Chain"
+   "label": "Feedstock Info"
   },
   {
    "fieldname": "primary_feedstock_category",
@@ -584,7 +584,7 @@
   {
    "fieldname": "employee_details_tab",
    "fieldtype": "Tab Break",
-   "label": "Employee Details"
+   "label": "Franchise Partner Details"
   },
   {
    "fieldname": "section_break_employee",
